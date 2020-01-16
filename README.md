@@ -11,8 +11,6 @@ Use the script `master.sh` to understand what is contained in this repository.
 ### Da fare
 
 #### Prioritario
-- Creare directory di dati usando quelli di Tom
-- Train Linear Regression
 - Train SmallTom (lui non usa maxpooling, batchnorm e dropout!)
 - Train SmallNet
 - Train SmallVGG
