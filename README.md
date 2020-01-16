@@ -8,12 +8,12 @@ Use the script `master.sh` to understand what is contained in this repository.
 
 ---
 
-### To do
+### Da fare
 
 #### Prioritario
 - Creare directory di dati usando quelli di Tom
 - Train Linear Regression
-- Train SmallTom
+- Train SmallTom (lui non usa maxpooling, batchnorm e dropout!)
 - Train SmallNet
 - Train SmallVGG
 - Capire quale di questi e` un buon baseline model
@@ -21,10 +21,34 @@ Use the script `master.sh` to understand what is contained in this repository.
 - Scegliere quale dei due e` un buon baseline model
 - Train VGG pretrained
 - Train models on mixed data
+- Vedere perche` non mi accetta batch size maggiore di 16 nel modello di Tom
 
+#### Analisi basiche
+- Plot: numero di esempi per classe
+- Plot: numero di pixel per ogni immagine raw
+- Plot: error rate quando uso abstention
 
-#### Altro:
-- Serie di scripts per organizzare bene dati
+#### Analisi avanzate
+- Vedere se ottengo migliore generalizzazione mediando i pesi finali
+
+### Parametri da analizzare
+
+#### Prima
+- _Taglia immagini_. Vedere effetto della taglia delle immagini (sto vedendo che immagini piu` grandi diminuiscono il tempo di convergenza). Plot: Final-accuracy vs image-size. Plot: Convergence time(wallclock and iterations) vs image-size. 
+- _Data Augmentation_. Plot: miglioramento della predizione con ogni tipo di data augmentation
+
+#### Dopo
+- _Batch size_. Tempo di esecuzione e accuracy vs batch size, per ogni modello
+- _Numero di classi_. Plot: accuracy in funzione del numero di classi
+- _Class imbalance_. Trovare qualche modo di misurare la performance in funzione dell'imbalance. Occhio che quando faccio training non posso splittare a casaccio, devo assicurarmi che ogni classe sia ben rappresentata.
+
+#### Organizzazione dati
+- Scripts che raccoglie dati da Q e li mette nella stessa cartella appropriata
+- Script che associa features e immagini
+- Script che prende dati dalla cartella appropriata, riscala le immagini e le associa alle label (e alle features) per creare il dataset
+
+#### Organizzazione workflow
+- Implementare semi-supervised e active learning
 
 ---
 
