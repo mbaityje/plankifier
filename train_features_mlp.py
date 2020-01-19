@@ -25,7 +25,7 @@ parser.add_argument('-plot', action='store_true', help="Plot loss and accuracy d
 parser.add_argument('-totEpochs', type=int, default=5, help="Total number of epochs for the training")
 parser.add_argument('-bs', type=int, default=16, help="Batch size")
 parser.add_argument('-lr', type=float, default=0.1, help="Learning Rate")
-parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Learning Rate")
+parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Layers")
 parser.add_argument('-testSplit', type=float, default=0.2, help="Fraction of examples in the validation set")
 args=parser.parse_args()
 
