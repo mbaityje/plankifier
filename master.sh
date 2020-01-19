@@ -7,15 +7,18 @@
 python analyze_dataset.py
 
 # Train Multi-layer Perceptron model on images
-python train_mlp.py -lr=0.1 -totEpochs=200 -width=64 -height=64 -plot
+python train_imgmodel.py -lr=0.001 -totEpochs=2000 -width=128 -height=128 -datapath=./data/zooplankton_trainingset_15oct/ -model='mlp' -bs=32  -aug
 # Use it to make predictions
-python predict_mlp.py '/path/to/unclassified/images/'
+# not existing:python predict_mlp.py '/path/to/unclassified/images/'
 
 # Train Convolutional model on images
+python train_imgmodel.py -lr=0.0001 -totEpochs=5000 -width=128 -height=128 -datapath=./data/zooplankton_trainingset_15oct/ -model='conv2' -bs=32  -aug
+
+
 
 # Train Multi-layer Perceptron on features
+python train_features_mlp.py -lr=0.01 -totEpochs=2000 -layers 256 128 -plot
 
 # Train Multi-layer Perceptron on images+features
 
 # Train Random Forest on features
-
