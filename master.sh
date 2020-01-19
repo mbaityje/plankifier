@@ -17,7 +17,7 @@ python train_imgmodel.py -lr=0.0001 -totEpochs=5000 -width=128 -height=128 -data
 
 
 # Train Multi-layer Perceptron on features
-python train_features_mlp.py -lr=0.01 -totEpochs=2000 -layers 256 128 -plot
+python train_features_mlp.py -lr=0.01 -totEpochs=2000 -layers 256 128 -datapath=./data/zooplankton_trainingset_15oct/ -bs=32 -plot
 
 # Train Multi-layer Perceptron on images+features
 
