@@ -36,9 +36,10 @@ class Conv2Layer:
 
 		model.add(Conv2D(64, kernel_size=24, activation='relu', input_shape=inputShape))
 		model.add(Conv2D(32, kernel_size=12, activation='relu'))
-		#model.add(Conv2D(16, kernel_size=12, activation='relu'))
+		# model.add(BatchNormalization(axis=chanDim))
+		# model.add(MaxPooling2D(pool_size=(2, 2)))
+		# model.add(Dropout(0.25))
 		model.add(Flatten())
-		#model.add(Dense(512, activation='relu'))
 		model.add(Dense(classes, activation='softmax'))
 
 		return model
