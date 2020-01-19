@@ -29,12 +29,12 @@ outname =outdir+'/'+args.name+'.txt'
 
 # Loop through the dataset
 sizes=[]
-classes = {'name': os.listdir(args.datapath)}
+classes = {'name': [ name for name in os.listdir(args.datapath) if os.path.isdir(os.path.join(args.datapath, name)) ]} # Every directory corresponds to a class. Files that aren't directories are ignored
 classes['num']    = len(classes['name'])
 classes['num_ex'] =  np.zeros(classes['num'], dtype=int)
 for ic in range(classes['num']):
 	c=classes['name'][ic]
-	classPath=args.datapath+c+'/'
+	classPath=args.datapath+'/'+c+'/'
 	classImages = os.listdir(classPath)
 	classes['num_ex'][ic] = len(classImages) # number of examples per class
 	sizes.append( np.ndarray( (classes['num_ex'][ic],3),dtype=int) ) # Container for raw image sizes of class ic
