@@ -160,7 +160,7 @@ else:
 model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
 
 # checkpoints
-filepath = outDir+'/weights_epoch{epoch:03d}.hdf5' # make sure that the callback filepath exists, since it won't create directories
+filepath = outDir+'/weights_epoch{epoch:05d}.hdf5' # make sure that the callback filepath exists, since it won't create directories
 checkpointer    = keras.callbacks.ModelCheckpoint(filepath=filepath, verbose=0, save_best_only=True) # save the model at every epoch in which there is an improvement in test accuracy
 coitointerrotto = keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', patience=args.totEpochs, restore_best_weights=True)
 callbacks=[checkpointer,coitointerrotto]
