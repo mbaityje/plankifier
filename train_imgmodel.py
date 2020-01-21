@@ -10,7 +10,7 @@
 # 
 #########################################################################
 
-import os, pathlib, time, datetime, argparse, numpy as np
+import os, sys, pathlib, time, datetime, argparse, numpy as np
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Conv2D, Flatten
@@ -41,10 +41,16 @@ parser.add_argument('-model', choices=['mlp','conv2','smallvgg'], default='conv2
 parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Layers for MLP")
 args=parser.parse_args()
 
+print('\nRunning',sys.argv[0],sys.argv[1:])
+
 # Check command line arguments
 if args.width!=args.height:
 	raise NotImplementedError('Height and width of the image must be the same for the moment.')
+if args.aug==True and args.model in ['mlp']:
+	print('We don\'t do data augmentation with the MLP')
+	args.aug=False
 flatten_image = True if args.model in ['mlp'] else False
+
 
 
 if args.verbose:
@@ -222,7 +228,7 @@ confidences_wrong = confidences[np.where(testY.argmax(axis=1)!=predictions.argma
 
 # Abstention accuracy
 thresholds = np.array([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.97,0.98,0.99,0.995,0.997,0.999,0.9995,0.9999,0.99995,0.99999], dtype=np.float)
-accs,nconfident = np.ndarray(len(thresholds),dtype=np.float), np.ndarray(len(thresholds), dtype=np.int)
+accs,nconfident = np.ndarray(len(thresholds), dtype=np.float), np.ndarray(len(thresholds), dtype=np.int)
 for i,thres in enumerate(thresholds):
 	confident     = np.where(confidences>thres)[0]
 	nconfident[i] = len(confident)
