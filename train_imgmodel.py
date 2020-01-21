@@ -107,7 +107,7 @@ labels = np.array(labels)
 p=np.random.permutation(classes['tot_ex'])
 data=data[p]
 labels=labels[p]
-
+np.save(outDir+'classes.npy', classes)
 
 #Split train and test
 (trainX, testX, trainY, testY) = train_test_split(data,	labels, test_size=args.testSplit, random_state=42)
