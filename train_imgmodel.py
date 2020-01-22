@@ -54,7 +54,7 @@ if args.aug==True and args.model in ['mlp']:
 	args.aug=False
 flatten_image = True if args.model in ['mlp'] else False
 if args.initial_epoch>=args.totEpochs:
-	print('The initial epoch is already larger than the target number of epochs, so there is no need to do anything. Exiting...')
+	print('The initial epoch is already equalr or larger than the target number of epochs, so there is no need to do anything. Exiting...')
 	raise SystemExit
 
 if args.verbose:
@@ -261,7 +261,20 @@ print("Training-time: {:} seconds".format(trainingTime), file=fsummary)
 fsummary.close()
 
 # Save classification report
-print(clrep, file=open(outDir+'/classification_report.txt','w'))
+with open(outDir+'/classification_report.txt','w') as frep:
+	print(clrep, file=frep)
+	# For each class, write down what it was confused with
+	print('\nLet us see with which other taxa each class gets confused.', file=frep)
+	for ic,c in enumerate(classes['name']):
+		print("{:18}: ".format( classes['name'][ic]), end=' ', file=frep)
+		ic_examples = np.where(testY.argmax(axis=1)==ic)[0] # examples in the test set with label ic
+		ic_predictions = predictions[ic_examples].argmax(axis=1)
+		histo = np.histogram(ic_predictions, bins=np.arange(classes['num']+1))[0]/len(ic_examples)
+		ranks = np.argsort(histo)[::-1]
+		# ic_classes = [classes['name'][ranks[i]] for i in range(classes['num'])]
+		for m in range(5): # Print only first few mistaken classes
+			print("{:18}({:.2f})".format( classes['name'][ranks[m]],histo[ranks[m]]), end=', ', file=frep)
+		print('...', file=frep)
 
 # Table with abstention data
 print('threshold accuracy nconfident', file=open(outDir+'/abstention.txt','w'))
