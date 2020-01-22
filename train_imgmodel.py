@@ -5,12 +5,11 @@
 # Optimizer: SGD with no weight decay.
 # 
 # Launch as:
-# 	python train_smallvgg.py -lr=0.1 -totEpochs=100 -width=128 -height=128 -plot
-#
+# 	python train_imgmodel.py -totEpochs=10 -width=128 -height=128 -model=conv2 -aug -resize=keep_proportions -bs=8 -lr=0.0001 -opt=sgd -datapath='./data/zooplankton_trainingset_15oct/'
 # 
 #########################################################################
 
-import os, sys, pathlib, time, datetime, argparse, numpy as np
+import os, sys, pathlib, time, datetime, argparse, numpy as np, pandas as pd
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Conv2D, Flatten
@@ -39,6 +38,7 @@ parser.add_argument('-aug', action='store_true', help="Perform data augmentation
 parser.add_argument('-resize', choices=['keep_proportions','acazzo'], default='keep_proportions', help='The way images are resized')
 parser.add_argument('-model', choices=['mlp','conv2','smallvgg'], default='conv2', help='The model. MLP gives decent results, conv2 is the best, smallvgg overfits (*validation* accuracy oscillates).')
 parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Layers for MLP")
+parser.add_argument('-load', default=None, help='Path to a previously trained model that should be loaded.')
 args=parser.parse_args()
 
 print('\nRunning',sys.argv[0],sys.argv[1:])
@@ -73,41 +73,48 @@ print(args, file=fsummary); fsummary.flush()
 ########
 # DATA #
 ########
-data,labels = [], np.array([])
-classes = {'name': [ name for name in os.listdir(args.datapath) if os.path.isdir(os.path.join(args.datapath, name)) ]}
-classes['num']    = len(classes['name'])
-classes['num_ex'] =  np.zeros(classes['num'], dtype=int)
-for ic in range(classes['num']):
-	c=classes['name'][ic]
-	classPath=args.datapath+c+'/'
-	if args.verbose: print('class:',c)
-	classImages = os.listdir(classPath)
-	classes['num_ex'][ic] = len(classImages) # number of examples per class
-	for imageName in classImages:
-		imagePath = classPath+imageName
-		image = Image.open(imagePath)
+def data_loader(args, seed=None):
+	if not seed==None: np.random.seed(seed)
 
-		if args.resize == 'acazzo':
-			image = image.resize((args.width,args.height))
-		else:
-			# Set image's largest dimension to target size, and fill the rest with black pixels
-			image,rescaled = helper_data.ResizeWithProportions(image, args.width) # width and height are assumed to be the same (assertion at the beginning)
+	data, labels, names = [], np.array([]), []
+	classes = {'name': [ name for name in os.listdir(args.datapath) if os.path.isdir(os.path.join(args.datapath, name)) ]}
+	classes['num']    = len(classes['name'])
+	classes['num_ex'] =  np.zeros(classes['num'], dtype=int)
+	for ic in range(classes['num']):
+		c=classes['name'][ic]
+		classPath=args.datapath+c+'/'
+		if args.verbose: print('class:',c)
+		classImages = os.listdir(classPath)
+		classes['num_ex'][ic] = len(classImages) # number of examples per class
+		for imageName in classImages:
+			imagePath = classPath+imageName
+			image = Image.open(imagePath)
+			# names.append(imagePath)
 
-		npimage = np.array(image.copy() )
+			if args.resize == 'acazzo':
+				image = image.resize((args.width,args.height))
+			elif args.resize=='keep_proportions':
+				# Set image's largest dimension to target size, and fill the rest with black pixels
+				image,rescaled = helper_data.ResizeWithProportions(image, args.width) # width and height are assumed to be the same (assertion at the beginning)
+			else:
+				raise NotImplementedError('Unknown resize option in command line arguments: {}'.format(args.resize))
 
-		if flatten_image:
-			npimage = npimage.flatten()
-		data.append(npimage)
-		image.close()
-	labels=np.concatenate(( labels, np.full(classes['num_ex'][ic], ic) ), axis=0)
-classes['tot_ex'] =  classes['num_ex'].sum()
-data = np.array(data, dtype="float") / 255.0 # scale the raw pixel intensities to the range [0, 1]
-labels = np.array(labels)
-#shuffle data (in a second moment the shuffling will need to take into account class imbalance)
-p=np.random.permutation(classes['tot_ex'])
-data=data[p]
-labels=labels[p]
-np.save(outDir+'classes.npy', classes)
+			npimage = np.array(image.copy() )
+
+			if flatten_image:
+				npimage = npimage.flatten()
+			data.append(npimage)
+			image.close()
+		labels=np.concatenate(( labels, np.full(classes['num_ex'][ic], ic) ), axis=0)
+	classes['tot_ex'] =  classes['num_ex'].sum()
+	data = np.array(data, dtype="float") / 255.0 # scale the raw pixel intensities to the range [0, 1]
+	labels = np.array(labels)
+	np.save(outDir+'classes.npy', classes)
+
+	return data, labels, classes
+
+data, labels, classes=data_loader(args)
+
 
 #Split train and test
 (trainX, testX, trainY, testY) = train_test_split(data,	labels, test_size=args.testSplit, random_state=42)
@@ -116,7 +123,6 @@ test_size=len(testX)
 if args.verbose:
 	print('We expect the training   examples ({}) to be {}'.format(train_size, train_images))
 	print('We expect the validation examples ({}) to be {}'.format(test_size , test_images))
-
 
 # convert the labels from integers to vectors (for 2-class, binary
 # classification you should use Keras' to_categorical function
@@ -141,22 +147,21 @@ if args.aug:
 		)
 
 # initialize our VGG-like Convolutional Neural Network
-if args.model == 'mlp':
-	model = helper_models.MultiLayerPerceptron.build(input_size=len(data[0]), classes=classes['num'], layers=args.layers)
-elif args.model == 'conv2':
-	model = helper_models.Conv2Layer.build(width=args.width, height=args.height, depth=args.depth, classes=classes['num'])
-elif args.model == 'smallvgg':
-	model = helper_models.SmallVGGNet.build(width=args.width, height=args.height, depth=args.depth, classes=classes['num'])
+if args.load!=None:
+	model=keras.models.load_model(args.load)
 else:
-	raise NotImplementedError('Not implemented model {}'.format(args.model))
-
-
-
+	if args.model == 'mlp':
+		model = helper_models.MultiLayerPerceptron.build(input_size=len(data[0]), classes=classes['num'], layers=args.layers)
+	elif args.model == 'conv2':
+		model = helper_models.Conv2Layer.build(width=args.width, height=args.height, depth=args.depth, classes=classes['num'])
+	elif args.model == 'smallvgg':
+		model = helper_models.SmallVGGNet.build(width=args.width, height=args.height, depth=args.depth, classes=classes['num'])
+	else:
+		raise NotImplementedError('Not implemented model {}'.format(args.model))
 
 # compile the model using SGD as our optimizer and categorical
 # cross-entropy loss (you'll want to use binary_crossentropy
 # for 2-class classification)
-print("[INFO] training network...")
 if args.opt=='adam':
 	opt = keras.optimizers.Adam(learning_rate=args.lr, beta_1=0.9, beta_2=0.999, amsgrad=False)
 elif args.opt=='sgd':
@@ -166,10 +171,10 @@ else:
 model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
 
 # checkpoints
-filepath = outDir+'/weights_epoch{epoch:05d}.hdf5' # make sure that the callback filepath exists, since it won't create directories
-checkpointer    = keras.callbacks.ModelCheckpoint(filepath=filepath, verbose=0, save_best_only=True) # save the model at every epoch in which there is an improvement in test accuracy
-coitointerrotto = keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', patience=args.totEpochs, restore_best_weights=True)
-callbacks=[checkpointer,coitointerrotto]
+checkpointer    = keras.callbacks.ModelCheckpoint(filepath=outDir+'/bestweights.hdf5', monitor='val_loss', verbose=0, save_best_only=True) # save the model at every epoch in which there is an improvement in test accuracy
+# coitointerrotto = keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', patience=args.totEpochs, restore_best_weights=True)
+logger          = keras.callbacks.callbacks.CSVLogger(outDir+'epochs.log', separator=' ', append=False)
+callbacks=[checkpointer, logger]
 
 ### TRAIN ###
 
@@ -255,29 +260,32 @@ for i in range(len(thresholds)):
 	print('{}\t{}\t{}'.format(thresholds[i],accs[i],nconfident[i]), file=fabst)
 fabst.close()
 
+
 ### IMAGES ###
 
-# Image of the easiest prediction
-plt.figure(0)
-npimage=testX[i_maxconf_right].reshape((args.width,args.height,args.depth))
-npimage=np.rint(npimage*256).astype(np.uint8)
-image=Image.fromarray(npimage)
-plt.title('Prediction: {}, Truth: {}\nConfidence:{:.2f}'.format(classes['name'][ predictions[i_maxconf_right].argmax() ], 
-																classes['name'][ testY      [i_maxconf_right].argmax() ],
-																confidences[i_maxconf_right]) )
-plt.imshow(image)
-plt.savefig(outDir+'/easiest-prediction.png')
+def plot_npimage(npimage, ifig=0, width=64, height=64, depth=3, title='Yet another image', filename=None):
+	plt.figure(ifig)
+	npimage.reshape((args.width,args.height,args.depth))	
+	npimage=np.rint(npimage*256).astype(np.uint8)
+	image=Image.fromarray(npimage)
+	plt.title(title)
+	plt.imshow(image)
+	if filename!=None:
+		plt.savefig(filename)
 
-# Image of the worse prediction (i.e. the classifier was really sure about the prediction but it was wrong)
-plt.figure(1)
-npimage=testX[i_maxconf_wrong].reshape((args.width,args.height,args.depth))
-npimage=np.rint(npimage*256).astype(np.uint8)
-image=Image.fromarray(npimage)
-plt.title('Prediction: {}, Truth: {}\nConfidence:{:.2f}'.format(classes['name'][ predictions[i_maxconf_wrong].argmax() ], 
+# Image of the easiest prediction
+plot_npimage(testX[i_maxconf_right], 0, args.width, args.height, args.depth, 
+	title='Prediction: {}, Truth: {}\nConfidence:{:.2f}'.format(classes['name'][ predictions[i_maxconf_right].argmax() ], 
+																classes['name'][ testY      [i_maxconf_right].argmax() ],
+																confidences[i_maxconf_right]),
+	filename=outDir+'/easiest-prediction.png')
+
+# Image of the worst prediction
+plot_npimage(testX[i_maxconf_wrong], 1, args.width, args.height, args.depth, 
+	title='Prediction: {}, Truth: {}\nConfidence:{:.2f}'.format(classes['name'][ predictions[i_maxconf_wrong].argmax() ], 
 																classes['name'][ testY      [i_maxconf_wrong].argmax() ],
-																confidences[i_maxconf_wrong]) )
-plt.imshow(image)
-plt.savefig(outDir+'/worse-prediction.png')
+																confidences[i_maxconf_wrong]),
+	filename=outDir+'/worst-prediction.png')
 
 
 # Plot loss during training
