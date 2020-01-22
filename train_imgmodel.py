@@ -41,6 +41,7 @@ parser.add_argument('-model', choices=['mlp','conv2','smallvgg'], default='conv2
 parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Layers for MLP")
 parser.add_argument('-load', default=None, help='Path to a previously trained model that should be loaded.')
 parser.add_argument('-override_lr', action='store_true', help='If true, when loading a previously trained model it discards its LR in favor of args.lr')
+parser.add_argument('-initial_epoch', type=int, default=0, help='Initial epoch of the training')
 args=parser.parse_args()
 
 print('\nRunning',sys.argv[0],sys.argv[1:])
@@ -52,8 +53,9 @@ if args.aug==True and args.model in ['mlp']:
 	print('We don\'t do data augmentation with the MLP')
 	args.aug=False
 flatten_image = True if args.model in ['mlp'] else False
-
-
+if args.initial_epoch>=args.totEpochs:
+	print('The initial epoch is already larger than the target number of epochs, so there is no need to do anything. Exiting...')
+	raise SystemExit
 
 if args.verbose:
 	ngpu=len(keras.backend.tensorflow_backend._get_available_gpus())
@@ -151,7 +153,7 @@ if args.aug:
 # initialize our VGG-like Convolutional Neural Network
 if args.load!=None:
 	model=keras.models.load_model(args.load)
-	print('LR of the loaded model:',K.get_value(model.optimizer.lr))
+	print('LR of the loaded model:', K.get_value(model.optimizer.lr))
 	if args.override_lr==True:
 		K.set_value(model.optimizer.lr, args.lr)
 		print('Setting the LR to',args.lr)
@@ -192,13 +194,15 @@ if args.aug:
 		validation_data=(testX, testY), 
 		steps_per_epoch=len(trainX)//args.bs,	
 		epochs=args.totEpochs, 
-		callbacks=callbacks)
+		callbacks=callbacks,
+		initial_epoch = args.initial_epoch)
 else:
 	history = model.fit(
 		trainX, trainY, batch_size=args.bs, 
 		validation_data=(testX, testY), 
 		epochs=args.totEpochs, 
-		callbacks=[checkpointer, coitointerrotto])
+		callbacks=[checkpointer, coitointerrotto],
+		initial_epoch = args.initial_epoch)
 trainingTime=time.time()-start
 print('Training took',trainingTime/60,'minutes')
 
