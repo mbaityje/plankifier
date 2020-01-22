@@ -51,6 +51,8 @@ Fatte per MLP.
 
 ## Cose che ho imparato
 
+- Some of the images have one dimension that is extremely larger than the other. When I try to reduce them to squares maintaining the proportions, the smaller dimension becomes ridiculously small. Careful with that, cause I haven't thought about it deeply yet.
+
 - Con un grande class imbalance, non serve a niente usare grandi batch sizes, perché la rete assegnerà a ogni esempio la classe maggioritaria. Una idea intuitiva del motivo è che, se il 90% degli esempi è dinobryon, la label media del batch sarà dinobryon per tutti gli elementi del batch, inclusi quelli di classi diverse. **Corollario:** sta cosa è stata sicuramente pubblicata, ma se non lo è stata devo mettermici subito.
 
 ## Risorse

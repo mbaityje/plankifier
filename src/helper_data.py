@@ -6,7 +6,7 @@
 from PIL import Image
 
 
-
+import sys
 
 def ResizeWithProportions(im, desired_size):
 	'''
@@ -17,13 +17,25 @@ def ResizeWithProportions(im, desired_size):
 
 	old_size    = im.size
 	largest_dim = max(old_size)
+	smallest_dim = min(old_size)
+
+	# If the image dimensions are very different, reducing the larger one to `desired_size` can make the other
+	# dimension too small. We impose that it be at least 4 pixels.
+	if desired_size*smallest_dim/largest_dim<4:
+		print('Image size: ({},{})'.format(largest_dim,smallest_dim ))
+		print('Desired size: ({},{})'.format(desired_size,desired_size))
+		raise ValueError('Images are too extreme rectangles to be reduced to this size. Try increasing the desired image size.')
+
 	rescaled    = 0 # This flag tells us whether there was a rescaling of the image (besides the padding). We can use it as feature for training.
+	# print('zzz:',im.size)
 
 	# 0) If any dimension of the image is larger than the desired size, shrink until the image can fully fit in the desired size
 	if max(im.size)>desired_size:
 
 		ratio = float(desired_size)/max(old_size)
 		new_size = tuple([int(x*ratio) for x in old_size])
+		# print('new_size:',new_size)
+		sys.stdout.flush()
 		im = im.resize(new_size, Image.LANCZOS)
 		rescaled = 1
 
