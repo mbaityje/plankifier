@@ -49,6 +49,10 @@ Fatte per MLP.
 
 ---
 
+## Cose che ho imparato
+
+- Con un grande class imbalance, non serve a niente usare grandi batch sizes, perché la rete assegnerà a ogni esempio la classe maggioritaria. Una idea intuitiva del motivo è che, se il 90% degli esempi è dinobryon, la label media del batch sarà dinobryon per tutti gli elementi del batch, inclusi quelli di classi diverse. **Corollario:** sta cosa è stata sicuramente pubblicata, ma se non lo è stata devo mettermici subito.
+
 ## Risorse
 
 - Pretrained tricks (pretrained, bottleneck features, fine-tuning)
@@ -59,3 +63,7 @@ Fatte per MLP.
 
 `https://www.pyimagesearch.com/2019/02/04/keras-multiple-inputs-and-mixed-data/`
 
+- Per class imbalance: ensemble cross validation, Class Weight/Importance, Over-Predict a Label than Under-Predict
+
+`https://towardsdatascience.com/working-with-highly-imbalanced-datasets-in-machine-learning-projects-c70c5f2a7b16` (ma poi i suoi risultati fanno pena) 
+`https://analyticsindiamag.com/5-important-techniques-to-process-imbalanced-data-in-machine-learning/`
