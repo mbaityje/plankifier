@@ -14,6 +14,7 @@ import keras
 from keras.models import Sequential
 from keras.layers import Dense, Conv2D, Flatten
 from keras.preprocessing.image import ImageDataGenerator
+import keras.backend as K
 import matplotlib.pyplot as plt, seaborn as sns
 from src import helper_models, helper_data
 from PIL import Image
@@ -39,6 +40,7 @@ parser.add_argument('-resize', choices=['keep_proportions','acazzo'], default='k
 parser.add_argument('-model', choices=['mlp','conv2','smallvgg'], default='conv2', help='The model. MLP gives decent results, conv2 is the best, smallvgg overfits (*validation* accuracy oscillates).')
 parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Layers for MLP")
 parser.add_argument('-load', default=None, help='Path to a previously trained model that should be loaded.')
+parser.add_argument('-override_lr', action='store_true', help='If true, when loading a previously trained model it discards its LR in favor of args.lr')
 args=parser.parse_args()
 
 print('\nRunning',sys.argv[0],sys.argv[1:])
@@ -149,6 +151,10 @@ if args.aug:
 # initialize our VGG-like Convolutional Neural Network
 if args.load!=None:
 	model=keras.models.load_model(args.load)
+	print('LR of the loaded model:',K.get_value(model.optimizer.lr))
+	if args.override_lr==True:
+		K.set_value(model.optimizer.lr, args.lr)
+		print('Setting the LR to',args.lr)
 else:
 	if args.model == 'mlp':
 		model = helper_models.MultiLayerPerceptron.build(input_size=len(data[0]), classes=classes['num'], layers=args.layers)
@@ -159,16 +165,16 @@ else:
 	else:
 		raise NotImplementedError('Not implemented model {}'.format(args.model))
 
-# compile the model using SGD as our optimizer and categorical
-# cross-entropy loss (you'll want to use binary_crossentropy
-# for 2-class classification)
-if args.opt=='adam':
-	opt = keras.optimizers.Adam(learning_rate=args.lr, beta_1=0.9, beta_2=0.999, amsgrad=False)
-elif args.opt=='sgd':
-	opt = keras.optimizers.SGD(lr=args.lr, nesterov=True)
-else:
-	raise NotImplementedError('Optimizer {} is not implemented'.format(arg.opt))
-model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
+	# compile the model using SGD as our optimizer and categorical
+	# cross-entropy loss (you'll want to use binary_crossentropy
+	# for 2-class classification)
+	if args.opt=='adam':
+		opt = keras.optimizers.Adam(learning_rate=args.lr, beta_1=0.9, beta_2=0.999, amsgrad=False)
+	elif args.opt=='sgd':
+		opt = keras.optimizers.SGD(lr=args.lr, nesterov=True)
+	else:
+		raise NotImplementedError('Optimizer {} is not implemented'.format(arg.opt))
+	model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
 
 # checkpoints
 checkpointer    = keras.callbacks.ModelCheckpoint(filepath=outDir+'/bestweights.hdf5', monitor='val_loss', verbose=0, save_best_only=True) # save the model at every epoch in which there is an improvement in test accuracy
