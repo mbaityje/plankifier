@@ -15,4 +15,5 @@ python train_imgmodel.py -lr=0.001 -totEpochs=2000 -width=128 -height=128 -datap
 # Train Multi-layer Perceptron on features
 python train_features_mlp.py -lr=0.01 -totEpochs=2000 -layers 256 128 -datapath=./data/zooplankton_trainingset_15oct/ -bs=32 -plot
 
-
+# Train model on combination of features and images
+python train_mixed.py -totEpochs=500 -width=128 -height=128 -model=mlp -resize=keep_proportions -bs=16 -lr=0.0001 -opt=sgd -datapath='./data/zooplankton_trainingset_15oct/'
