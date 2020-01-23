@@ -186,11 +186,7 @@ fsummary.close()
 print(clrep, file=open(outDir+'/classification_report.txt','w'))
 
 # Table with abstention data
-print('threshold accuracy nconfident', file=open(outDir+'/abstention.txt','w'))
-fabst=open(outDir+'/abstention.txt','a')
-for i in range(len(thresholds)):
-	print('{}\t{}\t{}'.format(thresholds[i],accs[i],nconfident[i]), file=fabst)
-fabst.close()
+np.savetxt(outDir+'/abstention.txt',np.stack((thresholds,accs,nconfident),axis=1),header='threshold accuracy nconfident')
 
 ### IMAGES ###
 
@@ -235,6 +231,7 @@ plt.figure(5)
 plt.subplots_adjust(left=0.125, bottom=0.1, right=0.9, top=0.9, wspace=0.2, hspace=.7)
 ax1=plt.subplot(2, 1, 1)
 ax1.set_ylim((0,1))
+ax1.set_xlim((0,1))
 plt.title('Abstention')
 plt.ylabel('Accuracy after abstention')
 plt.xlabel('Threshold')
@@ -242,6 +239,7 @@ plt.plot(thresholds, accs, color='darkred')
 plt.grid(axis='y')
 ax2=plt.subplot(2, 1, 2)
 ax2.set_ylim((0.1,test_size*1.5))
+axx.set_xlim((0,1))
 ax2.set_yscale('log')
 plt.ylabel('Remaining data after abstention')
 plt.xlabel('Threshold')

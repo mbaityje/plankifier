@@ -201,7 +201,7 @@ else:
 		trainX, trainY, batch_size=args.bs, 
 		validation_data=(testX, testY), 
 		epochs=args.totEpochs, 
-		callbacks=[checkpointer, coitointerrotto],
+		callbacks=callbacks,
 		initial_epoch = args.initial_epoch)
 trainingTime=time.time()-start
 print('Training took',trainingTime/60,'minutes')

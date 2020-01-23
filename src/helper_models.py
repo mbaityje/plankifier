@@ -19,6 +19,16 @@ class MultiLayerPerceptron:
 		model.add(Dense(classes, activation="softmax"))
 		return model
 
+	@staticmethod
+	def BuildFromImage(width, height, depth, classes, layers=[64,32]):
+		model = Sequential()
+		model.add( Flatten(input_shape=(width, height, classes)) )
+		model.add(Dense(layers[0], activation="sigmoid"))
+		model.add(Dense(layers[1], activation="sigmoid"))
+		model.add(Dense(classes, activation="softmax"))
+		return model
+
+
 class Conv2Layer:
 	@staticmethod
 	def build(width, height, depth, classes):
