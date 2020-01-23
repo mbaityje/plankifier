@@ -53,6 +53,8 @@ Fatte per MLP.
 
 - Some of the images have one dimension that is extremely larger than the other. When I try to reduce them to squares maintaining the proportions, the smaller dimension becomes ridiculously small. Careful with that, cause I haven't thought about it deeply yet.
 
+- Training images on a stupid MLP gives decent results. If to that dataset, we simply add the information on whether that image was resized or not, the test accuracy improves sizably. This probably means that resizing is often taking away useful information (which can be understood by reading the previous point).
+
 - Con un grande class imbalance, non serve a niente usare grandi batch sizes, perché la rete assegnerà a ogni esempio la classe maggioritaria. Una idea intuitiva del motivo è che, se il 90% degli esempi è dinobryon, la label media del batch sarà dinobryon per tutti gli elementi del batch, inclusi quelli di classi diverse. **Corollario:** sta cosa è stata sicuramente pubblicata, ma se non lo è stata devo mettermici subito.
 
 ## Risorse
