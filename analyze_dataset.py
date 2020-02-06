@@ -3,19 +3,23 @@
 # Gives features of a given dataset.
 # 
 # Launch as:
-# 	python analyze_dataset.py 
+# 	python analyze_dataset.py -datapath='./data/2020.02.02_zooplankton_trainingset_EWA/' -kind='mixed'
 #
+#	or:
+#
+# 	python analyze_dataset.py -datapath=./data/2019.11.20_zooplankton_trainingset_15oct_TOM -kind='image'
 # 
 #########################################################################
 
-import os, sys, argparse, numpy as np
+import os, sys, argparse, glob, numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 
 parser = argparse.ArgumentParser(description='Train a model on zooplankton images')
-parser.add_argument('-datapath', default='./data/zooplankton_trainingset/', help="Path of the dataset")
+parser.add_argument('-datapath', default='./data/2020.02.02_zooplankton_trainingset_EWA/', help="Path of the dataset")
 parser.add_argument('-outpath', default='./out/', help="Path of the output")
 parser.add_argument('-name', default=None, help="Name for output")
+parser.add_argument('-kind', default='mixed', choices=['tsv','image','mixed'], help="If tsv, expect a single tsv file; if images, each class directory has only images inside; if mixed, expect a more complicated structure defined by the output of SPCConvert")
 args=parser.parse_args()
 if args.name==None:
 	args.name = os.path.basename(os.path.dirname(args.datapath+'/')) # Append a slash because if it is not present dirname gives a different result
@@ -26,7 +30,7 @@ except FileExistsError:
     pass
 outname =outdir+'/'+args.name+'.txt'
 
-
+# glob.glob("data/2020.02.02_zooplankton_trainingset_EWA/bosmina/training_data/*.*[!b]")
 # Loop through the dataset
 sizes=[]
 classes = {'name': [ name for name in os.listdir(args.datapath) if os.path.isdir(os.path.join(args.datapath, name)) ]} # Every directory corresponds to a class. Files that aren't directories are ignored
@@ -34,18 +38,31 @@ classes['num']    = len(classes['name'])
 classes['num_ex'] =  np.zeros(classes['num'], dtype=int)
 for ic in range(classes['num']):
 	c=classes['name'][ic]
-	classPath=args.datapath+'/'+c+'/'
-	classImages = os.listdir(classPath)
+
+	if args.kind == 'image':
+		classPath=args.datapath+'/'+c+'/*.jp*g'
+	elif args.kind == 'mixed':
+		classPath=args.datapath+'/'+c+'/training_data/*.jp*g'
+	elif args.kind == 'tsv':
+		raise NotImplementedError('I did not implement yet tsv only')
+	else:
+		raise ValueError('Unknown args.kind {}'.format(args.kind))
+
+	# classImages = os.listdir(classPath)
+	# classImages = [im for im in classImages if any(ext in im for ext in ['jpg','jpeg','JPG','JPEG'])] # Keep only reasonable extensions
+
+	classImages = glob.glob(classPath)
+
+
 	classes['num_ex'][ic] = len(classImages) # number of examples per class
 	sizes.append( np.ndarray( (classes['num_ex'][ic],3),dtype=int) ) # Container for raw image sizes of class ic
 	for i,imageName in enumerate(classImages):
-		imagePath = classPath+imageName
-		image = Image.open(imagePath)
+		image = Image.open(imageName)
 		npimage = np.array(image.copy() )
 		sizes[ic][i]=npimage.shape
 		assert( npimage.shape[2]==3) #We expect these images to have three channels
 		image.close()
-classes['tot_ex'] =  classes['num_ex'].sum()
+classes['tot_ex'] = classes['num_ex'].sum()
 isort=np.argsort(classes['num_ex'])[::-1] #sort the classes by their abundance
 
 
