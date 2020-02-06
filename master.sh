@@ -7,7 +7,8 @@
 python analyze_dataset.py -datapath='./data/2020.02.02_zooplankton_trainingset_EWA/' -kind='mixed'
 
 # Train Convolutional model on images
-python train_imgmodel.py -lr=0.0001 -totEpochs=5000 -width=128 -height=128 -datapath=./data/2019.11.20_zooplankton_trainingset_15oct_TOM/ -model='conv2' -bs=32  -aug
+python train_imgmodel.py -totEpochs=10 -width=128 -height=128 -model=conv2 -aug -resize=keep_proportions -bs=8 -lr=0.0001 -opt=sgd -datapath='./data/2020.02.02_zooplankton_trainingset_EWA/' -datakind='mixed'
+python train_imgmodel.py -totEpochs=10 -width=128 -height=128 -model=conv2 -aug -resize=keep_proportions -bs=8 -lr=0.0001 -opt=sgd -datapath='./data/2019.11.20_zooplankton_trainingset_15oct_TOM/' -datakind='image'
 
 # Train Multi-layer Perceptron model on images
 python train_imgmodel.py -lr=0.001 -totEpochs=2000 -width=128 -height=128 -datapath=./data/2019.11.20_zooplankton_trainingset_15oct_TOM/ -model='mlp' -bs=32  -aug
@@ -17,3 +18,12 @@ python train_features_mlp.py -lr=0.01 -totEpochs=2000 -layers 256 128 -bs=32 -pl
 
 # Train model on combination of features and images
 python train_mixed.py -totEpochs=500 -width=128 -height=128 -model=mlp -resize=keep_proportions -bs=16 -lr=0.0001 -opt=sgd -datapath='./data/2019.11.20_zooplankton_trainingset_15oct_TOM/'
+
+
+
+
+
+
+
+# Make predictions
+

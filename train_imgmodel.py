@@ -5,11 +5,11 @@
 # Optimizer: SGD with no weight decay.
 # 
 # Launch as:
-# 	python train_imgmodel.py -totEpochs=10 -width=128 -height=128 -model=conv2 -aug -resize=keep_proportions -bs=8 -lr=0.0001 -opt=sgd -datapath='./data/zooplankton_trainingset_15oct/'
+# 	python train_imgmodel.py -totEpochs=10 -width=128 -height=128 -model=conv2 -aug -resize=keep_proportions -bs=8 -lr=0.0001 -opt=sgd -datapath='./data/2019.11.20_zooplankton_trainingset_15oct_TOM/'
 # 
 #########################################################################
 
-import os, sys, pathlib, time, datetime, argparse, numpy as np, pandas as pd
+import os, sys, pathlib, glob, time, datetime, argparse, numpy as np, pandas as pd
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Conv2D, Flatten
@@ -23,7 +23,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 
 parser = argparse.ArgumentParser(description='Train a model on zooplankton images')
-parser.add_argument('-datapath', default='./data/zooplankton_trainingset/', help="Print many messages on screen.")
+parser.add_argument('-datapath', default='./data/2019.11.20_zooplankton_trainingset_TOM/', help="Print many messages on screen.")
+parser.add_argument('-datakind', default='image', choices=['mixed','image','tsv'], help="If tsv, expect a single tsv file; if images, each class directory has only images inside; if mixed, expect a more complicated structure defined by the output of SPCConvert")
 parser.add_argument('-outpath', default='./out/', help="Print many messages on screen.")
 parser.add_argument('-verbose', action='store_true', help="Print many messages on screen.")
 parser.add_argument('-plot', action='store_true', help="Plot loss and accuracy during training once the run is over.")
@@ -86,14 +87,23 @@ def data_loader(args, seed=None):
 	classes['num_ex'] =  np.zeros(classes['num'], dtype=int)
 	for ic in range(classes['num']):
 		c=classes['name'][ic]
-		classPath=args.datapath+c+'/'
 		if args.verbose: print('class:',c)
-		classImages = os.listdir(classPath)
+		classPath=args.datapath+c+'/'
+
+		if args.datakind == 'image':
+			classPath=args.datapath+'/'+c+'/*.jp*g'
+		elif args.datakind == 'mixed':
+			classPath=args.datapath+'/'+c+'/training_data/*.jp*g'
+		elif args.datakind == 'tsv':
+			raise NotImplementedError('I did not implement yet tsv only')
+		else:
+			raise ValueError('Unknown args.kind {}'.format(args.kind))
+
+		classImages = glob.glob(classPath)
+
 		classes['num_ex'][ic] = len(classImages) # number of examples per class
 		for imageName in classImages:
-			imagePath = classPath+imageName
-			image = Image.open(imagePath)
-			# names.append(imagePath)
+			image = Image.open(imageName)
 
 			if args.resize == 'acazzo':
 				image = image.resize((args.width,args.height))
