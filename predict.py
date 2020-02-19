@@ -19,7 +19,7 @@ import tensorflow as tf
 
 
 parser = argparse.ArgumentParser(description='Load a model and use it to make predictions on images')
-parser.add_argument('-modelpath', default='./out/conv2/2020-02-06_17h56m55s/', help='directory of the model to be loaded')
+parser.add_argument('-modelpath', default='./util-files/trained-conv2/', help='directory of the model to be loaded')
 parser.add_argument('-modelname', default='bestweights.hdf5', help='name of the model to be loaded. If None, choose latest created hdf5 file in the directory')
 parser.add_argument('-testdir', default='../Q-AQUASCOPE/pictures/annotation_classifier/tommy_for_classifier/tommy_validation/images/', help='directory of the test data')
 parser.add_argument('-target', default=None, help='Only test target class')
