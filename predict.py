@@ -5,6 +5,8 @@ Quick and dirty program that loads a model and generates prediction on custom da
 Next upgrades:
 	- Put all data in a single pandas dataframe
 
+Launch as:
+	python predict.py -modelpath='./out/conv2/2020-02-06_17h56m55s/' -modelname='bestweights.hdf5' -testdir='../Q-AQUASCOPE/pictures/annotation_classifier/tommy_for_classifier/tommy_validation/images/' -target='daphnia'
 
 '''
 
@@ -21,10 +23,10 @@ parser.add_argument('-modelpath', default='./out/conv2/2020-02-06_17h56m55s/', h
 parser.add_argument('-modelname', default='bestweights.hdf5', help='name of the model to be loaded. If None, choose latest created hdf5 file in the directory')
 parser.add_argument('-testdir', default='../Q-AQUASCOPE/pictures/annotation_classifier/tommy_for_classifier/tommy_validation/images/', help='directory of the test data')
 parser.add_argument('-target', default=None, help='Only test target class')
-parser.add_argument('-silent', action='store_false', help='')
+parser.add_argument('-verbose', action='store_true', help='Print lots of useless tensorflow information')
 args=parser.parse_args()
 
-if args.silent:
+if not args.verbose:
 	os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 	tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -145,15 +147,18 @@ npimages=load_images(im_names, width, height, depth, modelname, resize)
 
 
 # Print prediction
-predictions=model.predict(npimages).argmax(axis=1)
+probs=model.predict(npimages)
+predictions=probs.argmax(axis=1)
+confidences=probs.max(axis=1)
 
+print('Name Prediction Confidence(%)')
 if args.target == None:
 	for i in range(len(npimages)):
-		print(im_names[i], classes_dict['name'][predictions[i]])
+		print('{}\t{}\t{:2f}'.format(im_names[i], classes_dict['name'][predictions[i]], confidences[i]))
 else:
 	count=0
 	for i in range(len(npimages)):
-		print(im_names[i], classes_dict['name'][predictions[i]])
+		print('{}\t{}\t{:.2f}'.format(im_names[i], classes_dict['name'][predictions[i]], confidences[i]))
 		if classes_dict['name'][predictions[i]] == args.target:
 			count+=1
 	print('Accuracy: ', count/len(npimages))
