@@ -75,19 +75,22 @@ def CheckArgs(modelpath):
 	print('outpath: ', outpath)
 	print('-----------------------------------------------------------')
 
-	# Extract classes from data directory
-	classes = [ name for name in os.listdir(datapath) if os.path.isdir(os.path.join(datapath, name)) ]
-
 	# Extract classes from npy file in output directory
 	classes_dict=np.load(modelpath+'classes.npy',allow_pickle=True).item()
 
-	# Compare the two
-	if len(classes_dict['name']) != len(classes):
-		raise IndexError('Number of classes in data directory is not the same as in classes.npy')
-	if not np.all(classes_dict['name']==classes):
-		print('classes_dict[\'name\']:',classes_dict['name'])
-		print('classes:',classes)
-		raise ValueError('Some of the classes in data directory are not the same as in classes.npy')
+	try:
+		# Extract classes from data directory (if datapath is accessible)
+		classes = [ name for name in os.listdir(datapath) if os.path.isdir(os.path.join(datapath, name)) ]
+	except FileNotFoundError:
+		pass
+	else:
+		# Compare the two
+		if len(classes_dict['name']) != len(classes):
+			raise IndexError('Number of classes in data directory is not the same as in classes.npy')
+		if not np.all(classes_dict['name']==classes):
+			print('classes_dict[\'name\']:',classes_dict['name'])
+			print('classes:',classes)
+			raise ValueError('Some of the classes in data directory are not the same as in classes.npy')
 
 
 	return height, width, depth, modelname, resize, layers, datapath, outpath, classes_dict
