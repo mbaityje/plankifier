@@ -22,7 +22,6 @@ parser = argparse.ArgumentParser(description='Load a model and use it to make pr
 parser.add_argument('-modelpath', default='./util-files/trained-conv2/', help='directory of the model to be loaded')
 parser.add_argument('-modelname', default='bestweights.hdf5', help='name of the model to be loaded. If None, choose latest created hdf5 file in the directory')
 parser.add_argument('-testdir', default='../Q-AQUASCOPE/pictures/annotation_classifier/tommy_for_classifier/tommy_validation/images/', help='directory of the test data')
-parser.add_argument('-target', default=None, help='Only test target class')
 parser.add_argument('-verbose', action='store_true', help='Print lots of useless tensorflow information')
 args=parser.parse_args()
 
@@ -30,11 +29,14 @@ if not args.verbose:
 	os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 	tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
+if not os.path.isdir(args.testdir):
+	print('You told me to read the images from a directory that does not exist:\n{}'.format(args.testdir))
+	raise IOError
 
 
 def CheckArgs(modelpath):
 	'''
-	Looks for an argument 
+	Looks with what arguments the model was trained, and makes a series of consistency checks.
 	'''
 	argsname=modelpath+'args.txt'
 
@@ -78,6 +80,13 @@ def CheckArgs(modelpath):
 	# Extract classes from npy file in output directory
 	classes_dict=np.load(modelpath+'classes.npy',allow_pickle=True).item()
 
+	def OutputClassPaths():
+		print('\nclasses_dict full filename: ',modelpath+'classes.npy')
+		print('classes_dict[\'name\']:',classes_dict['name'])
+		print('\nclasses are the subdirectories in the following folder: ', datapath)
+		print('classes:',classes)
+		print('')
+
 	try:
 		# Extract classes from data directory (if datapath is accessible)
 		classes = [ name for name in os.listdir(datapath) if os.path.isdir(os.path.join(datapath, name)) ]
@@ -86,10 +95,10 @@ def CheckArgs(modelpath):
 	else:
 		# Compare the two
 		if len(classes_dict['name']) != len(classes):
+			OutputClassPaths()
 			raise IndexError('Number of classes in data directory is not the same as in classes.npy')
-		if not np.all(classes_dict['name']==classes):
-			print('classes_dict[\'name\']:',classes_dict['name'])
-			print('classes:',classes)
+		if not np.all(set(classes_dict['name'])==set(classes)):
+			OutputClassPaths()
 			raise ValueError('Some of the classes in data directory are not the same as in classes.npy')
 
 
@@ -97,14 +106,19 @@ def CheckArgs(modelpath):
 
 height, width, depth, modelname, resize, layers, datapath, outpath, classes_dict = CheckArgs(args.modelpath)
 
-if args.target == None:
-	im_names=glob.glob(args.testdir+'/*/*.jpeg')
-	print('\nWe will predict the class of {} images'.format(len(im_names)))
-else:
-	im_names=glob.glob(args.testdir+'/'+args.target+'/*.jpeg')
-	print('\nWe will predict the class of {} images belonging to the {} class'.format(len(im_names),args.target))
-assert(len(im_names)>0)
 
+# Read names of images that we want to predict on.
+im_names=glob.glob(args.testdir+'/*.jpeg')
+print('\nWe will predict the class of {} images'.format(len(im_names)))
+
+# Check that the paths contained images
+if len(im_names)<1:
+	print('We found no .jpeg images')
+	print('Folder which should contain the images:',args.testdir)
+	print('Content of the folder:',os.listdir(args.testdir))
+	raise IOError()
+else:
+	print('There are {} images in {}'.format(len(im_names), args.testdir))
 
 if args.modelname == None:
 	from stat import S_ISREG, ST_CTIME, ST_MODE
@@ -134,7 +148,10 @@ def load_images(im_names, width, height, depth, modelname, resize):
             image = image.resize((width,height))
         else:
             # Set image's largest dimension to target size, and fill the rest with black pixels
-            image,rescaled = helper_data.ResizeWithProportions(image, width) # width and height are assumed to be the same (assertion at the beginning)
+            if width!=height:
+            	print('load_images(): width={}, height={}'.format(width,height))
+            	raise NotImplementedError('We are only treating square, not rectangular images')
+            image,rescaled = helper_data.ResizeWithProportions(image, width) # width and height are assumed to be the same
             npimage=np.array(image.copy())
         if model == 'mlp':
             npimage = npimage.flatten()
@@ -155,14 +172,6 @@ predictions=probs.argmax(axis=1)
 confidences=probs.max(axis=1)
 
 print('Name Prediction Confidence(%)')
-if args.target == None:
-	for i in range(len(npimages)):
-		print('{}\t{}\t{:2f}'.format(im_names[i], classes_dict['name'][predictions[i]], confidences[i]))
-else:
-	count=0
-	for i in range(len(npimages)):
-		print('{}\t{}\t{:.2f}'.format(im_names[i], classes_dict['name'][predictions[i]], confidences[i]))
-		if classes_dict['name'][predictions[i]] == args.target:
-			count+=1
-	print('Accuracy: ', count/len(npimages))
+for i in range(len(npimages)):
+	print('{}\t{}\t{:2f}'.format(im_names[i], classes_dict['name'][predictions[i]], confidences[i]))
 
