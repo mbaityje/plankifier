@@ -12,18 +12,7 @@ Use the script `master.sh` to understand what is contained in this repository.
 
 #### Prioritario
 - Trainare senza immagini, solo features. Usare Random Forest e MLP
-- Train SmallTom (lui non usa maxpooling, batchnorm e dropout!)
-- Train SmallNet
-- Train SmallVGG
-- Capire quale di questi e` un buon baseline model
-- Scegliere quale dei due e` un buon baseline model
-- Train VGG pretrained
-- Train models on mixed data
-- Vedere perche` non mi accetta batch size maggiore di 16 nel modello di Tom
 - Condizioni iniziali
-
-#### Analisi basiche
-Fatte per MLP.
 
 #### Analisi avanzate
 - Vedere se ottengo migliore generalizzazione mediando i pesi finali
