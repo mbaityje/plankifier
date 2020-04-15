@@ -21,7 +21,8 @@ import tensorflow as tf
 parser = argparse.ArgumentParser(description='Load a model and use it to make predictions on images')
 parser.add_argument('-modelpath', default='./util-files/trained-conv2/', help='directory of the model to be loaded')
 parser.add_argument('-modelname', default='bestweights.hdf5', help='name of the model to be loaded. If None, choose latest created hdf5 file in the directory')
-parser.add_argument('-testdir', default='../Q-AQUASCOPE/pictures/annotation_classifier/tommy_for_classifier/tommy_validation/images/', help='directory of the test data')
+parser.add_argument('-testdir', default='	../Q-AQUASCOPE/pictures/annotation_classifier/tommy_for_classifier/tommy_validation/images/', help='directory of the test data')
+parser.add_argument('-fullname', action='store_true', help='Output contains full image path instead of only the name')
 parser.add_argument('-verbose', action='store_true', help='Print lots of useless tensorflow information')
 args=parser.parse_args()
 
@@ -169,9 +170,14 @@ npimages=load_images(im_names, width, height, depth, modelname, resize)
 # Print prediction
 probs=model.predict(npimages)
 predictions=probs.argmax(axis=1)
-confidences=probs.max(axis=1)
+confidences=probs.max(axis=1) # equivalent to: [probs[i][predictions[i]] for i in range(len(probs))] 
 
-print('Name Prediction Confidence(%)')
+predictions2=probs.argsort(axis=1)[:,-2] # The second most likely class
+confidences2=[probs[i][predictions2[i]] for i in range(len(probs))] 
+	
+
+print('Name Prediction Confidence Prediction(2ndGuess) Confidence(2ndGuess)')
 for i in range(len(npimages)):
-	print('{}\t{}\t{:2f}'.format(im_names[i], classes_dict['name'][predictions[i]], confidences[i]))
+	name=im_names[i] if args.fullname else os.path.basename(im_names[i])
+	print('{}\t{:20s}\t{:.3f}\t{:20s}\t{:.3f}'.format(name, classes_dict['name'][predictions[i]], confidences[i], classes_dict['name'][predictions2[i]], confidences2[i]))
 
