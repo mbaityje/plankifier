@@ -26,4 +26,5 @@ python train_mixed.py -totEpochs=500 -width=128 -height=128 -model=mlp -resize=k
 
 
 # Make predictions
-
+cd val
+bash validation.sh
