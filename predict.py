@@ -169,12 +169,12 @@ npimages=load_images(im_names, width, height, depth, modelname, resize)
 
 # Print prediction
 probs=model.predict(npimages)
-predictions=probs.argmax(axis=1)
-confidences=probs.max(axis=1) # equivalent to: [probs[i][predictions[i]] for i in range(len(probs))] 
+predictions=probs.argmax(axis=1)  # The class that the classifier wuold bet on
+confidences=probs.max(axis=1)     # equivalent to: [probs[i][predictions[i]] for i in range(len(probs))] 
 
 predictions2=probs.argsort(axis=1)[:,-2] # The second most likely class
 confidences2=[probs[i][predictions2[i]] for i in range(len(probs))] 
-	
+
 
 print('Name Prediction Confidence Prediction(2ndGuess) Confidence(2ndGuess)')
 for i in range(len(npimages)):
