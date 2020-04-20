@@ -21,10 +21,18 @@ import tensorflow as tf
 parser = argparse.ArgumentParser(description='Load a model and use it to make predictions on images')
 parser.add_argument('-modelpath', default='./util-files/trained-conv2/', help='directory of the model to be loaded')
 parser.add_argument('-modelname', default='bestweights.hdf5', help='name of the model to be loaded. If None, choose latest created hdf5 file in the directory')
-parser.add_argument('-testdir', default='	../Q-AQUASCOPE/pictures/annotation_classifier/tommy_for_classifier/tommy_validation/images/', help='directory of the test data')
+parser.add_argument('-testdir', default='data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/', help='directory of the test data')
 parser.add_argument('-fullname', action='store_true', help='Output contains full image path instead of only the name')
 parser.add_argument('-verbose', action='store_true', help='Print lots of useless tensorflow information')
+parser.add_argument('-PRfilter', default=None, type=float, help='Give a threshold value, a>1. Screen output is filtered with the value of the participation ratio (PR) and only includes predictions with PR<a.')
+parser.add_argument('-notxt', action='store_true', help='Avoid writing output to file (only have screen output)')
 args=parser.parse_args()
+
+if not args.PRfilter==None:
+	print('PRfilter=',args.PRfilter)
+	if (args.PRfilter<1):
+		print('args.PRfilter should be >=1, so we cannot accept ',args.PRfilter)
+		raise ValueError
 
 if not args.verbose:
 	os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -107,9 +115,12 @@ def CheckArgs(modelpath):
 
 height, width, depth, modelname, resize, layers, datapath, outpath, classes_dict = CheckArgs(args.modelpath)
 
+#If PR filter is unset, just set it to the maximum value that it can assume (i.e. the number of classes)
+if args.PRfilter==None:
+	args.PRfilter=classes_dict['num']
 
 # Read names of images that we want to predict on.
-im_names=glob.glob(args.testdir+'/*.jpeg')
+im_names=np.array(glob.glob(args.testdir+'/*.jpeg'),dtype=object)
 print('\nWe will predict the class of {} images'.format(len(im_names)))
 
 # Check that the paths contained images
@@ -171,13 +182,45 @@ npimages=load_images(im_names, width, height, depth, modelname, resize)
 probs=model.predict(npimages)
 predictions=probs.argmax(axis=1)  # The class that the classifier wuold bet on
 confidences=probs.max(axis=1)     # equivalent to: [probs[i][predictions[i]] for i in range(len(probs))] 
+predictions_names=np.array([classes_dict['name'][predictions[i]] for i in range(len(npimages))],dtype=object)
 
 predictions2=probs.argsort(axis=1)[:,-2] # The second most likely class
-confidences2=[probs[i][predictions2[i]] for i in range(len(probs))] 
+confidences2=np.array([probs[i][predictions2[i]] for i in range(len(probs))], dtype=float) 
+predictions2_names=np.array([classes_dict['name'][predictions2[i]] for i in range(len(npimages))],dtype=object)
 
 
-print('Name Prediction Confidence Prediction(2ndGuess) Confidence(2ndGuess)')
+# Participation ratio
+def PR(vec):
+	'''
+	if vec is:
+	- fully localized:   PR=1
+	- fully delocalized: PR=N
+	'''
+	num=np.square(np.sum(vec))
+	den=np.square(vec).sum()
+	return num/den
+
+pr=np.array([PR(prob) for prob in probs], dtype=float)
+
+
+
+
+
+##########
+# OUTPUT #
+##########
+
+
+header='Name Prediction Confidence Prediction(2ndGuess) Confidence(2ndGuess) participation-ratio'
+if not args.notxt:
+	np.savetxt('predict.txt', np.c_[im_names, predictions_names, confidences, predictions2_names, confidences2, pr], fmt='%s %s %.3f %s %.3f %.3f', header=header)
+
+print(header)
 for i in range(len(npimages)):
 	name=im_names[i] if args.fullname else os.path.basename(im_names[i])
-	print('{}\t{:20s}\t{:.3f}\t{:20s}\t{:.3f}'.format(name, classes_dict['name'][predictions[i]], confidences[i], classes_dict['name'][predictions2[i]], confidences2[i]))
+	
+	if pr[i]<=args.PRfilter:
+		print('{}\t{:20s}\t{:.3f}\t{:20s}\t{:.3f}\t{:.3f}'.format(name, classes_dict['name'][predictions[i]], confidences[i], classes_dict['name'][predictions2[i]], confidences2[i], pr[i] ) )
+
+
 
