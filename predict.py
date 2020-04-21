@@ -209,6 +209,8 @@ pr=np.array([PR(prob) for prob in probs], dtype=float)
 ##########
 # OUTPUT #
 ##########
+if not args.fullname:
+	im_names=np.array([os.path.basename(im) for im in im_names],dtype=object)
 
 
 header='Name Prediction Confidence Prediction(2ndGuess) Confidence(2ndGuess) participation-ratio'
@@ -217,10 +219,9 @@ if not args.notxt:
 
 print(header)
 for i in range(len(npimages)):
-	name=im_names[i] if args.fullname else os.path.basename(im_names[i])
 	
 	if pr[i]<=args.PRfilter:
-		print('{}\t{:20s}\t{:.3f}\t{:20s}\t{:.3f}\t{:.3f}'.format(name, classes_dict['name'][predictions[i]], confidences[i], classes_dict['name'][predictions2[i]], confidences2[i], pr[i] ) )
+		print('{}\t{:20s}\t{:.3f}\t{:20s}\t{:.3f}\t{:.3f}'.format(im_names, classes_dict['name'][predictions[i]], confidences[i], classes_dict['name'][predictions2[i]], confidences2[i], pr[i] ) )
 
 
 

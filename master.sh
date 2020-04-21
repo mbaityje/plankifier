@@ -26,5 +26,12 @@ python train_mixed.py -totEpochs=500 -width=128 -height=128 -model=mlp -resize=k
 
 
 # Make predictions
+python predictions.py
+cat predict.txt
+rm predict.txt
+
+# Validation tests
 cd val
-bash validation.sh
+bash validation.sh        # Validate on Tommy-validation
+bash validation-counts.sh # Validate on populations (compare total counts, not single images)
+cd ..
