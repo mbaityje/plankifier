@@ -22,6 +22,8 @@ parser = argparse.ArgumentParser(description='Load a model and use it to make pr
 parser.add_argument('-modelpath', default='./util-files/trained-conv2/', help='directory of the model to be loaded')
 parser.add_argument('-modelname', default='bestweights.hdf5', help='name of the model to be loaded. If None, choose latest created hdf5 file in the directory')
 parser.add_argument('-testdir', default='data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/', help='directory of the test data')
+parser.add_argument('-preddir', default='./', help='directory where you want the output to be')
+parser.add_argument('-predname', default='predict.txt', help='name of the file with the model predictions')
 parser.add_argument('-fullname', action='store_true', help='Output contains full image path instead of only the name')
 parser.add_argument('-verbose', action='store_true', help='Print lots of useless tensorflow information')
 parser.add_argument('-PRfilter', default=None, type=float, help='Give a threshold value, a>1. Screen output is filtered with the value of the participation ratio (PR) and only includes predictions with PR<a.')
@@ -215,13 +217,13 @@ if not args.fullname:
 
 header='Name Prediction Confidence Prediction(2ndGuess) Confidence(2ndGuess) participation-ratio'
 if not args.notxt:
-	np.savetxt('predict.txt', np.c_[im_names, predictions_names, confidences, predictions2_names, confidences2, pr], fmt='%s %s %.3f %s %.3f %.3f', header=header)
+	np.savetxt(args.preddir+'/'+args.predname, np.c_[im_names, predictions_names, confidences, predictions2_names, confidences2, pr], fmt='%s %s %.3f %s %.3f %.3f', header=header)
 
 print(header)
 for i in range(len(npimages)):
 	
 	if pr[i]<=args.PRfilter:
-		print('{}\t{:20s}\t{:.3f}\t{:20s}\t{:.3f}\t{:.3f}'.format(im_names, classes_dict['name'][predictions[i]], confidences[i], classes_dict['name'][predictions2[i]], confidences2[i], pr[i] ) )
+		print('{}\t{:20s}\t{:.3f}\t{:20s}\t{:.3f}\t{:.3f}'.format(im_names[i], classes_dict['name'][predictions[i]], confidences[i], classes_dict['name'][predictions2[i]], confidences2[i], pr[i] ) )
 
 
 
