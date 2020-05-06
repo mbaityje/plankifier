@@ -37,12 +37,14 @@ from sklearn.metrics import classification_report
 
 class Ctrain:
 	def __init__(self):
+		self.data=None
+		self.trainSize=None
+		self.testSize=None
 		self.RecordInitTime()
 		self.ReadArgs()
 		self.CreateOutDir()
-		np.random.seed(12345)
-		# self.LoadData(kind=self.args.kind)
 		self.data = hd.Cdata(self.args.datapath, self.args.L, self.args.class_select, self.args.kind)
+		self.data.Preprocess()
 
 		return
 
@@ -129,11 +131,29 @@ class Ctrain:
 		self.data.Load(kind)
 		return
 
-	def Train(self):
+	def CreateTrainTestSets(self, kind=None, random_state=12345):
+
+		if kind==None: kind=self.args.kind
+
+		if kind == 'mixed':
+			(self.trainX, self.testX, self.trainY, self.testY) = train_test_split(self.data.X, self.data.y, test_size=self.args.testSplit, random_state=random_state)
+		elif kind == 'feat':
+			(self.trainX, self.testX, self.trainY, self.testY) = train_test_split(self.data.X.drop(columns=['npimage'], errors='ignore'), self.data.y, test_size=self.args.testSplit, random_state=random_state)
+		elif kind == 'image':
+			(self.trainX, self.testX, self.trainY, self.testY) = train_test_split(self.data.X.npimage, self.data.y, test_size=self.args.testSplit, random_state=random_state)
+		else:
+			raise NotImplementerError('Unknown kind '+kind+' in CreateTrainTestSets')
+
+		self.trainSize=len(self.trainY)
+		self.testSize =len(self.testY)
+
+
+	def Train(self, kind):
 		return
 
 	def Predict(self):
 		return
+
 
 
 
@@ -158,7 +178,7 @@ print('\nRunning',sys.argv[0],sys.argv[1:])
 
 if __name__=='__main__':
 	sim=Ctrain()
-
+	sim.CreateTrainTestSets()
 
 
 

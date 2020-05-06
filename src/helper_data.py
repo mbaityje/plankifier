@@ -116,6 +116,8 @@ class Cdata:
 		self.class_select=class_select
 		self.kind=kind
 		self.df=None
+		self.y=None
+		self.X=None
 		self.Load(self.kind)
 		return
 
@@ -159,11 +161,12 @@ class Cdata:
 
 		return
 
+	def Preprocess(self):
+		''' Preprocessing of the data '''
 
-	def Clean(self):
-		return
+		self.y = self.df.classname
+		self.X = self.df.drop(columns=['classname','url','file_size','timestamp'], errors='ignore')
 
-	def Balance(self):
 		return
 
 
