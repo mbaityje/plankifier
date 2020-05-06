@@ -105,11 +105,68 @@ def LoadMixed(datapath, L, class_select=None, alsoImages=True):
 	if alsoImages:
 		df.npimage = df.npimage / 255.0 # scale the raw pixel intensities to the range [0, 1]
 
-	return df
+	return df.reset_index(drop=True) # The data was loaded without an index, that we add with reset_index()
 
 
+class Cdata:
 
+	def __init__(self, datapath, L, class_select=None, kind='mixed'):
+		self.datapath=datapath
+		self.L=L
+		self.class_select=class_select
+		self.kind=kind
+		self.df=None
+		self.Load(self.kind)
+		return
+
+
+	def Load(self, kind='mixed'):
+		''' 
+		Loads dataset 
+		For the moment, only mixed data. Later, also pure images or pure features.
+		'''
+		if kind=='mixed':
+			self.df = LoadMixed(self.datapath, self.L, self.class_select, alsoImages=True)
+		elif kind=='feat':
+			self.df = LoadMixed(self.datapath, self.L, self.class_select, alsoImages=False)
+		else:
+			raise NotImplementedError('Only mixed or feat data loading for the moment')
+
+		self.kind=kind # Now the data kind is kind. In most cases, we had already kind=self.kind, but it the user tested another kind, it must be changed
+		self.Check()
+		return
+
+
+	def Check(self):
+		''' Basic checks on the dataset '''
+
+		#Number of different classes
+		classes=self.df['classname'].unique()
+		if len(classes)<2:
+			print('There are less than 2 classes ({})'.format(classes))
+			raise ValueError
+
+		# Columns potentially useful for classification
+		ucols=self.df.drop(columns=['classname','url','file_size','timestamp'], errors='ignore').columns
+		if len(ucols)<1:
+			print('Columns: {}'.format(self.df.columns))
+			raise ValueError('The dataset has no useful columns.')
+
+		# Check for NaNs
+		if self.df.isnull().any().any():
+			print('There are NaN values in the data.')
+			raise ValueError
+
+		return
+
+
+	def Clean(self):
+		return
+
+	def Balance(self):
+		return
 
 
 if __name__=='__main__':
 	pass
+
