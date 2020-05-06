@@ -4,7 +4,8 @@
 #
 ################################################
 from PIL import Image
-
+import os
+import numpy as np, pandas as pd
 
 import sys
 
@@ -45,6 +46,67 @@ def ResizeWithProportions(im, desired_size):
 						(desired_size-im.size[1])//2))
 
 	return new_im, rescaled
+
+def ReduceClasses(datapath, class_select):
+	allClasses = [ name for name in os.listdir(datapath) if os.path.isdir(os.path.join(datapath, name)) ]
+	if class_select==None:
+		class_select = allClasses
+	else:
+		if not set(class_select).issubset(allClasses):
+			print('Some of the classes input by the user are not present in the dataset.')
+			print('class_select:',class_select)
+			print('all  classes:',allClasses)
+			raise ValueError
+	return class_select
+
+def LoadMixed(datapath, L, class_select=None, alsoImages=True):
+	'''
+	Uses the data in datapath to create a DataFrame with images and features. 
+	For each class, we read a tsv file with the features. This file also contains the name of the corresponding image, which we fetch and resize.
+	For each line in the tsv file, we then have all the features in the tsv, plus class name, image (as numpy array), and a binary variable stating whether the image was resized or not.
+	Assumes a well-defined directory structure.
+
+	Arguments:
+	datapath 	 - the path where the data is stored. Inside datapath, we expect to find directories with the names of the classes
+	L 			 - images are rescaled to a square of size LxL (maintaining proportions)
+	class_select - a list of the classes to load. If None (default), loads all classes 
+	alsoImages   - flag that tells whether to only load features, or features+images
+	Output:
+	df 			 - a dataframe with classname, npimage, rescaled, and all the columns in features.tsv
+	'''
+	df = pd.DataFrame()
+	class_select=ReduceClasses(datapath, class_select)	# Decide whether to use all available classes
+
+	# Loop for data loading
+	for ic,c in enumerate(class_select): # Loop over the classes
+
+		print(c)
+		dfFeat = pd.read_csv(datapath+c+'/features.tsv', sep = '\t')
+
+
+		classPath=datapath+c+'/training_data/'
+
+		# Each line in features.tsv should be associated with an image (the url is slightly different than what appears in the file)
+		for index, row in dfFeat.iterrows():
+
+			if alsoImages:
+				imName=datapath+c+'/training_data/'+os.path.basename(row['url'])
+				image=Image.open(imName)
+				image,rescaled = ResizeWithProportions(image, L) # Set image's largest dimension to target size, and fill the rest with black pixels
+				npimage = np.array(image.copy() , dtype=np.float32)			 # Convert to numpy
+
+				dftemp=pd.DataFrame([[c,npimage,rescaled]+row.to_list()] ,columns=['classname','npimage','rescaled']+dfFeat.columns.to_list())
+				image.close()
+			else: #alsoImages is False here
+				dftemp=pd.DataFrame([[c]+row.to_list()] ,columns=['classname']+dfFeat.columns.to_list())
+
+			df=pd.concat([df,dftemp], axis=0)
+
+	if alsoImages:
+		df.npimage = df.npimage / 255.0 # scale the raw pixel intensities to the range [0, 1]
+
+	return df
+
 
 
 
