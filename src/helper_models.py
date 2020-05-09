@@ -1,37 +1,28 @@
 # import the necessary packages
 from keras.models import Sequential
 from keras.layers.normalization import BatchNormalization
-from keras.layers.convolutional import Conv2D
-from keras.layers.convolutional import MaxPooling2D
-from keras.layers.core import Activation
-from keras.layers.core import Flatten
-from keras.layers.core import Dropout
-from keras.layers.core import Dense
+from keras.layers.convolutional import Conv2D, MaxPooling2D
+from keras.layers.core import Activation, Flatten, Dropout, Dense
 from keras import backend as K
 
 
 class MultiLayerPerceptron:
 	@staticmethod
-	def build(input_size, classes, layers=[64,32]):
+	def Build2Layer(input_shape, classes, layers=[64,32]):
 		model = Sequential()
-		model.add(Dense(layers[0], input_shape=(input_size,), activation="sigmoid"))
+		if len(input_shape)==1:
+			model.add(Dense(layers[0], input_shape=input_shape, activation="sigmoid"))
+		else:
+			model.add( Flatten(input_shape=input_shape ) )
+			model.add(Dense(layers[0], activation="sigmoid"))
 		model.add(Dense(layers[1], activation="sigmoid"))
-		model.add(Dense(classes, activation="softmax"))
+		if classes != None:
+			model.add(Dense(classes, activation="softmax"))
 		return model
-
-	@staticmethod
-	def BuildFromImage(width, height, depth, classes, layers=[64,32]):
-		model = Sequential()
-		model.add( Flatten(input_shape=(width, height, classes)) )
-		model.add(Dense(layers[0], activation="sigmoid"))
-		model.add(Dense(layers[1], activation="sigmoid"))
-		model.add(Dense(classes, activation="softmax"))
-		return model
-
 
 class Conv2Layer:
 	@staticmethod
-	def build(width, height, depth, classes):
+	def Build(width, height, depth, classes):
 		# initialize the model along with the input shape to be
 		# "channels last" and the channels dimension itself
 		model = Sequential()
@@ -46,8 +37,8 @@ class Conv2Layer:
 
 		model.add(Conv2D(64, kernel_size=24, activation='relu', input_shape=inputShape))
 		model.add(Conv2D(32, kernel_size=12, activation='relu'))
-		# model.add(BatchNormalization(axis=chanDim))
-		# model.add(MaxPooling2D(pool_size=(2, 2)))
+		model.add(BatchNormalization(axis=chanDim))
+		model.add(MaxPooling2D(pool_size=(2, 2)))
 		# model.add(Dropout(0.25))
 		model.add(Flatten())
 		model.add(Dense(classes, activation='softmax'))
@@ -57,7 +48,7 @@ class Conv2Layer:
 
 class SmallVGGNet:
 	@staticmethod
-	def build(width, height, depth, classes):
+	def Build(width, height, depth, classes):
 		# initialize the model along with the input shape to be
 		# "channels last" and the channels dimension itself
 		model = Sequential()
@@ -114,3 +105,4 @@ class SmallVGGNet:
 
 		# return the constructed network architecture
 		return model
+
