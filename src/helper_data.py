@@ -4,7 +4,7 @@
 #
 ################################################
 from PIL import Image
-import os
+import os, glob
 import numpy as np, pandas as pd
 
 import sys
@@ -78,7 +78,7 @@ def LoadMixed(datapath, L, class_select=None, alsoImages=True):
 	class_select=ReduceClasses(datapath, class_select)	# Decide whether to use all available classes
 
 	# Loop for data loading
-	for ic,c in enumerate(class_select): # Loop over the classes
+	for c in class_select: # Loop over the classes
 
 		print(c)
 		dfFeat = pd.read_csv(datapath+c+'/features.tsv', sep = '\t')
@@ -134,8 +134,10 @@ class Cdata:
 		else:
 			raise NotImplementedError('Only mixed or feat data loading for the moment')
 
+		self.classes=self.df['classname'].unique()
 		self.kind=kind # Now the data kind is kind. In most cases, we had already kind=self.kind, but it the user tested another kind, it must be changed
-		self.Check()
+		self.Check() # Some sanity checks on the dataset
+
 		return
 
 
@@ -143,7 +145,7 @@ class Cdata:
 		''' Basic checks on the dataset '''
 
 		#Number of different classes
-		classes=self.df['classname'].unique()
+		classes=self.classes
 		if len(classes)<2:
 			print('There are less than 2 classes ({})'.format(classes))
 			raise ValueError
@@ -159,6 +161,11 @@ class Cdata:
 			print('There are NaN values in the data.')
 			raise ValueError
 
+		# Check that the images have the expected size
+		if 'npimage' in self.df.columns:
+			if self.df.npimage[0].shape != (self.L, self.L, 3):
+				print('Cdata Check(): Images were not reshaped correctly: {} instead of {}'.format(self.npimage[0].shape, (self.L, self.L, 3)))
+
 		return
 
 	def Preprocess(self):
@@ -167,9 +174,54 @@ class Cdata:
 		self.y = self.df.classname
 		self.X = self.df.drop(columns=['classname','url','file_size','timestamp'], errors='ignore')
 
+		if self.kind != 'image':
+			self.Xfeat  = self.X.drop(columns=['npimage'], errors='ignore')
+		if self.kind != 'feat':
+			self.Ximage = self.X.npimage
+
 		return
 
 
 if __name__=='__main__':
 	pass
 
+
+
+def LoadImages(datapath, L, class_select=None):
+	'''
+	Uses the data in datapath to create a DataFrame with images only. 
+	This cannot be a particular case of the mixed loading, because the mixed depends on the files written in the features.tsv file, whereas here we fetch the images directly.
+
+	Arguments:
+	datapath 	 - the path where the data is stored. Inside datapath, we expect to find directories with the names of the classes
+	L 			 - images are rescaled to a square of size LxL (maintaining proportions)
+	class_select - a list of the classes to load. If None (default), loads all classes 
+	Output:
+	df 			 - a dataframe with classname, npimage, rescaled.
+	'''
+
+	df = pd.DataFrame()
+	class_select=ReduceClasses(datapath, class_select)	# Decide whether to use all available classes
+
+
+
+	for c in class_select:
+		
+		print('class:',c)
+
+		classImages = glob.glob(datapath+'/'+c+'/training_data/*.jp*g')
+		dfClass=pd.DataFrame(columns=['classname','npimage','rescaled'])
+
+		for i,imageName in enumerate(classImages):
+			image = Image.open(imageName)
+
+			# Set image's largest dimension to target size, and fill the rest with black pixels
+			image,rescaled = ResizeWithProportions(image, L) # width and height are assumed to be the same (assertion at the beginning)
+			npimage = np.array(image.copy() )
+			image.close()
+
+			dfClass.loc[i] = [c,npimage,rescaled]
+
+		df=pd.concat([df,dfClass], axis=0)
+
+	return df.reset_index(drop=True)
