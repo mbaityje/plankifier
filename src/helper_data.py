@@ -28,7 +28,6 @@ def ResizeWithProportions(im, desired_size):
 		raise ValueError('Images are too extreme rectangles to be reduced to this size. Try increasing the desired image size.')
 
 	rescaled    = 0 # This flag tells us whether there was a rescaling of the image (besides the padding). We can use it as feature for training.
-	# print('zzz:',im.size)
 
 	# 0) If any dimension of the image is larger than the desired size, shrink until the image can fully fit in the desired size
 	if max(im.size)>desired_size:
@@ -107,37 +106,86 @@ def LoadMixed(datapath, L, class_select=None, alsoImages=True):
 
 	return df.reset_index(drop=True) # The data was loaded without an index, that we add with reset_index()
 
+def LoadImages(datapath, L, class_select=None):
+	'''
+	Uses the data in datapath to create a DataFrame with images only. 
+	This cannot be a particular case of the mixed loading, because the mixed depends on the files written in the features.tsv file, whereas here we fetch the images directly.
+
+	Arguments:
+	datapath 	 - the path where the data is stored. Inside datapath, we expect to find directories with the names of the classes
+	L 			 - images are rescaled to a square of size LxL (maintaining proportions)
+	class_select - a list of the classes to load. If None (default), loads all classes 
+	Output:
+	df 			 - a dataframe with classname, npimage, rescaled.
+	'''
+
+	df = pd.DataFrame()
+	class_select=ReduceClasses(datapath, class_select)	# Decide whether to use all available classes
+
+
+
+	for c in class_select:
+		
+		print('class:',c)
+
+		classImages = glob.glob(datapath+'/'+c+'/training_data/*.jp*g')
+		dfClass=pd.DataFrame(columns=['classname','npimage'])
+
+		for i,imageName in enumerate(classImages):
+			image = Image.open(imageName)
+
+			# Set image's largest dimension to target size, and fill the rest with black pixels
+			image,rescaled = ResizeWithProportions(image, L) # width and height are assumed to be the same (assertion at the beginning)
+			npimage = np.array(image.copy() )
+			image.close()
+
+			dfClass.loc[i] = [c,npimage]
+
+		df=pd.concat([df,dfClass], axis=0)
+
+	return df.reset_index(drop=True)
+
 
 class Cdata:
 
-	def __init__(self, datapath, L, class_select=None, kind='mixed'):
+	def __init__(self, datapath, L=None, class_select=None, kind='mixed'):
+		print('init class_select:',class_select)
+		print('L:',L)
 		self.datapath=datapath
+		if L==None and kind!='feat':
+			print('CData: image size needs to be set, unless kind is \'feat\'')
+			raise ValueError
 		self.L=L
 		self.class_select=class_select
 		self.kind=kind
 		self.df=None
 		self.y=None
 		self.X=None
-		self.Load(self.kind)
+		print('Loading with class select:',class_select)
+		self.Load(self.datapath, self.L, self.class_select, self.kind)
 		return
 
 
-	def Load(self, kind='mixed'):
+	def Load(self, datapath, L, class_select, kind='mixed'):
 		''' 
 		Loads dataset 
 		For the moment, only mixed data. Later, also pure images or pure features.
 		'''
+		print('Loading with class select:',class_select)
+
 		if kind=='mixed':
-			self.df = LoadMixed(self.datapath, self.L, self.class_select, alsoImages=True)
+			self.df = LoadMixed(datapath, L, class_select, alsoImages=True)
 		elif kind=='feat':
-			self.df = LoadMixed(self.datapath, self.L, self.class_select, alsoImages=False)
+			self.df = LoadMixed(datapath, L, class_select, alsoImages=False)
+		elif kind=='image':
+			self.df = LoadImages(datapath, L, class_select)
 		else:
-			raise NotImplementedError('Only mixed or feat data loading for the moment')
+			raise NotImplementedError('Only mixed, image or feat data-loading')
 
 		self.classes=self.df['classname'].unique()
-		self.kind=kind # Now the data kind is kind. In most cases, we had already kind=self.kind, but it the user tested another kind, it must be changed
-		self.Check() # Some sanity checks on the dataset
-
+		self.kind=kind 		# Now the data kind is kind. In most cases, we had already kind=self.kind, but it the user tested another kind, it must be changed
+		self.Check()  		# Some sanity checks on the dataset
+		self.CreateXy()		# Creates X and y, i.e.
 		return
 
 
@@ -168,16 +216,18 @@ class Cdata:
 
 		return
 
-	def Preprocess(self):
-		''' Preprocessing of the data '''
+	def CreateXy(self):
+		''' 
+		Creates features and target
+		- removing the evidently junk columns.
+		- allowing to access images and features separately and confortably
+		'''
 
 		self.y = self.df.classname
 		self.X = self.df.drop(columns=['classname','url','file_size','timestamp'], errors='ignore')
 
-		if self.kind != 'image':
-			self.Xfeat  = self.X.drop(columns=['npimage'], errors='ignore')
-		if self.kind != 'feat':
-			self.Ximage = self.X.npimage
+		self.Ximage = self.X.npimage if (self.kind != 'feat') else None
+		self.Xfeat  = self.X.drop(columns=['npimage'], errors='ignore') if (self.kind != 'image') else None
 
 		return
 
@@ -187,41 +237,3 @@ if __name__=='__main__':
 
 
 
-def LoadImages(datapath, L, class_select=None):
-	'''
-	Uses the data in datapath to create a DataFrame with images only. 
-	This cannot be a particular case of the mixed loading, because the mixed depends on the files written in the features.tsv file, whereas here we fetch the images directly.
-
-	Arguments:
-	datapath 	 - the path where the data is stored. Inside datapath, we expect to find directories with the names of the classes
-	L 			 - images are rescaled to a square of size LxL (maintaining proportions)
-	class_select - a list of the classes to load. If None (default), loads all classes 
-	Output:
-	df 			 - a dataframe with classname, npimage, rescaled.
-	'''
-
-	df = pd.DataFrame()
-	class_select=ReduceClasses(datapath, class_select)	# Decide whether to use all available classes
-
-
-
-	for c in class_select:
-		
-		print('class:',c)
-
-		classImages = glob.glob(datapath+'/'+c+'/training_data/*.jp*g')
-		dfClass=pd.DataFrame(columns=['classname','npimage','rescaled'])
-
-		for i,imageName in enumerate(classImages):
-			image = Image.open(imageName)
-
-			# Set image's largest dimension to target size, and fill the rest with black pixels
-			image,rescaled = ResizeWithProportions(image, L) # width and height are assumed to be the same (assertion at the beginning)
-			npimage = np.array(image.copy() )
-			image.close()
-
-			dfClass.loc[i] = [c,npimage,rescaled]
-
-		df=pd.concat([df,dfClass], axis=0)
-
-	return df.reset_index(drop=True)
