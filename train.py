@@ -10,8 +10,10 @@
 # DA FARE
 # 
 # - modularizzare il tutto
+# - preprocess features (mean zero, std one), images as float32
 # - implement logging
 # - condizioni iniziali
+# - data Augmentation
 # 
 
 
@@ -32,7 +34,7 @@ from PIL import Image
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
-import pdb
+# import pdb
 
 
 
@@ -85,7 +87,8 @@ class Ctrain:
 		parser.add_argument('-L', type=int, default=128, help="Images are resized to a square of LxL pixels")
 		parser.add_argument('-testSplit', type=float, default=0.2, help="Fraction of examples in the validation set")
 		parser.add_argument('-class_select', nargs='*', default=None, help='List of classes to be looked at (put the class names one by one, separated by spaces). If None, all available classes are studied.')
-		parser.add_argument('-datakind', choices=['mixed','feat','image'], default='mixed', help="Which data to load: features, images (not implemented), or both")
+		parser.add_argument('-datakind', choices=['mixed','feat','image'], default='mixed', help="Which data to load: features, images, or both")
+		parser.add_argument('-ttkind', choices=['mixed','feat','image'], default='mixed', help="Which data to use in the test and training sets: features, images, or both")
 		# Training time
 		parser.add_argument('-totEpochs', type=int, default=5, help="Total number of epochs for the training")
 		parser.add_argument('-initial_epoch', type=int, default=0, help='Initial epoch of the training')
@@ -135,6 +138,13 @@ class Ctrain:
 			ngpu=len(keras.backend.tensorflow_backend._get_available_gpus())
 			print('We have {} GPUs'.format(ngpu))
 
+		if args.datakind == 'image':
+			args.modelkind = 'image'
+			args.ttkind = 'image'
+		elif args.datakind == 'feat':
+			args.modelkind = 'feat'
+			args.ttkind = 'feat'
+
 		return
 
 	def CreateOutDir(self):
@@ -162,7 +172,7 @@ class Ctrain:
 		if self.data==None:
 			self.data = hd.Cdata(datapath, L, class_select, datakind)
 		else:
-			self.data.Load(datakind)
+			self.data.Load(datapath, L, class_select ,datakind)
 
 		# Reset parameters	
 		self.params.datapath = self.data.datapath
@@ -172,134 +182,37 @@ class Ctrain:
 
 		return
 
-	def CreateTrainTestSets(self, ttkind='mixed', random_state=12345):
-		''' 
-		Create Training and Test Sets: 
-		- Decides what X is according to the model kind
-		- Splits data in train and test sets
-		- Transforms the labels y in an nclass-vector
-		'''
-
-		# If the data is mixed, we allow to only get images or features. If it is not mixed, this cannot be done.
-		if self.data.kind == 'image' or ttkind=='image':
-			ttkind='image'
-			X=np.array([self.data.Ximage.values[i] for i in range(len(self.data.Ximage.index))])
-		elif self.data.kind == 'feat' or ttkind=='feat':
-			ttkind='feat'
-			X=self.data.Xfeat
-		elif ttkind=='mixed':
-			X=self.data.X
-		else:
-			raise NotImplementerError('CreateTrainTestSets() not implemented ttkind')
-
+	def CreateTrainTestSets(self, ttkind=None, random_state=12345):
 		
-		self.tts=CTrainTestSet(self.data.X, self.data.y, self.params.testSplit, random_state=random_state)
-
-		if ttkind == 'mixed':
-			(self.trainX, self.testX, trainY, testY) = train_test_split(X, self.data.y, test_size=self.params.testSplit, random_state=random_state)
-			self.numFeat   = len(self.data.Xfeat.columns)
-		elif ttkind == 'feat':
-			(self.trainX, self.testX, trainY, testY) = train_test_split(X, self.data.y, test_size=self.params.testSplit, random_state=random_state)
-			self.numFeat   = len(self.data.Xfeat.columns)
-		elif ttkind == 'image':
-			(self.trainX, self.testX, trainY, testY) = train_test_split(X, self.data.y, test_size=self.params.testSplit, random_state=random_state)
-		else:
-			raise NotImplementerError('Unknown kind '+ttkind+' in CreateTrainTestSets')
-
-		# This is where we will act if we decide to train with HYBRID LABELS
-		lb = LabelBinarizer()
-		# print('trainY:',trainY.tolist())
-		# print('testY:',testY.tolist())
-		self.trainY = lb.fit_transform(trainY.tolist())
-		self.testY = lb.transform(testY.tolist())
-		# print('trainY:',self.trainY)
-		# print('testY:',self.testY)
-
-
-		# pdb.set_trace()
-
-		self.trainSize = len(self.trainY)
-		self.testSize  = len(self.testY)
+		if ttkind is None:
+			ttkind= self.params.ttkind
+		self.tt=CTrainTestSet(self.data.X, self.data.y, ttkind=ttkind, split=True)
+		self.params.ttkind=self.tt.ttkind
 
 		return
 
-
-	def SetModel(self, kind=None):
-		''' Set the Model and Optimizer - still needs a lot of work '''
-
-		if kind==None: kind=self.params.modelkind # Change this
-
-		if kind=='mixed':
-			ni = 32 # Number of output nodes for the image branch
-			nf = 16 # Number of output nodes for the image branch
-			model_feat = hm.MultiLayerPerceptron.Build2Layer(input_shape=(self.numFeat,)             , classes=None, layers=self.params.layers)
-			model_imag = hm.MultiLayerPerceptron.Build2Layer(input_shape=np.shape(sim.data.Ximage.values[0]), classes=None, layers=self.params.layers)
-			combinedInput = concatenate([model_feat.output, model_imag.output]) # Combine the two
-			model_join = Dense(64, activation="relu")(combinedInput)
-			model_join = Dense(len(self.data.classes), activation="softmax")(model_join)			
-			self.model = Model(inputs=[model_feat.input, model_imag.input], outputs=model_join)
-
-		elif kind=='feat':
-			self.model = hm.MultiLayerPerceptron.Build2Layer(input_shape=(self.numFeat,), classes=len(self.data.classes), layers=self.params.layers)
-
-		elif kind=='image':
-			print('Shape:', np.shape(sim.data.Ximage.values[0]))
-			self.model = hm.MultiLayerPerceptron.Build2Layer(input_shape=np.shape(self.data.Ximage.values[0]), classes=len(self.data.classes), layers=self.params.layers)
-
-		# compile the model using SGD as our optimizer and categorical
-		# cross-entropy loss (you'll want to use binary_crossentropy
-		# for 2-class classification)
-		if self.params.opt=='adam':
-			self.opt = keras.optimizers.Adam(learning_rate=self.params.lr, beta_1=0.9, beta_2=0.999, amsgrad=False)
-		elif self.params.opt=='sgd':
-			self.opt = keras.optimizers.SGD(lr=self.params.lr, nesterov=True)
-		else:
-			raise NotImplementedError('Optimizer {} is not implemented'.format(self.arg.opt))
-		self.model.compile(loss="categorical_crossentropy", optimizer=self.opt, metrics=["accuracy"])
-
-		return
 
 	def Train(self):
 
-		# checkpoints
-		checkpointer    = keras.callbacks.ModelCheckpoint(filepath=self.params.outpath+'/bestweights.hdf5', monitor='val_loss', verbose=0, save_best_only=True) # save the model at every epoch in which there is an improvement in test accuracy
-		# coitointerrotto = keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', patience=params.totEpochs, restore_best_weights=True)
-		logger          = keras.callbacks.callbacks.CSVLogger(self.params.outpath+'epochs.log', separator=' ', append=False)
-		callbacks=[checkpointer, logger]
 
-		if self.params.aug:
-			raise NotImplementedError('Data Aumentation not implemented')
+		checkpointer    = keras.callbacks.ModelCheckpoint(filepath=sim.params.outpath+'/bestweights.hdf5', monitor='val_loss', verbose=0, save_best_only=True) # save the model at every epoch in which there is an improvement in test accuracy
+		coitointerrotto = keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', patience=100, restore_best_weights=True)
+		logger          = keras.callbacks.callbacks.CSVLogger(sim.params.outpath+'epochs.log', separator=' ', append=False)
 
-		### TRAIN ###
-
+		trainParams=hm.CreateParams(
+									layers=sim.params.layers, 
+									lr=sim.params.lr,
+        							bs=sim.params.bs,
+        							totEpochs=sim.params.totEpochs,
+        							callbacks= [checkpointer, logger, coitointerrotto]
+        							)
 		# train the neural network
 		start=time.time()
 
-		if self.params.modelkind=='mixed':
-			trainXim= np.array([self.trainX.npimage.to_numpy()[i] for i in range(len(self.trainX.index))])
-			testXim = np.array([self.testX.npimage.to_numpy ()[i] for i in range(len(self.testX.index))])
-			history = self.model.fit(
-				[self.trainX.drop(columns='npimage').to_numpy(), trainXim], self.trainY, batch_size=self.params.bs, 
-				validation_data=([self.testX.drop(columns='npimage').to_numpy(),testXim], self.testY), 
-				epochs=self.params.totEpochs, 
-				callbacks=callbacks,
-				initial_epoch = self.params.initial_epoch)
-		elif self.params.modelkind=='feat':
-			history = self.model.fit(self.trainX, self.trainY, validation_data=(self.testX, self.testY), epochs=self.params.totEpochs, batch_size=self.params.bs)
-			# history = self.model.fit(
-			# 	self.trainX.drop(columns='npimage', errors='ignore').to_numpy(), self.trainY, batch_size=self.params.bs, 
-			# 	validation_data=(self.testX.drop(columns='npimage', errors='ignore').to_numpy(), self.testY), 
-			# 	epochs=self.params.totEpochs, 
-			# 	callbacks=callbacks,
-			# 	initial_epoch = self.params.initial_epoch)
-		elif self.params.modelkind=='image':
-			history = self.model.fit(
-				self.trainX, self.trainY, batch_size=self.params.bs, 
-				validation_data=(self.testX, self.testY), 
-				epochs=self.params.totEpochs, 
-				callbacks=callbacks,
-				initial_epoch = self.params.initial_epoch)
-
+		if self.params.modelkind == 'mixed':
+			history, model = hm.MixedModel([self.tt.trainXimage,self.tt.trainXfeat], self.tt.trainY, [self.tt.testXimage,self.tt.testXfeat], self.tt.testY, trainParams)
+		else:
+			history, model = hm.MLP(self.tt.trainX, self.tt.trainY, self.tt.testX, self.tt.testY, trainParams)
 
 		trainingTime=time.time()-start
 		print('Training took',trainingTime/60,'minutes')
@@ -320,35 +233,113 @@ class Ctrain:
 
 
 
+
+
+
+
+
+
+
 class CTrainTestSet:
-	def __init__(self, X, y, test_size=0.2, random_state=12345):
+	def __init__(self, X, y, ttkind='mixed', split=True):
 		''' X and y are dataframes with features and labels'''
-		self.X=X
+		self.ttkind=ttkind
+
+		# Take care of the labels
 		self.y=y
+		self.VectorizeLabels()
 
-		(self.trainX, self.testX, trainY, testY) = \
-							train_test_split(self.X,     self.y, \
-											test_size=test_size, \
-											random_state=random_state)
 
-		return
+		# Now the features
 
-	def SelectCols(self, cols):
-		''' 
-		Keeps only the columns cols. 
-		cols is a list with the columns names
-		'''
-		self.X=self.X[cols]
-		return
-
-	def DropCols(self, cols):
-		''' 
-		Gets rid of the columns cols. 
-		cols is a list with the columns names
-		'''
-		self.X = self.X.drop(columns=cols, errors='ignore')
+		if ttkind == 'image':
+			self.X=self.ImageNumpyFromMixedDataframe(X)
+		elif ttkind == 'feat':
+			X=self.DropCols(X, ['npimage','rescaled'])
+			self.X=np.array([X.to_numpy()[i] for i in range(len(X.index))])
+		else:
+			# This checks if there are images, but it also implicitly checks if there are features.
+			# In fact, if there are only images, X is a series and has no attribute columns (I am aware this should be coded better). 
+			if 'npimage' not in X.columns:
+				raise RuntimeError('Error: you asked for mixed Train-Test, but the dataset you gave me does not contain images.')
+			self.X=X #Note that with ttkind=mixed, X stays a dataframe
 	
+		if split:
+			self.Split()
+
 		return
+
+	def VectorizeLabels(self):
+		''' 
+		Transform labels in one-hot encoded vectors 
+		This is where we will act if we decide to train with HYBRID LABELS
+		'''
+
+		self.lb = LabelBinarizer()
+
+		self.y = self.lb.fit_transform(self.y.tolist())
+		return
+
+	def UnvectorizeLabels(self, y):
+		''' Recovers the original labels from the vectorized ones '''
+		return self.lb.inverse_transform(y) 
+
+
+	def ImageNumpyFromMixedDataframe(self, X=None):
+		''' Returns a numpy array of the shape (nexamples, L, L, channels)'''
+		if X is None:
+			X=self.X
+
+		# The column containing npimage
+		im_col = [i for i,col in enumerate(X.columns) if col == 'npimage'][0] 
+		
+		return np.array([X.to_numpy()[i, im_col] for i in range( len(X.index) )])
+
+
+	def Split(self, test_size=0.2, random_state=12345):
+		''' handles differently the mixed case, because in that case  X is a dataframe'''
+		self.trainX, self.testX, self.trainY, self.testY = train_test_split(self.X, self.y, test_size=test_size, random_state=random_state)
+
+		if self.ttkind == 'mixed':
+			# Images
+			self.trainXimage = self.ImageNumpyFromMixedDataframe(self.trainX)
+			self.testXimage = self.ImageNumpyFromMixedDataframe(self.testX)
+			#Features
+			Xf=self.DropCols(self.trainX, ['npimage','rescaled'])
+			self.trainXfeat=np.array([Xf.to_numpy()[i] for i in range(len(Xf.index))])
+			Xf=self.DropCols(self.testX, ['npimage','rescaled'])
+			self.testXfeat=np.array([Xf.to_numpy()[i] for i in range(len(Xf.index))])
+
+		return
+
+
+	def Rescale(self, cols=None):
+		raise NotImplementedError
+
+	def SelectCols(self, X, cols):
+		''' 
+		Keeps only the columns cols from the dataframe X. 
+		cols is a list with the columns names
+		'''
+
+		if isinstance(X, pd.DataFrame): # Make sure it is not a series
+			if set(cols).issubset(set(X.columns)): # Check that columns we want to select exist
+				return X[cols]
+			else:
+				print('self.X.columns: {}'.format(self.X.columns))
+				print('requested cols: {}'.format(cols))
+				raise IndexError('You are trying to select columns that are not present in the dataframe')
+		else:
+			assert(len(cols)==1) # If it's a series there should be only one column
+			assert(self.X.name==cols[0])# And that column should coincide with the series name
+			return
+
+	def DropCols(self, X, cols):
+		''' 
+		Gets rid of the columns cols from the dataframe X. 
+		cols is a list with the columns names
+		'''
+		return X.drop(columns=cols, errors='ignore')
 
 	def MergeLabels(self):
 		''' Merges labels to create aggregated classes '''
@@ -356,7 +347,17 @@ class CTrainTestSet:
 
 
 
+class Cmodel:
 
+	def __init__():
+		return
+
+	@staticmethod
+	def MLP(trainX, trainY, testX, testY, params):
+
+		model = hm.MultiLayerPerceptron.Build2Layer(input_shape=(self.numFeat,), classes=len(self.data.classes), layers=self.params.layers)
+
+		return out, model
 
 
 print('\nRunning',sys.argv[0],sys.argv[1:])
@@ -364,16 +365,10 @@ print('\nRunning',sys.argv[0],sys.argv[1:])
 if __name__=='__main__':
 	sim=Ctrain()
 	sim.SetParameters('args')
-	print(sim.params)
-	print('class_select:',sim.params.class_select)
 	sim.data = hd.Cdata(sim.params.datapath, sim.params.L, sim.params.class_select, sim.params.datakind)
-
-
-
 	sim.CreateOutDir()
-
 	sim.CreateTrainTestSets()
-	sim.SetModel()
+
 	sim.Train()
 	sim.Report()
 

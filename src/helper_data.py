@@ -136,7 +136,7 @@ def LoadImages(datapath, L, class_select=None):
 
 			# Set image's largest dimension to target size, and fill the rest with black pixels
 			image,rescaled = ResizeWithProportions(image, L) # width and height are assumed to be the same (assertion at the beginning)
-			npimage = np.array(image.copy() )
+			npimage = np.array(image.copy(), dtype=np.float32)
 			image.close()
 
 			dfClass.loc[i] = [c,npimage]
@@ -149,8 +149,6 @@ def LoadImages(datapath, L, class_select=None):
 class Cdata:
 
 	def __init__(self, datapath, L=None, class_select=None, kind='mixed'):
-		print('init class_select:',class_select)
-		print('L:',L)
 		self.datapath=datapath
 		if L==None and kind!='feat':
 			print('CData: image size needs to be set, unless kind is \'feat\'')
@@ -161,7 +159,6 @@ class Cdata:
 		self.df=None
 		self.y=None
 		self.X=None
-		print('Loading with class select:',class_select)
 		self.Load(self.datapath, self.L, self.class_select, self.kind)
 		return
 
@@ -171,7 +168,6 @@ class Cdata:
 		Loads dataset 
 		For the moment, only mixed data. Later, also pure images or pure features.
 		'''
-		print('Loading with class select:',class_select)
 
 		if kind=='mixed':
 			self.df = LoadMixed(datapath, L, class_select, alsoImages=True)
