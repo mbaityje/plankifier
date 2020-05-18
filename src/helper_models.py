@@ -8,35 +8,49 @@ from keras.layers import concatenate
 from keras import backend as K
 
 
-def CreateParams(layers= None, lr =None, bs=None, totEpochs= None, callbacks= None, initial_epoch=0):
+def CreateParams(layers= None, lr =None, bs=None, totEpochs= None, callbacks= None, initial_epoch=0, aug=None):
 	''' Creates an empty dictionary with all possible entries'''
+
 	params={
 		'layers': layers,
         'lr': lr,
         'bs': bs,
         'totEpochs': totEpochs,
         'callbacks': callbacks,
-        'initial_epoch': initial_epoch
+        'initial_epoch': initial_epoch,
+        'aug': aug
 		}
 
 	return params
 
 def MLP(trainX, trainY, testX, testY, params):
 
-    model = MultiLayerPerceptron.Build2Layer(input_shape=trainX[0].shape, classes=len(trainY[0]), layers=params['layers'])
+	model = MultiLayerPerceptron.Build2Layer(input_shape=trainX[0].shape, classes=len(trainY[0]), layers=params['layers'])
 
-    optimizer=keras.optimizers.SGD(lr=params['lr'], nesterov=True)
+	optimizer=keras.optimizers.SGD(lr=params['lr'], nesterov=True)
     
-    model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
+	model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 
-    history = model.fit(trainX, trainY, 
-    					validation_data=(testX, testY), 
-    					epochs=params['totEpochs'], 
-    					batch_size=params['bs'], 
-    					callbacks=params['callbacks'],
-    					initial_epoch = params['initial_epoch'])
+	if params['aug'] is None:
 
-    return history, model
+		history = model.fit(
+							trainX, trainY, 
+							validation_data=(testX, testY), 
+							epochs=params['totEpochs'], 
+							batch_size=params['bs'], 
+							callbacks=params['callbacks'],
+							initial_epoch = params['initial_epoch'])
+	else:
+		history = model.fit_generator(
+							params['aug'].flow(trainX, trainY, batch_size=params['bs']), 
+							validation_data=(testX, testY), 
+							epochs=params['totEpochs'], 
+							callbacks=params['callbacks'],
+							initial_epoch = params['initial_epoch'],
+							steps_per_epoch=len(trainX)//params['bs']
+							)
+
+	return history, model
 
 
 
@@ -64,13 +78,27 @@ def MixedModel(trainX, trainY, testX, testY, params):
 
 	model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 
-	history = model.fit([trainXi,trainXf], trainY, 
-						validation_data=([testXi,testXf], testY), 
-						epochs=params['totEpochs'], 
-						batch_size=params['bs'], 
-						callbacks=params['callbacks'],
-						initial_epoch = params['initial_epoch'])
+	if params['aug'] is None:
+	
+		history = model.fit(
+							[trainXi,trainXf], trainY, 
+							validation_data=([testXi,testXf], testY), 
+							epochs=params['totEpochs'], 
+							batch_size=params['bs'], 
+							callbacks=params['callbacks'],
+							initial_epoch = params['initial_epoch']
+							)
 
+	else:
+
+		history = model.fit_generator(
+							params['aug'].flow([trainXi,trainXf], trainY, batch_size=params['bs']), 
+							validation_data=([testXi,testXf], testY), 
+							epochs=params['totEpochs'], 
+							callbacks=params['callbacks'],
+							initial_epoch = params['initial_epoch'],
+							steps_per_epoch=len(trainXi)//params['bs']
+							)
 
 	return history, model
 

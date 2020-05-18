@@ -2,18 +2,16 @@
 # 
 # Script that trains a model
 # 
-# Options: 
-# - kind of model
-# - kind of data input type
 # 
 
 # DA FARE
 # 
-# - modularizzare il tutto
-# - preprocess features (mean zero, std one), images as float32
+# - 
+# - preprocess features (mean zero, std one)
 # - implement logging
 # - condizioni iniziali
-# - data Augmentation
+# - data Augmentation scan
+# - binary classifier
 # 
 
 
@@ -29,10 +27,8 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import to_categorical
 import keras.backend as K
 import matplotlib.pyplot as plt, seaborn as sns
-from src import helper_models as hm, helper_data as hd
+from src import helper_models as hm, helper_data as hd, helper_tts as htts
 from PIL import Image
-from sklearn.preprocessing import LabelBinarizer
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 # import pdb
 
@@ -80,7 +76,7 @@ class Ctrain:
 		parser.add_argument('-opt', choices=['sgd','adam'], default='sgd', help="Choice of the minimization algorithm (sgd,adam)")
 		parser.add_argument('-bs', type=int, default=32, help="Batch size")
 		parser.add_argument('-lr', type=float, default=0.00005, help="Learning Rate")
-		parser.add_argument('-aug', action='store_true', help="Perform data augmentation.")
+		parser.add_argument('-aug', action='store_true', help="Perform data augmentation. Augmentation parameters are hard-coded.")
 		parser.add_argument('-model', choices=['mlp','conv2','smallvgg'], default='mlp', help='The model. MLP gives decent results, conv2 is the best, smallvgg overfits (*validation* accuracy oscillates).')
 		parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Layers for MLP")
 		# Data
@@ -151,9 +147,9 @@ class Ctrain:
 		''' Create a unique output directory, and put inside it a file with the simulation parameters '''
 		outDir = self.params.outpath+'/'+self.params.model+'_mix/'+datetime.datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")+'/'
 		pathlib.Path(outDir).mkdir(parents=True, exist_ok=True)
-		fsummary=open(outDir+'params.txt','w')
-		print(self.params, file=fsummary); 
-		fsummary.flush()
+		self.fsummary=open(outDir+'params.txt','w')
+		print(self.params, file=self.fsummary); 
+		self.fsummary.flush()
 		return
 
 	def LoadData(self, datapath=None, L=None, class_select=None, datakind=None):
@@ -186,7 +182,7 @@ class Ctrain:
 		
 		if ttkind is None:
 			ttkind= self.params.ttkind
-		self.tt=CTrainTestSet(self.data.X, self.data.y, ttkind=ttkind, split=True)
+		self.tt=htts.CTrainTestSet(self.data.X, self.data.y, ttkind=ttkind, split=True)
 		self.params.ttkind=self.tt.ttkind
 
 		return
@@ -194,25 +190,50 @@ class Ctrain:
 
 	def Train(self):
 
-
+		# Callbacks
 		checkpointer    = keras.callbacks.ModelCheckpoint(filepath=sim.params.outpath+'/bestweights.hdf5', monitor='val_loss', verbose=0, save_best_only=True) # save the model at every epoch in which there is an improvement in test accuracy
 		coitointerrotto = keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', patience=100, restore_best_weights=True)
 		logger          = keras.callbacks.callbacks.CSVLogger(sim.params.outpath+'epochs.log', separator=' ', append=False)
 
-		trainParams=hm.CreateParams(
+
+		self.aug = None if (self.params.aug == False) else ImageDataGenerator(
+																				rotation_range=90,      # 
+																				vertical_flip=True,
+																				horizontal_flip=True,
+																				shear_range=30,			# 
+																				width_shift_range=0.5,	# 
+																				height_shift_range=0.5, # 
+																				fill_mode='constant', 
+																				validation_split=self.params.testSplit,
+																				#From here on it's the default values
+																				featurewise_center=False, samplewise_center=False,
+																				featurewise_std_normalization=False, samplewise_std_normalization=False,
+																				zca_whitening=False, zca_epsilon=1e-06, brightness_range=None, zoom_range=0.0,
+																				channel_shift_range=0.0, cval=0.0, rescale=None, preprocessing_function=None,
+																				data_format=None,  dtype=None
+																			)
+
+
+
+
+
+
+
+		self.trainParams=hm.CreateParams(
 									layers=sim.params.layers, 
 									lr=sim.params.lr,
         							bs=sim.params.bs,
         							totEpochs=sim.params.totEpochs,
-        							callbacks= [checkpointer, logger, coitointerrotto]
+        							callbacks= [checkpointer, logger, coitointerrotto],
+        							aug = self.aug
         							)
 		# train the neural network
 		start=time.time()
 
 		if self.params.modelkind == 'mixed':
-			history, model = hm.MixedModel([self.tt.trainXimage,self.tt.trainXfeat], self.tt.trainY, [self.tt.testXimage,self.tt.testXfeat], self.tt.testY, trainParams)
+			self.history, self.model = hm.MixedModel([self.tt.trainXimage,self.tt.trainXfeat], self.tt.trainY, [self.tt.testXimage,self.tt.testXfeat], self.tt.testY, self.trainParams)
 		else:
-			history, model = hm.MLP(self.tt.trainX, self.tt.trainY, self.tt.testX, self.tt.testY, trainParams)
+			self.history, self.model = hm.MLP(self.tt.trainX, self.tt.trainY, self.tt.testX, self.tt.testY, self.trainParams)
 
 		trainingTime=time.time()-start
 		print('Training took',trainingTime/60,'minutes')
@@ -220,10 +241,68 @@ class Ctrain:
 		return
 
 	def Report(self):
+
+		predictions = self.Predict()
+
+
+		clrep=classification_report(self.tt.testY.argmax(axis=1), predictions.argmax(axis=1), target_names=self.tt.lb.classes_)
+		print(clrep)
+
 		return
 
+
 	def Predict(self):
-		return
+
+		bs = self.trainParams['bs'] if (self.params.aug == False) else None
+		testX =  [self.tt.testXimage, self.tt.testXfeat] if (self.tt.ttkind=='mixed') else self.tt.testX
+
+		predictions = self.model.predict(testX, batch_size=bs)
+
+		return predictions
+
+
+	def IdentifyWorsePrediction(self, predictions):
+		''' Identify the easiest prediction and the worse mistake '''
+
+		i_maxconf_right=-1; i_maxconf_wrong=-1
+		maxconf_right  = 0; maxconf_wrong  = 0
+		
+		for i in range(len(self.tt.testY)):
+			# Spot easiestly classified image (largest confidence, and correct classification)
+			if self.tt.testY.argmax(axis=1)[i]==predictions.argmax(axis=1)[i]: # correct classification
+				if predictions[i][predictions[i].argmax()]>maxconf_right: # if the confidence on this prediction is larger than the largest seen until now
+					i_maxconf_right = i
+					maxconf_right   = predictions[i][predictions[i].argmax()]
+			# Spot biggest mistake (largest confidence, and incorrect classification)
+			else: # wrong classification
+				if predictions[i][predictions[i].argmax()]>maxconf_wrong:
+					i_maxconf_wrong=i
+					maxconf_wrong=predictions[i][predictions[i].argmax()]
+		return i_maxconf_right, i_maxconf_wrong, maxconf_right, maxconf_wrong
+
+	def Confidences(self, predictions):
+
+		# Confidences of right and wrong predictions
+		confidences = predictions.max(axis=1) # confidence of each prediction made by the classifier
+		whether = np.array([1 if testY.argmax(axis=1)[i]==predictions.argmax(axis=1)[i] else 0 for i in range(len(predictions))]) #0 if wrong, 1 if right
+		self.confidences_right = confidences[np.where(testY.argmax(axis=1)==predictions.argmax(axis=1))[0]]
+		self.confidences_wrong = confidences[np.where(testY.argmax(axis=1)!=predictions.argmax(axis=1))[0]]
+
+	def Abstention(self, thresholds=[0.999], print=True, save=True, plot=False):
+
+		if thresholds is None:
+			thresholds = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.97,0.98,0.99,0.995,0.997,0.999,0.9995,0.9999,0.99995,0.99999]
+
+		accs,nconfident = np.ndarray(len(thresholds), dtype=np.float), np.ndarray(len(thresholds), dtype=np.int)
+		for i,thres in enumerate(thresholds):
+			confident     = np.where(confidences>thres)[0]
+			nconfident[i] = len(confident)
+			accs      [i] = whether[confident].sum()/nconfident[i] if nconfident[i]>0 else np.nan
+
+	def Finalize(self):
+		print("Training-time: {:} seconds".format(trainingTime), file=self.fsummary)
+		self.fsummary.close()
+
 
 	def LoadModel(self):
 		return
@@ -240,124 +319,20 @@ class Ctrain:
 
 
 
-class CTrainTestSet:
-	def __init__(self, X, y, ttkind='mixed', split=True):
-		''' X and y are dataframes with features and labels'''
-		self.ttkind=ttkind
-
-		# Take care of the labels
-		self.y=y
-		self.VectorizeLabels()
-
-
-		# Now the features
-
-		if ttkind == 'image':
-			self.X=self.ImageNumpyFromMixedDataframe(X)
-		elif ttkind == 'feat':
-			X=self.DropCols(X, ['npimage','rescaled'])
-			self.X=np.array([X.to_numpy()[i] for i in range(len(X.index))])
-		else:
-			# This checks if there are images, but it also implicitly checks if there are features.
-			# In fact, if there are only images, X is a series and has no attribute columns (I am aware this should be coded better). 
-			if 'npimage' not in X.columns:
-				raise RuntimeError('Error: you asked for mixed Train-Test, but the dataset you gave me does not contain images.')
-			self.X=X #Note that with ttkind=mixed, X stays a dataframe
-	
-		if split:
-			self.Split()
-
-		return
-
-	def VectorizeLabels(self):
-		''' 
-		Transform labels in one-hot encoded vectors 
-		This is where we will act if we decide to train with HYBRID LABELS
-		'''
-
-		self.lb = LabelBinarizer()
-
-		self.y = self.lb.fit_transform(self.y.tolist())
-		return
-
-	def UnvectorizeLabels(self, y):
-		''' Recovers the original labels from the vectorized ones '''
-		return self.lb.inverse_transform(y) 
-
-
-	def ImageNumpyFromMixedDataframe(self, X=None):
-		''' Returns a numpy array of the shape (nexamples, L, L, channels)'''
-		if X is None:
-			X=self.X
-
-		# The column containing npimage
-		im_col = [i for i,col in enumerate(X.columns) if col == 'npimage'][0] 
-		
-		return np.array([X.to_numpy()[i, im_col] for i in range( len(X.index) )])
-
-
-	def Split(self, test_size=0.2, random_state=12345):
-		''' handles differently the mixed case, because in that case  X is a dataframe'''
-		self.trainX, self.testX, self.trainY, self.testY = train_test_split(self.X, self.y, test_size=test_size, random_state=random_state)
-
-		if self.ttkind == 'mixed':
-			# Images
-			self.trainXimage = self.ImageNumpyFromMixedDataframe(self.trainX)
-			self.testXimage = self.ImageNumpyFromMixedDataframe(self.testX)
-			#Features
-			Xf=self.DropCols(self.trainX, ['npimage','rescaled'])
-			self.trainXfeat=np.array([Xf.to_numpy()[i] for i in range(len(Xf.index))])
-			Xf=self.DropCols(self.testX, ['npimage','rescaled'])
-			self.testXfeat=np.array([Xf.to_numpy()[i] for i in range(len(Xf.index))])
-
-		return
-
-
-	def Rescale(self, cols=None):
-		raise NotImplementedError
-
-	def SelectCols(self, X, cols):
-		''' 
-		Keeps only the columns cols from the dataframe X. 
-		cols is a list with the columns names
-		'''
-
-		if isinstance(X, pd.DataFrame): # Make sure it is not a series
-			if set(cols).issubset(set(X.columns)): # Check that columns we want to select exist
-				return X[cols]
-			else:
-				print('self.X.columns: {}'.format(self.X.columns))
-				print('requested cols: {}'.format(cols))
-				raise IndexError('You are trying to select columns that are not present in the dataframe')
-		else:
-			assert(len(cols)==1) # If it's a series there should be only one column
-			assert(self.X.name==cols[0])# And that column should coincide with the series name
-			return
-
-	def DropCols(self, X, cols):
-		''' 
-		Gets rid of the columns cols from the dataframe X. 
-		cols is a list with the columns names
-		'''
-		return X.drop(columns=cols, errors='ignore')
-
-	def MergeLabels(self):
-		''' Merges labels to create aggregated classes '''
-		raise NotImplementedError
 
 
 
-class Cmodel:
+# class Cmodel:
 
-	def __init__():
-		return
+# 	def __init__():
+# 		return
 
-	@staticmethod
-	def MLP(trainX, trainY, testX, testY, params):
+# 	@staticmethod
+# 	def MLP(trainX, trainY, testX, testY, params):
 
-		model = hm.MultiLayerPerceptron.Build2Layer(input_shape=(self.numFeat,), classes=len(self.data.classes), layers=self.params.layers)
+# 		model = hm.MultiLayerPerceptron.Build2Layer(input_shape=(self.numFeat,), classes=len(self.data.classes), layers=self.params.layers)
 
-		return out, model
+# 		return out, model
 
 
 print('\nRunning',sys.argv[0],sys.argv[1:])
@@ -368,8 +343,8 @@ if __name__=='__main__':
 	sim.data = hd.Cdata(sim.params.datapath, sim.params.L, sim.params.class_select, sim.params.datakind)
 	sim.CreateOutDir()
 	sim.CreateTrainTestSets()
-
 	sim.Train()
+
 	sim.Report()
 
 
