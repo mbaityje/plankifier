@@ -6,11 +6,10 @@
 
 # DA FARE
 # 
-# - 
-# - preprocess features (mean zero, std one)
+# - implementazione modelli decenti
+# - Scan (includendo architettura e data Augmentation)
 # - implement logging
 # - condizioni iniziali
-# - data Augmentation scan
 # - binary classifier
 # 
 
@@ -182,7 +181,7 @@ class Ctrain:
 		
 		if ttkind is None:
 			ttkind= self.params.ttkind
-		self.tt=htts.CTrainTestSet(self.data.X, self.data.y, ttkind=ttkind, split=True)
+		self.tt=htts.CTrainTestSet(self.data.X, self.data.y, ttkind=ttkind)
 		self.params.ttkind=self.tt.ttkind
 
 		return

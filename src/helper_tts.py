@@ -9,12 +9,18 @@ from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
 
 
+def unique_cols(df):
+    ''' Returns one value per column, stating whether all the values are the same'''
+    a = df.to_numpy() # df.values (pandas<0.24)
+    return (a[0] == a[1:]).all(0)
+
+
 class CTrainTestSet:
 	''' 
 	A class for extracting train and test sets from the original dataset, and preprocessing them.
 	'''
 
-	def __init__(self, X, y, ttkind='mixed', split=True):
+	def __init__(self, X, y, ttkind='mixed', rescale=True):
 		''' X and y are dataframes with features and labels'''
 		self.ttkind=ttkind
 
@@ -28,17 +34,25 @@ class CTrainTestSet:
 		if ttkind == 'image':
 			self.X=self.ImageNumpyFromMixedDataframe(X)
 		elif ttkind == 'feat':
-			X=self.DropCols(X, ['npimage','rescaled'])
+			X = self.DropCols(X, ['npimage','rescaled'])
+			X = self.RemoveUselessCols(X)
 			self.X=np.array([X.to_numpy()[i] for i in range(len(X.index))])
 		else:
 			# This checks if there are images, but it also implicitly checks if there are features.
 			# In fact, if there are only images, X is a series and has no attribute columns (I am aware this should be coded better). 
 			if 'npimage' not in X.columns:
 				raise RuntimeError('Error: you asked for mixed Train-Test, but the dataset you gave me does not contain images.')
-			self.X=X #Note that with ttkind=mixed, X stays a dataframe
+			self.X=self.RemoveUselessCols(X) #Note that with ttkind=mixed, X stays a dataframe
 	
-		if split:
-			self.Split()
+		# Split train and test data
+		self.Split()
+
+		# Rescale features
+		if rescale == True:
+			self.Rescale()
+			self.rescale=True
+		else:
+			self.rescale=False
 
 		return
 
@@ -85,9 +99,58 @@ class CTrainTestSet:
 
 		return
 
+	def RemoveUselessCols(self, df):
+		''' Removes columns with no information from dataframe '''
+		# Select all columns except image
+		morecols=[]
+		cols=df.columns.tolist()
 
-	def Rescale(self, cols=None):
-		raise NotImplementedError
+		if 'npimage' in cols:
+			cols.remove('npimage')
+			morecols=['npimage']
+
+		# Remove all columns with all equal values
+		badcols=np.where(unique_cols(df[cols]) == True)[0].tolist()
+		badcols.reverse() # I reverse, because otherwise the indices get messed up when I use del
+
+		for i in badcols:
+		    del cols[i]
+
+		cols = morecols+cols
+
+		return df[cols]
+
+
+	def Rescale(self):
+		''' 
+		Rescales all columns except npimage to have mean zero and unit standard deviation 
+
+		To avoid data leakage, the rescaling factors are chosen from the training set
+		'''
+
+		cols=self.trainX.columns.tolist()
+
+		if 'npimage' in cols:
+			cols.remove('npimage')
+
+		# Set to zero mean and unit standard deviation
+		x=self.trainX[cols].to_numpy()
+		mu=x.mean(axis=0)
+		sigma=np.std(x, axis=0, ddof=0)
+
+		# Training set
+		self.trainX[cols]-=mu          # Set mean to zero
+		self.trainX[cols]/=sigma       # Set standard dev to one
+		# Test set
+		self.testX[cols]-=mu          # Set mean to zero
+		self.testX[cols]/=sigma       # Set standard dev to one
+
+		# These checks are only valid for the training set
+		assert( np.all(np.isclose( self.trainX[cols].mean()  , 0, atol=1e-5)) ) # Check that mean is zero
+		assert( np.all(np.isclose( np.std(self.trainX[cols], axis=0, ddof=0)  , 1, atol=1e-5)) ) # Check that std dev is unity
+
+		return
+
 
 	def SelectCols(self, X, cols):
 		''' 
