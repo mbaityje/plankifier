@@ -6,12 +6,12 @@
 
 # DA FARE
 # 
-# - implementazione modelli decenti
 # - Scan (includendo architettura e data Augmentation)
 # - implement logging
 # - condizioni iniziali
 # - binary classifier
-# 
+# - learning rate schedule
+# - 
 
 
 ###########
@@ -44,7 +44,6 @@ class Ctrain:
 		self.testSize=None
 		self.model=None
 		self.opt=None
-		print(initMode)
 		self.SetParameters(mode=initMode)
 
 		return
@@ -77,6 +76,8 @@ class Ctrain:
 		parser.add_argument('-lr', type=float, default=0.00005, help="Learning Rate")
 		parser.add_argument('-aug', action='store_true', help="Perform data augmentation. Augmentation parameters are hard-coded.")
 		parser.add_argument('-model', choices=['mlp','conv2','smallvgg'], default='mlp', help='The model. MLP gives decent results, conv2 is the best, smallvgg overfits (*validation* accuracy oscillates).')
+		parser.add_argument('-model_image', choices=['mlp','conv2','smallvgg'], default='mlp', help='For mixed data models, tells what model to use for the image branch.')
+		parser.add_argument('-model_feat', choices=['mlp'], default='mlp', help='For mixed data models, tells what model to use for the feature branch.')
 		parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Layers for MLP")
 		# Data
 		parser.add_argument('-L', type=int, default=128, help="Images are resized to a square of LxL pixels")
@@ -106,7 +107,6 @@ class Ctrain:
 
 		print(args)
 
-		self.params.modelkind=args.datakind
 
 		return
 
@@ -134,10 +134,8 @@ class Ctrain:
 			print('We have {} GPUs'.format(ngpu))
 
 		if args.datakind == 'image':
-			args.modelkind = 'image'
 			args.ttkind = 'image'
 		elif args.datakind == 'feat':
-			args.modelkind = 'feat'
 			args.ttkind = 'feat'
 
 		return
@@ -217,22 +215,25 @@ class Ctrain:
 
 
 
-
 		self.trainParams=hm.CreateParams(
 									layers=sim.params.layers, 
 									lr=sim.params.lr,
         							bs=sim.params.bs,
         							totEpochs=sim.params.totEpochs,
         							callbacks= [checkpointer, logger, coitointerrotto],
-        							aug = self.aug
+        							aug = self.aug,
+        							model = self.params.model,
+        							model_image = self.params.model_image,
+        							model_feat  = self.params.model_feat
         							)
+
 		# train the neural network
 		start=time.time()
 
-		if self.params.modelkind == 'mixed':
+		if self.params.ttkind == 'mixed':
 			self.history, self.model = hm.MixedModel([self.tt.trainXimage,self.tt.trainXfeat], self.tt.trainY, [self.tt.testXimage,self.tt.testXfeat], self.tt.testY, self.trainParams)
 		else:
-			self.history, self.model = hm.MLP(self.tt.trainX, self.tt.trainY, self.tt.testX, self.tt.testY, self.trainParams)
+			self.history, self.model = hm.PlainModel(self.tt.trainX, self.tt.trainY, self.tt.testX, self.tt.testY, self.trainParams)
 
 		trainingTime=time.time()-start
 		print('Training took',trainingTime/60,'minutes')
@@ -304,9 +305,11 @@ class Ctrain:
 
 
 	def LoadModel(self):
+		raise NotImplementedError
 		return
 
 	def SaveModel(self):
+		raise NotImplementedError
 		return
 
 
@@ -318,20 +321,6 @@ class Ctrain:
 
 
 
-
-
-
-# class Cmodel:
-
-# 	def __init__():
-# 		return
-
-# 	@staticmethod
-# 	def MLP(trainX, trainY, testX, testY, params):
-
-# 		model = hm.MultiLayerPerceptron.Build2Layer(input_shape=(self.numFeat,), classes=len(self.data.classes), layers=self.params.layers)
-
-# 		return out, model
 
 
 print('\nRunning',sys.argv[0],sys.argv[1:])

@@ -8,7 +8,7 @@ from keras.layers import concatenate
 from keras import backend as K
 
 
-def CreateParams(layers= None, lr =None, bs=None, totEpochs= None, callbacks= None, initial_epoch=0, aug=None):
+def CreateParams(layers= None, lr =None, bs=None, totEpochs= None, callbacks= None, initial_epoch=0, aug=None, model='mlp', model_feat='mlp', model_image='mlp'):
 	''' Creates an empty dictionary with all possible entries'''
 
 	params={
@@ -18,14 +18,26 @@ def CreateParams(layers= None, lr =None, bs=None, totEpochs= None, callbacks= No
         'totEpochs': totEpochs,
         'callbacks': callbacks,
         'initial_epoch': initial_epoch,
-        'aug': aug
+        'aug': aug,
+        'model': model, # For mixed models, what the image branch gets
+        'model_feat': model_feat, # For mixed models, what the feature branch gets
+        'model_image': model_image # For mixed models, what the image branch gets
 		}
 
 	return params
 
-def MLP(trainX, trainY, testX, testY, params):
+def PlainModel(trainX, trainY, testX, testY, params):
+	'''
+	A wrapper for models that use feature-only or image-only data
+	'''
 
-	model = MultiLayerPerceptron.Build2Layer(input_shape=trainX[0].shape, classes=len(trainY[0]), layers=params['layers'])
+
+	if params['model'] == 'mlp':
+		model = MultiLayerPerceptron.Build2Layer(input_shape=trainX[0].shape, classes=len(trainY[0]), layers=params['layers'])
+	elif params['model'] == 'conv2':
+		model = Conv2Layer.Build(input_shape=trainX[0].shape, classes=len(trainY[0]), last_activation='softmax')
+	else:
+		raise NotImplementedError('PlainModel() - chosen model is not implemented')
 
 	optimizer=keras.optimizers.SGD(lr=params['lr'], nesterov=True)
     
@@ -56,6 +68,7 @@ def MLP(trainX, trainY, testX, testY, params):
 
 def MixedModel(trainX, trainY, testX, testY, params):
 	'''
+	A wrapper for models that use mixed data
 	'''
 
 	nclasses=len(trainY[0])
@@ -66,9 +79,23 @@ def MixedModel(trainX, trainY, testX, testY, params):
 	assert(len(trainXi.shape)>len(trainXf.shape))
 	assert(len( testXi.shape)>len( testXf.shape))
 
-	model_feat = MultiLayerPerceptron.Build2Layer(input_shape=trainXf[0].shape , classes=None, layers=params['layers'])
-	model_image= MultiLayerPerceptron.Build2Layer(input_shape=trainXi[0].shape , classes=None, layers=params['layers'])
+	## First branches - features and images separate
+	# Set model for first branch on features
+	if params['model_feat'] == 'mlp':
+		model_feat = MultiLayerPerceptron.Build2Layer(input_shape=trainXf[0].shape , classes=None, layers=params['layers'])
+	else: 
+		raise NotImplementedError
 
+	# Set model for first branch on images
+	if params['model_image'] == 'mlp':
+		model_image= MultiLayerPerceptron.Build2Layer(input_shape=trainXi[0].shape , classes=None, layers=params['layers'])
+	elif params['model_image'] == 'conv2':
+		model_image= Conv2Layer.Build(input_shape=trainXi[0].shape, classes=params['layers'][1], last_activation = 'sigmoid')
+	else: 		
+		raise NotImplementedError
+
+
+	## Second branch - join features and images
 	combinedInput = concatenate([model_image.output, model_feat.output]) # Combine the two
 	model_join = Dense(64, activation="relu")(combinedInput)
 	model_join = Dense(nclasses, activation="softmax")(model_join)				
@@ -119,26 +146,28 @@ class MultiLayerPerceptron:
 
 class Conv2Layer:
 	@staticmethod
-	def Build(width, height, depth, classes):
+	def Build(input_shape, classes, last_activation='softmax'):
 		# initialize the model along with the input shape to be
 		# "channels last" and the channels dimension itself
 		model = Sequential()
-		inputShape = (height, width, depth)
-		chanDim = -1
+		# inputShape = (height, width, depth) # This should be the normal situation -  we use channels last
+		# chanDim = -1
 
-		# if we are using "channels first", update the input shape
-		# and channels dimension
-		if K.image_data_format() == "channels_first":
-			inputShape = (depth, height, width)
-			chanDim = 1
+		# # if we are using "channels first", update the input shape
+		# # and channels dimension
+		# if K.image_data_format() == "channels_first":
+		# 	inputShape = (depth, height, width)
+		# 	chanDim = 1
 
-		model.add(Conv2D(64, kernel_size=24, activation='relu', input_shape=inputShape))
+		# Beware, kernel_size is hard coded for the moment, so it might not work if images are small
+		model.add(Conv2D(64, kernel_size=24, activation='relu', input_shape=input_shape))
 		model.add(Conv2D(32, kernel_size=12, activation='relu'))
-		model.add(BatchNormalization(axis=chanDim))
+		model.add(BatchNormalization(axis=-1))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
 		# model.add(Dropout(0.25))
 		model.add(Flatten())
-		model.add(Dense(classes, activation='softmax'))
+
+		model.add(Dense(classes, activation=last_activation))
 
 		return model
 

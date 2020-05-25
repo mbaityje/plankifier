@@ -122,6 +122,17 @@ class CTrainTestSet:
 
 
 	def Rescale(self):
+		if self.ttkind == 'mixed':
+			self.RescaleMixed()
+		elif self.ttkind == 'feat':
+			self.RescaleFeat()
+		elif self.ttkind == 'image':
+			pass # We don't rescale the image
+		else:
+			raise NotImplementedError('CTrainTestSet: ttkind must be feat, image or mixed')
+		return
+
+	def RescaleMixed(self):
 		''' 
 		Rescales all columns except npimage to have mean zero and unit standard deviation 
 
@@ -148,6 +159,31 @@ class CTrainTestSet:
 		# These checks are only valid for the training set
 		assert( np.all(np.isclose( self.trainX[cols].mean()  , 0, atol=1e-5)) ) # Check that mean is zero
 		assert( np.all(np.isclose( np.std(self.trainX[cols], axis=0, ddof=0)  , 1, atol=1e-5)) ) # Check that std dev is unity
+
+		return
+
+
+	def RescaleFeat(self):
+		''' 
+		Rescales all columns
+
+		To avoid data leakage, the rescaling factors are chosen from the training set
+		'''
+		
+		# Set to zero mean and unit standard deviation
+		mu=self.trainX.mean(axis=0)
+		sigma=np.std(self.trainX, axis=0, ddof=0)
+
+		# Training set
+		self.trainX-=mu          # Set mean to zero
+		self.trainX/=sigma       # Set standard dev to one
+		# Test set
+		self.testX-=mu          # Set mean to zero
+		self.testX/=sigma       # Set standard dev to one
+
+		# These checks are only valid for the training set
+		assert( np.all(np.isclose( self.trainX.mean()  , 0, atol=1e-5)) ) # Check that mean is zero
+		assert( np.all(np.isclose( np.std(self.trainX, axis=0, ddof=0)  , 1, atol=1e-5)) ) # Check that std dev is unity
 
 		return
 
