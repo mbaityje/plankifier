@@ -6,22 +6,27 @@ from keras.layers.convolutional import Conv2D, MaxPooling2D
 from keras.layers.core import Activation, Flatten, Dropout, Dense
 from keras.layers import concatenate
 from keras import backend as K
+from keras import metrics as metrics
 
 
-def CreateParams(layers= None, lr =None, bs=None, totEpochs= None, callbacks= None, initial_epoch=0, aug=None, model='mlp', model_feat='mlp', model_image='mlp'):
+def CreateParams(layers= None, lr =None, bs=None, optimizer='sgd', totEpochs= None, dropout=None, callbacks= None, initial_epoch=0, aug=None, model='mlp', model_feat='mlp', model_image='mlp', load=None, override_lr=False):
 	''' Creates an empty dictionary with all possible entries'''
 
 	params={
 		'layers': layers,
         'lr': lr,
         'bs': bs,
+        'optimizer': optimizer,
         'totEpochs': totEpochs,
+        'dropout': dropout,
         'callbacks': callbacks,
         'initial_epoch': initial_epoch,
         'aug': aug,
         'model': model, # For mixed models, what the image branch gets
         'model_feat': model_feat, # For mixed models, what the feature branch gets
-        'model_image': model_image # For mixed models, what the image branch gets
+        'model_image': model_image, # For mixed models, what the image branch gets
+		'load': load, # Whether to load model from file
+		'override_lr': override_lr, # Whether to load model from file
 		}
 
 	return params
@@ -32,15 +37,31 @@ def PlainModel(trainX, trainY, testX, testY, params):
 	'''
 
 
-	if params['model'] == 'mlp':
-		model = MultiLayerPerceptron.Build2Layer(input_shape=trainX[0].shape, classes=len(trainY[0]), layers=params['layers'])
-	elif params['model'] == 'conv2':
-		model = Conv2Layer.Build(input_shape=trainX[0].shape, classes=len(trainY[0]), last_activation='softmax')
+	# Model creation - in case we do not load it
+	if params['load'] is None:
+
+		if params['model'] == 'mlp':
+			model = MultiLayerPerceptron.Build2Layer(input_shape=trainX[0].shape, classes=len(trainY[0]), layers=params['layers'])
+		elif params['model'] == 'conv2':
+			model = Conv2Layer.Build(input_shape=trainX[0].shape, classes=len(trainY[0]), last_activation='softmax')
+		elif params['model'] == 'smallvgg':
+			model = SmallVGGNet.Build(input_shape=trainX[0].shape, classes=len(trainY[0]))
+		else:
+			raise NotImplementedError('PlainModel() - chosen model is not implemented')
+
+	# Model creation - in case we load it from file
 	else:
-		raise NotImplementedError('PlainModel() - chosen model is not implemented')
+
+		model=keras.models.load_model(params['load'])
+
+		print('LR of the loaded model:', K.get_value(model.optimizer.lr))
+		if params['override_lr']==True:
+			K.set_value(model.optimizer.lr, params['lr'])
+			print('Setting the LR to', params['lr'])
 
 	optimizer=keras.optimizers.SGD(lr=params['lr'], nesterov=True)
     
+	# model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 	model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 
 	if params['aug'] is None:
@@ -101,7 +122,10 @@ def MixedModel(trainX, trainY, testX, testY, params):
 	model_join = Dense(nclasses, activation="softmax")(model_join)				
 	model = Model(inputs=[model_image.input, model_feat.input], outputs=model_join)
 
-	optimizer=keras.optimizers.SGD(lr=params['lr'], nesterov=True)
+	if params['optimizer'] == 'sgd':
+		optimizer=keras.optimizers.SGD(lr=params['lr'], nesterov=True)
+	elif params['optimizer'] == 'adam':
+		optimizer = keras.optimizers.Adam(learning_rate=params['lr'], beta_1=0.9, beta_2=0.999, amsgrad=False)
 
 	model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 
@@ -146,7 +170,7 @@ class MultiLayerPerceptron:
 
 class Conv2Layer:
 	@staticmethod
-	def Build(input_shape, classes, last_activation='softmax'):
+	def Build(input_shape, classes, last_activation='softmax', dropout=None):
 		# initialize the model along with the input shape to be
 		# "channels last" and the channels dimension itself
 		model = Sequential()
@@ -164,7 +188,8 @@ class Conv2Layer:
 		model.add(Conv2D(32, kernel_size=12, activation='relu'))
 		model.add(BatchNormalization(axis=-1))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
-		# model.add(Dropout(0.25))
+		if dropout is not None:
+			model.add(Dropout(dropout))
 		model.add(Flatten())
 
 		model.add(Dense(classes, activation=last_activation))
@@ -174,22 +199,12 @@ class Conv2Layer:
 
 class SmallVGGNet:
 	@staticmethod
-	def Build(width, height, depth, classes):
-		# initialize the model along with the input shape to be
-		# "channels last" and the channels dimension itself
+	def Build(input_shape, classes):
 		model = Sequential()
-		inputShape = (height, width, depth)
-		chanDim = -1
-
-		# if we are using "channels first", update the input shape
-		# and channels dimension
-		if K.image_data_format() == "channels_first":
-			inputShape = (depth, height, width)
-			chanDim = 1
+		chanDim = -1 		# initialize the model along with the input shape to be "channels last" and the channels dimension itself
 
 		# CONV => RELU => POOL layer set
-		model.add(Conv2D(32, (3, 3), padding="same",
-			input_shape=inputShape))
+		model.add(Conv2D(32, (3, 3), padding="same", input_shape=input_shape))
 		model.add(Activation("relu"))
 		model.add(BatchNormalization(axis=chanDim))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
