@@ -48,7 +48,7 @@ class Ctrain:
 
 		return
 
-	def SetParameters(self,mode='default'):
+	def SetParameters(self, mode='default'):
 		''' default, from args'''
 		if mode == 'default':
 			self.ReadArgs(string=None)
@@ -64,9 +64,11 @@ class Ctrain:
 			string=""
 
 		parser = argparse.ArgumentParser(description='Train a model on zooplankton images')
-		# Paths
-		parser.add_argument('-datapath', default='./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/', help="Print many messages on screen.")
-		parser.add_argument('-outpath', default='./out/', help="Print many messages on screen.")
+		# I/O
+		parser.add_argument('-datapath', default='./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/', help="Directory with the data.")
+		parser.add_argument('-outpath', default='./out/', help="directory where you want the output saved")
+		parser.add_argument('-load', default=None, help='Path to a previously trained model that should be loaded.')
+		parser.add_argument('-override_lr', action='store_true', help='If true, when loading a previously trained model it discards its LR in favor of args.lr')
 		# User experience
 		parser.add_argument('-verbose', action='store_true', help="Print many messages on screen.")
 		parser.add_argument('-plot', action='store_true', help="Plot loss and accuracy during training once the run is over.")
@@ -79,6 +81,7 @@ class Ctrain:
 		parser.add_argument('-model_image', choices=['mlp','conv2','smallvgg'], default='mlp', help='For mixed data models, tells what model to use for the image branch.')
 		parser.add_argument('-model_feat', choices=['mlp'], default='mlp', help='For mixed data models, tells what model to use for the feature branch.')
 		parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Layers for MLP")
+		parser.add_argument('-dropout', type=float, default=None, help="Drop out")
 		# Data
 		parser.add_argument('-L', type=int, default=128, help="Images are resized to a square of LxL pixels")
 		parser.add_argument('-testSplit', type=float, default=0.2, help="Fraction of examples in the validation set")
@@ -89,8 +92,6 @@ class Ctrain:
 		parser.add_argument('-totEpochs', type=int, default=5, help="Total number of epochs for the training")
 		parser.add_argument('-initial_epoch', type=int, default=0, help='Initial epoch of the training')
 
-		# parser.add_argument('-load', default=None, help='Path to a previously trained model that should be loaded.')
-		# parser.add_argument('-override_lr', action='store_true', help='If true, when loading a previously trained model it discards its LR in favor of args.lr')
 		# parser.add_argument('-augtype', default='standard', help='Augmentation type')
 		# parser.add_argument('-augparameter', type=float, default=0, help='Augmentation parameter')
 		# parser.add_argument('-cpu', default=False, help='performs training only on cpus')
@@ -216,15 +217,17 @@ class Ctrain:
 
 
 		self.trainParams=hm.CreateParams(
-									layers=sim.params.layers, 
-									lr=sim.params.lr,
-        							bs=sim.params.bs,
-        							totEpochs=sim.params.totEpochs,
-        							callbacks= [checkpointer, logger, coitointerrotto],
+									layers = self.params.layers, 
+									lr = self.params.lr,
+        							bs = self.params.bs,
+        							totEpochs = self.params.totEpochs,
+        							dropout = self.params.dropout,
+        							callbacks = [checkpointer, logger, coitointerrotto],
         							aug = self.aug,
         							model = self.params.model,
         							model_image = self.params.model_image,
-        							model_feat  = self.params.model_feat
+        							model_feat  = self.params.model_feat,
+        							load = self.params.load,
         							)
 
 		# train the neural network
@@ -304,6 +307,8 @@ class Ctrain:
 		self.fsummary.close()
 
 
+
+
 	def LoadModel(self):
 		raise NotImplementedError
 		return
@@ -322,17 +327,14 @@ class Ctrain:
 
 
 
-
 print('\nRunning',sys.argv[0],sys.argv[1:])
 
 if __name__=='__main__':
-	sim=Ctrain()
-	sim.SetParameters('args')
-	sim.data = hd.Cdata(sim.params.datapath, sim.params.L, sim.params.class_select, sim.params.datakind)
+	sim=Ctrain(initMode='args')
+	sim.LoadData()
 	sim.CreateOutDir()
 	sim.CreateTrainTestSets()
 	sim.Train()
-
 	sim.Report()
 
 
