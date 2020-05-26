@@ -126,10 +126,11 @@ def LoadImages(datapath, L, class_select=None):
 
 	for c in class_select:
 		
-		print('class:',c)
 
 		classImages = glob.glob(datapath+'/'+c+'/training_data/*.jp*g')
 		dfClass=pd.DataFrame(columns=['classname','npimage'])
+
+		print('class: {} ({})'.format(c,len(classImages)))
 
 		for i,imageName in enumerate(classImages):
 			image = Image.open(imageName)
