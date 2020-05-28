@@ -11,7 +11,7 @@
 # - condizioni iniziali
 # - binary classifier
 # - learning rate schedule
-# - 
+# - maxout activation on the dense layer should reduce overfitting
 
 
 ###########
@@ -195,26 +195,11 @@ class Ctrain:
 
 
 		self.aug = None if (self.params.aug == False) else ImageDataGenerator(
-																				rotation_range=90,      # 
-																				vertical_flip=True,
-																				horizontal_flip=True,
-																				shear_range=30,			# 
-																				width_shift_range=0.5,	# 
-																				height_shift_range=0.5, # 
-																				fill_mode='constant', 
-																				validation_split=self.params.testSplit,
-																				#From here on it's the default values
-																				featurewise_center=False, samplewise_center=False,
-																				featurewise_std_normalization=False, samplewise_std_normalization=False,
-																				zca_whitening=False, zca_epsilon=1e-06, brightness_range=None, zoom_range=0.0,
-																				channel_shift_range=0.0, cval=0.0, rescale=None, preprocessing_function=None,
-																				data_format=None,  dtype=None
-																			)
-
-
-
-
-
+                        rotation_range=90,
+                        vertical_flip=True,
+                        horizontal_flip=True,
+                        shear_range=10
+                )
 
 		self.trainParams=hm.CreateParams(
 									layers = self.params.layers, 
