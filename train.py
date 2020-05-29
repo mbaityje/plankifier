@@ -195,7 +195,7 @@ class Ctrain:
 		callbacks=[checkpointer, logger]
 		if self.params.earlyStopping>0:
 			earlyStopping   = keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', patience=self.params.earlyStopping, restore_best_weights=True)
-			callbaks.append(earlyStopping)
+			callbacks.append(earlyStopping)
 
 		self.aug = None if (self.params.aug == False) else ImageDataGenerator(
                         rotation_range=90,
