@@ -113,6 +113,8 @@ def MixedModel(trainX, trainY, testX, testY, params):
 		model_image= MultiLayerPerceptron.Build2Layer(input_shape=trainXi[0].shape , classes=None, layers=params['layers'])
 	elif params['model_image'] == 'conv2':
 		model_image= Conv2Layer.Build(input_shape=trainXi[0].shape, classes=params['layers'][1], last_activation = 'sigmoid')
+	elif params['model_image'] == 'smallvgg':
+		model_image = SmallVGGNet.Build(input_shape=trainX[0].shape, classes=params['layers'][1])
 	else: 		
 		raise NotImplementedError
 
