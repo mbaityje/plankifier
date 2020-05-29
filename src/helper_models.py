@@ -37,7 +37,6 @@ def PlainModel(trainX, trainY, testX, testY, params):
 	A wrapper for models that use feature-only or image-only data
 	'''
 
-
 	# Model creation - in case we do not load it
 	if params['load'] is None:
 
@@ -83,7 +82,7 @@ def PlainModel(trainX, trainY, testX, testY, params):
 							initial_epoch = params['initial_epoch'],
 							steps_per_epoch=len(trainX)//params['bs']
 							)
-
+	
 	return history, model
 
 
@@ -114,7 +113,7 @@ def MixedModel(trainX, trainY, testX, testY, params):
 	elif params['model_image'] == 'conv2':
 		model_image= Conv2Layer.Build(input_shape=trainXi[0].shape, classes=params['layers'][1], last_activation = 'sigmoid')
 	elif params['model_image'] == 'smallvgg':
-		model_image = SmallVGGNet.Build(input_shape=trainX[0].shape, classes=params['layers'][1])
+		model_image = SmallVGGNet.Build(input_shape=trainX[0].shape, classes=params['layers'][1], last_activation = 'sigmoid')
 	else: 		
 		raise NotImplementedError
 
@@ -143,7 +142,7 @@ def MixedModel(trainX, trainY, testX, testY, params):
 							initial_epoch = params['initial_epoch']
 							)
 
-	else:
+	else: #here, params['aug'] is set
 
 		history = model.fit_generator(
 							params['aug'].flow([trainXi,trainXf], trainY, batch_size=params['bs']), 
@@ -191,7 +190,7 @@ class Conv2Layer:
 
 class SmallVGGNet:
 	@staticmethod
-	def Build(input_shape, classes):
+	def Build(input_shape, classes, last_activation='softmax'):
 		model = Sequential()
 		chanDim = -1 		# initialize the model along with the input shape to be "channels last" and the channels dimension itself
 
@@ -234,7 +233,7 @@ class SmallVGGNet:
 
 		# softmax classifier
 		model.add(Dense(classes))
-		model.add(Activation("softmax"))
+		model.add(Activation(last_activation))
 
 		# return the constructed network architecture
 		return model
