@@ -177,11 +177,25 @@ class Ctrain:
 
 		return
 
-	def CreateTrainTestSets(self, ttkind=None, random_state=12345):
-		
+	def CreateTrainTestSets(self, ttkind=None, testSplit=None, random_state=12345):
+		'''
+		Creates train and test sets using the CtrainTestSet class
+		'''
+
+		# Set default value for ttkind
 		if ttkind is None:
-			ttkind= self.params.ttkind
-		self.tt=htts.CTrainTestSet(self.data.X, self.data.y, ttkind=ttkind)
+			ttkind = self.params.ttkind
+		else:
+			self.params.ttkind = ttkind
+
+		# Set default value for testSplit
+		if testSplit == None:
+			testSplit = self.params.testSplit
+		else:
+			self.params.testSplit = testSplit
+
+
+		self.tt=htts.CTrainTestSet(self.data.X, self.data.y, ttkind=ttkind, testSplit=testSplit)
 		self.params.ttkind=self.tt.ttkind
 
 		return
@@ -231,21 +245,31 @@ class Ctrain:
 
 		return
 
+
 	def Report(self):
 
 		predictions = self.Predict()
-
-
 		clrep=classification_report(self.tt.testY.argmax(axis=1), predictions.argmax(axis=1), target_names=self.tt.lb.classes_)
 		print(clrep)
 
 		return
 
 
+	def LoadModel(self, modelfile=None):
+
+		if modelfile is not None:
+			self.params.load = modelfile
+		self.model=keras.models.load_model(self.params.load)
+
+		raise Warning('x-x-! We should be updating all the parameters with the loaded ones!!!!')
+		
+		return
+
+
 	def Predict(self):
 
-		bs = self.trainParams['bs'] if (self.params.aug == False) else None
-		testX =  [self.tt.testXimage, self.tt.testXfeat] if (self.tt.ttkind=='mixed') else self.tt.testX
+		bs = self.params.bs if (self.params.aug == False) else None
+		testX = [self.tt.testXimage, self.tt.testXfeat] if (self.tt.ttkind=='mixed') else self.tt.testX
 
 		predictions = self.model.predict(testX, batch_size=bs)
 
@@ -294,12 +318,6 @@ class Ctrain:
 		print("Training-time: {:} seconds".format(trainingTime), file=self.fsummary)
 		self.fsummary.close()
 
-
-
-
-	def LoadModel(self):
-		raise NotImplementedError
-		return
 
 	def SaveModel(self):
 		raise NotImplementedError

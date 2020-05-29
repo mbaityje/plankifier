@@ -20,9 +20,14 @@ class CTrainTestSet:
 	A class for extracting train and test sets from the original dataset, and preprocessing them.
 	'''
 
-	def __init__(self, X, y, ttkind='mixed', rescale=True):
-		''' X and y are dataframes with features and labels'''
+	def __init__(self, X, y, ttkind='mixed', rescale=True, testSplit=0.2, random_state=12345):
+		''' 
+		X and y are dataframes with features and labels
+		'''
+
 		self.ttkind=ttkind
+		self.testSplit=testSplit
+		self.random_state=random_state
 
 		# Take care of the labels
 		self.y=y
@@ -30,7 +35,6 @@ class CTrainTestSet:
 
 
 		# Now the features
-
 		if ttkind == 'image':
 			self.X=self.ImageNumpyFromMixedDataframe(X)
 		elif ttkind == 'feat':
@@ -45,7 +49,9 @@ class CTrainTestSet:
 			self.X=self.RemoveUselessCols(X) #Note that with ttkind=mixed, X stays a dataframe
 	
 		# Split train and test data
-		self.Split()
+		self.Split(test_size=testSplit, random_state=random_state)
+
+
 
 		# Rescale features
 		if rescale == True:
@@ -85,15 +91,24 @@ class CTrainTestSet:
 
 	def Split(self, test_size=0.2, random_state=12345):
 		''' handles differently the mixed case, because in that case  X is a dataframe'''
-		self.trainX, self.testX, self.trainY, self.testY = train_test_split(self.X, self.y, test_size=test_size, random_state=random_state)
+		
+		if test_size<1:
+			self.trainX, self.testX, self.trainY, self.testY = train_test_split(self.X, self.y, test_size=test_size, random_state=random_state)
+		else: # This allows us to pack everything into the test set
+			self.trainX, self.testX, self.trainY, self.testY = None, self.X, None, self.y
 
+
+		print('test_size:',test_size)
 		if self.ttkind == 'mixed':
 			# Images
-			self.trainXimage = self.ImageNumpyFromMixedDataframe(self.trainX)
+			if self.trainX is not None:
+				self.trainXimage = self.ImageNumpyFromMixedDataframe(self.trainX)
 			self.testXimage = self.ImageNumpyFromMixedDataframe(self.testX)
+
 			#Features
-			Xf=self.DropCols(self.trainX, ['npimage','rescaled'])
-			self.trainXfeat=np.array([Xf.to_numpy()[i] for i in range(len(Xf.index))])
+			if self.trainX is not None:
+				Xf=self.DropCols(self.trainX, ['npimage','rescaled'])
+				self.trainXfeat=np.array([Xf.to_numpy()[i] for i in range(len(Xf.index))])
 			Xf=self.DropCols(self.testX, ['npimage','rescaled'])
 			self.testXfeat=np.array([Xf.to_numpy()[i] for i in range(len(Xf.index))])
 
@@ -138,6 +153,10 @@ class CTrainTestSet:
 
 		To avoid data leakage, the rescaling factors are chosen from the training set
 		'''
+
+		if self.trainX==None:
+			print('No rescaling is performed because the training set is empty, but the truth is that in this case we should have rescaling parameters coming from elsewhere')
+			return
 
 		cols=self.trainX.columns.tolist()
 
