@@ -143,9 +143,9 @@ class Ctrain:
 
 	def CreateOutDir(self):
 		''' Create a unique output directory, and put inside it a file with the simulation parameters '''
-		outDir = self.params.outpath+'/'+self.params.model+'_mix/'+datetime.datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")+'/'
-		pathlib.Path(outDir).mkdir(parents=True, exist_ok=True)
-		self.fsummary=open(outDir+'params.txt','w')
+		# outDir = self.params.outpath+'/'+self.params.model+'_mix/'+datetime.datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")+'/'
+		pathlib.Path(self.params.outpath).mkdir(parents=True, exist_ok=True)
+		self.fsummary=open(self.params.outpath+'params.txt','w')
 		print(self.params, file=self.fsummary); 
 		self.fsummary.flush()
 		return
@@ -190,7 +190,7 @@ class Ctrain:
 
 		# Callbacks
 		checkpointer    = keras.callbacks.ModelCheckpoint(filepath=sim.params.outpath+'/bestweights.hdf5', monitor='val_loss', verbose=0, save_best_only=True) # save the model at every epoch in which there is an improvement in test accuracy
-		coitointerrotto = keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', patience=100, restore_best_weights=True)
+		coitointerrotto = keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', patience=200, restore_best_weights=True)
 		logger          = keras.callbacks.callbacks.CSVLogger(sim.params.outpath+'epochs.log', separator=' ', append=False)
 
 

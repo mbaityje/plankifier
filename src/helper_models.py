@@ -9,7 +9,7 @@ from keras import backend as K
 from keras import metrics as metrics
 
 
-def CreateParams(layers= None, lr =None, bs=None, optimizer='sgd', totEpochs= None, dropout=None, callbacks= None, initial_epoch=0, aug=None, model='mlp', model_feat='mlp', model_image='mlp', load=None, override_lr=False):
+def CreateParams(layers= None, lr =None, bs=None, optimizer='sgd', totEpochs= None, dropout=None, callbacks= None, initial_epoch=0, aug=None, model='mlp', model_feat='mlp', model_image='mlp', load=None, override_lr=False, train=True):
 	''' Creates an empty dictionary with all possible entries'''
 
 	params={
@@ -25,8 +25,9 @@ def CreateParams(layers= None, lr =None, bs=None, optimizer='sgd', totEpochs= No
         'model': model, # For mixed models, what the image branch gets
         'model_feat': model_feat, # For mixed models, what the feature branch gets
         'model_image': model_image, # For mixed models, what the image branch gets
-		'load': load, # Whether to load model from file
+		'load': load, # If you want to load model from file, put the filename (with path) here
 		'override_lr': override_lr, # Whether to load model from file
+		'train': train, # Whether to train the model (e.g. maybe you only want to load it)
 		}
 
 	return params
