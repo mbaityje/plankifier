@@ -91,6 +91,7 @@ class Ctrain:
 		# Training time
 		parser.add_argument('-totEpochs', type=int, default=5, help="Total number of epochs for the training")
 		parser.add_argument('-initial_epoch', type=int, default=0, help='Initial epoch of the training')
+		parser.add_argument('-earlyStopping', type=int, default=100, help='If >0, we do early stopping, and this number is the patience (how many epochs without improving)')
 
 		# parser.add_argument('-augtype', default='standard', help='Augmentation type')
 		# parser.add_argument('-augparameter', type=float, default=0, help='Augmentation parameter')
@@ -190,9 +191,11 @@ class Ctrain:
 
 		# Callbacks
 		checkpointer    = keras.callbacks.ModelCheckpoint(filepath=sim.params.outpath+'/bestweights.hdf5', monitor='val_loss', verbose=0, save_best_only=True) # save the model at every epoch in which there is an improvement in test accuracy
-		coitointerrotto = keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', patience=200, restore_best_weights=True)
 		logger          = keras.callbacks.callbacks.CSVLogger(sim.params.outpath+'epochs.log', separator=' ', append=False)
-
+		callbacks=[checkpointer, logger]
+		if self.params.earlyStopping>0:
+			earlyStopping   = keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', patience=self.params.earlyStopping, restore_best_weights=True)
+			callbaks.append(earlyStopping)
 
 		self.aug = None if (self.params.aug == False) else ImageDataGenerator(
                         rotation_range=90,
@@ -207,7 +210,7 @@ class Ctrain:
         							bs = self.params.bs,
         							totEpochs = self.params.totEpochs,
         							dropout = self.params.dropout,
-        							callbacks = [checkpointer, logger, coitointerrotto],
+        							callbacks = callbacks,
         							aug = self.aug,
         							model = self.params.model,
         							model_image = self.params.model_image,
