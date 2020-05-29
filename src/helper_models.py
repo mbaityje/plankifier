@@ -170,26 +170,15 @@ class MultiLayerPerceptron:
 
 class Conv2Layer:
 	@staticmethod
-	def Build(input_shape, classes, last_activation='softmax', dropout=None):
-		# initialize the model along with the input shape to be
-		# "channels last" and the channels dimension itself
+	def Build(input_shape, classes, last_activation='softmax'):
 		model = Sequential()
-		# inputShape = (height, width, depth) # This should be the normal situation -  we use channels last
-		# chanDim = -1
-
-		# # if we are using "channels first", update the input shape
-		# # and channels dimension
-		# if K.image_data_format() == "channels_first":
-		# 	inputShape = (depth, height, width)
-		# 	chanDim = 1
+		chanDim = -1
 
 		# Beware, kernel_size is hard coded for the moment, so it might not work if images are small
 		model.add(Conv2D(64, kernel_size=24, activation='relu', input_shape=input_shape))
 		model.add(Conv2D(32, kernel_size=12, activation='relu'))
-		model.add(BatchNormalization(axis=-1))
+		model.add(BatchNormalization(axis=chanDim))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
-		if dropout is not None:
-			model.add(Dropout(dropout))
 		model.add(Flatten())
 
 		model.add(Dense(classes, activation=last_activation))
