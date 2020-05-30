@@ -154,7 +154,7 @@ class CTrainTestSet:
 		To avoid data leakage, the rescaling factors are chosen from the training set
 		'''
 
-		if self.trainX==None:
+		if self.trainX is None:
 			print('No rescaling is performed because the training set is empty, but the truth is that in this case we should have rescaling parameters coming from elsewhere')
 			return
 
