@@ -222,6 +222,7 @@ class Ctrain:
 									layers = self.params.layers, 
 									lr = self.params.lr,
         							bs = self.params.bs,
+        							optimizer = self.params.opt,
         							totEpochs = self.params.totEpochs,
         							dropout = self.params.dropout,
         							callbacks = callbacks,
