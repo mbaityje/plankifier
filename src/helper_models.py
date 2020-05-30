@@ -100,20 +100,29 @@ def MixedModel(trainX, trainY, testX, testY, params):
 	assert(len(trainXi.shape)>len(trainXf.shape))
 	assert(len( testXi.shape)>len( testXf.shape))
 
+	# Number of output nodes of the image and feature branches (will become a user parameter)
+	nout_f = params['layers'][1]
+	nout_i = params['layers'][1]
+
+
 	## First branches - features and images separate
 	# Set model for first branch on features
 	if params['model_feat'] == 'mlp':
-		model_feat = MultiLayerPerceptron.Build2Layer(input_shape=trainXf[0].shape , classes=None, layers=params['layers'])
+		model_feat = MultiLayerPerceptron.Build2Layer(
+			input_shape=trainXf[0].shape , classes=nout_f, last_activation = 'sigmoid', layers=params['layers'])
 	else: 
 		raise NotImplementedError
 
 	# Set model for first branch on images
 	if params['model_image'] == 'mlp':
-		model_image= MultiLayerPerceptron.Build2Layer(input_shape=trainXi[0].shape , classes=None, layers=params['layers'])
+		model_image = MultiLayerPerceptron.Build2Layer(
+			input_shape=trainXi[0].shape, classes=nout_i, last_activation = 'sigmoid', layers=params['layers'])
 	elif params['model_image'] == 'conv2':
-		model_image= Conv2Layer.Build(input_shape=trainXi[0].shape, classes=params['layers'][1], last_activation = 'sigmoid')
+		model_image = Conv2Layer.Build(
+			input_shape=trainXi[0].shape, classes=nout_i, last_activation = 'sigmoid')
 	elif params['model_image'] == 'smallvgg':
-		model_image = SmallVGGNet.Build(input_shape=trainXi[0].shape, classes=params['layers'][1], last_activation = 'sigmoid')
+		model_image = SmallVGGNet.Build(
+			input_shape=trainXi[0].shape, classes=nout_i, last_activation = 'sigmoid')
 	else: 		
 		raise NotImplementedError
 
