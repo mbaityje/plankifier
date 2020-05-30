@@ -158,16 +158,16 @@ def MixedModel(trainX, trainY, testX, testY, params):
 
 class MultiLayerPerceptron:
 	@staticmethod
-	def Build2Layer(input_shape, classes, layers=[64,32]):
+	def Build2Layer(input_shape, classes, layers=[64,32], activation="sigmoid", last_activation="softmax"):
 		model = Sequential()
 		if len(input_shape)==1:
-			model.add(Dense(layers[0], input_shape=input_shape, activation="sigmoid"))
+			model.add(Dense(layers[0], input_shape=input_shape, activation=activation))
 		else:
 			model.add( Flatten(input_shape=input_shape ) )
-			model.add(Dense(layers[0], activation="sigmoid"))
-		model.add(Dense(layers[1], activation="sigmoid"))
-		if classes != None:
-			model.add(Dense(classes, activation="softmax"))
+			model.add(Dense(layers[0], activation=activation))
+		model.add(Dense(layers[1], activation=activation))
+
+		model.add(Dense(classes, activation=last_activation))
 		return model
 
 class Conv2Layer:
