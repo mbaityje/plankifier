@@ -90,15 +90,21 @@ class CTrainTestSet:
 
 
 	def Split(self, test_size=0.2, random_state=12345):
-		''' handles differently the mixed case, because in that case  X is a dataframe'''
-		
+		''' 
+		Splits train and test datasets.
+
+		Allows to put all the data in the test set by choosing test_size=1. This is useful for evaluation.
+
+		Handles differently the mixed case, because in that case  X is a dataframe.
+		'''
+
+				
 		if test_size<1:
 			self.trainX, self.testX, self.trainY, self.testY = train_test_split(self.X, self.y, test_size=test_size, random_state=random_state)
 		else: # This allows us to pack everything into the test set
 			self.trainX, self.testX, self.trainY, self.testY = None, self.X, None, self.y
 
 
-		print('test_size:',test_size)
 		if self.ttkind == 'mixed':
 			# Images
 			if self.trainX is not None:
