@@ -20,7 +20,7 @@ class CTrainTestSet:
 	A class for extracting train and test sets from the original dataset, and preprocessing them.
 	'''
 
-	def __init__(self, X, y, ttkind='mixed', rescale=True, testSplit=0.2, random_state=12345):
+	def __init__(self, X, y, ttkind='mixed', rescale=False, testSplit=0.2, random_state=12345):
 		''' 
 		X and y are dataframes with features and labels
 		'''
@@ -143,6 +143,9 @@ class CTrainTestSet:
 
 
 	def Rescale(self):
+		
+		raise NotImplementedError('No preprocessing allowed until I write a function that allows to make the same preprocessing on validation data')
+		
 		if self.ttkind == 'mixed':
 			self.RescaleMixed()
 		elif self.ttkind == 'feat':
