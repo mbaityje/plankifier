@@ -25,7 +25,7 @@ mkdir -p validation training
 #####################################################
 # Recovery of only the training images and features #
 #####################################################
-#exit
+# Loops allow to change the directory structure in the desired way
 
 #
 # Loop over training datasets
@@ -57,10 +57,11 @@ done
 # Loop over validation datasets
 #
 
-# First copy the folder
-rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/* ./validation/
+# Validation Tommy folder
+rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/tommy_validation ./validation/
 
-# Then, copy the files linked in the folder
+# Counts folder
+rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/counts ./validation/
 countsdir=../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/counts/
 counts_rel_path=$(grep LINUX-PATH-REL validation/counts/path-to-directory.txt|cut -f2 -d' ')
 ls ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/counts//../../../../../lab/2020/annotation_workshop/pictures//year_2018/1530403202/0000000000_subset_static_html/images/00000/| grep -v rawcolor | grep -v binary
