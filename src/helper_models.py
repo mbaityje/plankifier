@@ -9,7 +9,7 @@ from keras import backend as K
 from keras import metrics as metrics
 
 
-def CreateParams(layers= None, lr =None, bs=None, optimizer='sgd', totEpochs= None, dropout=None, callbacks= None, initial_epoch=0, aug=None, model='mlp', model_feat='mlp', model_image='mlp', load=None, override_lr=False, train=True, numclasses=None):
+def CreateParams(layers= None, lr =None, bs=None, optimizer='sgd', totEpochs= None, dropout=None, callbacks= None, initial_epoch=0, aug=None, model=None, model_feat='mlp', model_image='mlp', load_weights=None, override_lr=False, train=True, numclasses=None):
 	''' Creates an empty dictionary with all possible entries'''
 
 	params={
@@ -25,7 +25,7 @@ def CreateParams(layers= None, lr =None, bs=None, optimizer='sgd', totEpochs= No
         'model': model, # For mixed models, what the image branch gets
         'model_feat': model_feat, # For mixed models, what the feature branch gets
         'model_image': model_image, # For mixed models, what the image branch gets
-		'load': load, # If you want to load model from file, put the filename (with path) here
+		'load_weights': load_weights, # If you want to load weights from file, put the filename (with path) here
 		'override_lr': override_lr, # Whether to load model from file
 		'train': train, # Whether to train the model (e.g. maybe you only want to load it)
 		'numclasses': numclasses, # If no labels are given, we must give the number of classes through this variable
@@ -33,60 +33,7 @@ def CreateParams(layers= None, lr =None, bs=None, optimizer='sgd', totEpochs= No
 
 	return params
 
-# def PlainModelOldWorkingVersion(trainX, trainY, testX, testY, params):
-# 	'''
-# 	A wrapper for models that use feature-only or image-only data
-# 	'''
 
-# 	# Model creation - in case we do not load it
-# 	if params['load'] is None:
-
-# 		if params['model'] == 'mlp':
-# 			model = MultiLayerPerceptron.Build2Layer(input_shape=trainX[0].shape, classes=len(trainY[0]), layers=params['layers'])
-# 		elif params['model'] == 'conv2':
-# 			model = Conv2Layer.Build(input_shape=trainX[0].shape, classes=len(trainY[0]), last_activation='softmax')
-# 		elif params['model'] == 'smallvgg':
-# 			model = SmallVGGNet.Build(input_shape=trainX[0].shape, classes=len(trainY[0]))
-# 		else:
-# 			raise NotImplementedError('PlainModel() - chosen model is not implemented')
-
-# 	# Model creation - in case we load it from file
-# 	else:
-# 		model=keras.models.load_model(params['load'])
-
-# 		print('LR of the loaded model:', K.get_value(model.optimizer.lr))
-# 		if params['override_lr']==True:
-# 			K.set_value(model.optimizer.lr, params['lr'])
-# 			print('Setting the LR to', params['lr'])
-
-# 	if params['optimizer'] == 'sgd':
-# 		optimizer=keras.optimizers.SGD(lr=params['lr'], nesterov=True)
-# 	elif params['optimizer'] == 'adam':
-# 		optimizer = keras.optimizers.Adam(learning_rate=params['lr'], beta_1=0.9, beta_2=0.999, amsgrad=False)
-    
-# 	# model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-# 	model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-
-# 	if params['aug'] is None:
-
-# 		history = model.fit(
-# 							trainX, trainY, 
-# 							validation_data=(testX, testY), 
-# 							epochs=params['totEpochs'], 
-# 							batch_size=params['bs'], 
-# 							callbacks=params['callbacks'],
-# 							initial_epoch = params['initial_epoch'])
-# 	else:
-# 		history = model.fit_generator(
-# 							params['aug'].flow(trainX, trainY, batch_size=params['bs']), 
-# 							validation_data=(testX, testY), 
-# 							epochs=params['totEpochs'], 
-# 							callbacks=params['callbacks'],
-# 							initial_epoch = params['initial_epoch'],
-# 							steps_per_epoch=len(trainX)//params['bs']
-# 							)
-	
-# 	return history, model
 
 def PlainModel(trainX, trainY, testX, testY, params):
 	'''
@@ -98,33 +45,45 @@ def PlainModel(trainX, trainY, testX, testY, params):
 	#
 	# Define model architecture
 	#
-	if params['model'] == 'mlp':
-		model = MultiLayerPerceptron.Build2Layer(input_shape=trainX[0].shape, classes=numclasses, layers=params['layers'])
-	elif params['model'] == 'conv2':
-		model = Conv2Layer.Build(input_shape=trainX[0].shape, classes=numclasses, last_activation='softmax')
-	elif params['model'] == 'smallvgg':
-		model = SmallVGGNet.Build(input_shape=trainX[0].shape, classes=numclasses)
-	else:
-		raise NotImplementedError('PlainModel() - chosen model is not implemented')
+	if params['model'] is None:
 
-	# Initialize weights
-	if params['load'] is None:
-		print('At the current state, we are taking the default initialization, whatever it is. This must change.')
+		print('np.shape(trainX[0]):',np.shape(trainX[0]))
+		modelkind = params['model_image'] if np.shape(trainX[0])>2 else params['model_feat']
+
+
+		# Define model
+		if modelkind == 'mlp':
+			model = MultiLayerPerceptron.Build2Layer(input_shape=trainX[0].shape, classes=numclasses, layers=params['layers'])
+		elif modelkind == 'conv2':
+			model = Conv2Layer.Build(input_shape=trainX[0].shape, classes=numclasses, last_activation='softmax')
+		elif modelkind == 'smallvgg':
+			model = SmallVGGNet.Build(input_shape=trainX[0].shape, classes=numclasses)
+		else:
+			raise NotImplementedError('PlainModel() - chosen model is not implemented')
+
+		# Initialize weights
+		if params['load_weights'] is None:
+			print('At the current state, we are taking the default weight initialization, whatever it is. This must change.')
+		else:
+			model.load_weights(params['load_weights'])
+		
+		# Set Optimizer
+		if params['optimizer'] == 'sgd':
+			optimizer=keras.optimizers.SGD(lr=params['lr'], nesterov=True)
+		elif params['optimizer'] == 'adam':
+			optimizer = keras.optimizers.Adam(learning_rate=params['lr'], beta_1=0.9, beta_2=0.999, amsgrad=False)
+
+		model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
+
+
 	else:
-		print('Loading only the weights')
-		model.load_weights(params['load'])
+		model = params['model']
+		if params['load_weights'] is not None:
+			model.load_weights(params['load_weights'])
 		# print('LR of the loaded model:', K.get_value(model.optimizer.lr))
 		# if params['override_lr']==True:
 		# 	K.set_value(model.optimizer.lr, params['lr'])
 		# 	print('Setting the LR to', params['lr'])
-
-	if params['optimizer'] == 'sgd':
-		optimizer=keras.optimizers.SGD(lr=params['lr'], nesterov=True)
-	elif params['optimizer'] == 'adam':
-		optimizer = keras.optimizers.Adam(learning_rate=params['lr'], beta_1=0.9, beta_2=0.999, amsgrad=False)
-
-	# model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-	model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 
 	if params['train']:
 
