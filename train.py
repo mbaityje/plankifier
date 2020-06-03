@@ -6,6 +6,8 @@
 
 # DA FARE
 # 
+# - Data preprocessing should be consistent
+# - helper_data: make sure that images are always divided by 255
 # - Scan (includendo architettura e data Augmentation)
 # - implement logging
 # - condizioni iniziali
@@ -55,7 +57,8 @@ class Ctrain:
 		elif mode == 'args':
 			self.ReadArgs(string=sys.argv[1:])
 		else:
-			print('Unknown ')
+			print('Unknown parameter mode',mode)
+			raise NotImplementedError
 		return
 
 	def ReadArgs(self, string=None):
@@ -68,7 +71,8 @@ class Ctrain:
 		parser.add_argument('-datapath', default='./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/', help="Directory with the data.")
 		parser.add_argument('-outpath', default='./out/', help="directory where you want the output saved")
 		parser.add_argument('-load', default=None, help='Path to a previously trained model that should be loaded.')
-		parser.add_argument('-override_lr', action='store_true', help='If true, when loading a previously trained model it discards its LR in favor of args.lr')
+		parser.add_argument('-saveModelName', default='keras_model.h5', help='Name of the model when it is saved.')
+		# parser.add_argument('-override_lr', action='store_true', help='If true, when loading a previously trained model it discards its LR in favor of args.lr')
 		# User experience
 		parser.add_argument('-verbose', action='store_true', help="Print many messages on screen.")
 		parser.add_argument('-plot', action='store_true', help="Plot loss and accuracy during training once the run is over.")
@@ -88,6 +92,7 @@ class Ctrain:
 		parser.add_argument('-class_select', nargs='*', default=None, help='List of classes to be looked at (put the class names one by one, separated by spaces). If None, all available classes are studied.')
 		parser.add_argument('-datakind', choices=['mixed','feat','image'], default='mixed', help="Which data to load: features, images, or both")
 		parser.add_argument('-ttkind', choices=['mixed','feat','image'], default='mixed', help="Which data to use in the test and training sets: features, images, or both")
+		parser.add_argument('-training_data', choices=[True,False], default=True, help="This is to cope with the different directory structures that I was given. Sometimes the class folder has an extra folder inside, called training_data. For the moment, this happens in the training images they gave me, but not with the validation images.")
 		# Training time
 		parser.add_argument('-totEpochs', type=int, default=5, help="Total number of epochs for the training")
 		parser.add_argument('-initial_epoch', type=int, default=0, help='Initial epoch of the training')
@@ -120,7 +125,7 @@ class Ctrain:
 
 		# flatten_image = True if args.model in ['mlp'] else False
 		if args.initial_epoch>=args.totEpochs:
-			print('The initial epoch is already equalr or larger than the target number of epochs, so there is no need to do anything. Exiting...')
+			print('The initial epoch is already equal or larger than the target number of epochs, so there is no need to do anything. Exiting...')
 			raise SystemExit
 
 		if args.initial_epoch<0:
@@ -146,12 +151,27 @@ class Ctrain:
 		''' Create a unique output directory, and put inside it a file with the simulation parameters '''
 		# outDir = self.params.outpath+'/'+self.params.model+'_mix/'+datetime.datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")+'/'
 		pathlib.Path(self.params.outpath).mkdir(parents=True, exist_ok=True)
-		self.fsummary=open(self.params.outpath+'params.txt','w')
+		self.WriteParams()
+		return
+
+	def WriteParams(self):
+		''' Writes a txt file with the simulation parameters '''
+		self.fsummary=open(self.params.outpath+'/params.txt','w')
 		print(self.params, file=self.fsummary); 
 		self.fsummary.flush()
 		return
 
-	def LoadData(self, datapath=None, L=None, class_select=None, datakind=None):
+	def UpdateParams(self, **kwargs):
+		''' Updates the parameters given in kwargs, and updates params.txt'''
+		self.paramsDict = vars(self.params)
+		if kwargs is not None:
+			for key, value in kwargs.items():
+				self.paramsDict[key] = value
+		self.WriteParams()
+
+		return
+
+	def LoadData(self, datapath=None, L=None, class_select=None, datakind=None, training_data=True):
 		''' 
 		Loads dataset using the function in the Cdata class.
 		Acts differently in case it is the first time or not that the data is loaded
@@ -160,14 +180,15 @@ class Ctrain:
 		# Default values
 		if 	   datapath == None:     datapath = self.params.datapath
 		if 			  L == None:            L = self.params.L
-		if class_select == None: class_select = self.params.class_select
+		# if class_select == None: class_select = self.params.class_select # I think this one is wrong, because class_select==None has an explicit meaning
 		if 	   datakind == None:     datakind = self.params.datakind
+		if training_data== None:training_data = self.params.training_data
 
 		# Initialize or Load Data Structure
-		if self.data==None:
-			self.data = hd.Cdata(datapath, L, class_select, datakind)
+		if self.data is None:
+			self.data = hd.Cdata(datapath, L, class_select, datakind, training_data=training_data)
 		else:
-			self.data.Load(datapath, L, class_select ,datakind)
+			self.data.Load(datapath, L, class_select ,datakind, training_data=training_data)
 
 		# Reset parameters	
 		self.params.datapath = self.data.datapath
@@ -203,9 +224,12 @@ class Ctrain:
 
 	def Train(self):
 
+		# Save classes
+		np.save(self.params.outpath+'/classes.npy', self.tt.lb.classes_)
+
 		# Callbacks
-		checkpointer    = keras.callbacks.ModelCheckpoint(filepath=sim.params.outpath+'/bestweights.hdf5', monitor='val_loss', verbose=0, save_best_only=True) # save the model at every epoch in which there is an improvement in test accuracy
-		logger          = keras.callbacks.callbacks.CSVLogger(sim.params.outpath+'epochs.log', separator=' ', append=False)
+		checkpointer    = keras.callbacks.ModelCheckpoint(filepath=self.params.outpath+'/bestweights.hdf5', monitor='val_loss', verbose=0, save_best_only=True) # save the model at every epoch in which there is an improvement in test accuracy
+		logger          = keras.callbacks.callbacks.CSVLogger(self.params.outpath+'/epochs.log', separator=' ', append=False)
 		callbacks=[checkpointer, logger]
 		if self.params.earlyStopping>0:
 			earlyStopping   = keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', patience=self.params.earlyStopping, restore_best_weights=True)
@@ -231,6 +255,7 @@ class Ctrain:
         							model_image = self.params.model_image,
         							model_feat  = self.params.model_feat,
         							load = self.params.load,
+        							initial_epoch=self.params.initial_epoch
         							)
 
 		# train the neural network
@@ -243,6 +268,9 @@ class Ctrain:
 
 		trainingTime=time.time()-start
 		print('Training took',trainingTime/60,'minutes')
+
+		print('Saving the last model. These are not the best weights, they are the last ones. For the best weights use the callback output (bestweights.hdf5)]')
+		self.SaveModel()
 
 		return
 
@@ -262,8 +290,6 @@ class Ctrain:
 			self.params.load = modelfile
 		self.model=keras.models.load_model(self.params.load)
 
-		raise Warning('x-x-! We should be updating all the parameters with the loaded ones!!!!')
-		
 		return
 
 
@@ -321,7 +347,8 @@ class Ctrain:
 
 
 	def SaveModel(self):
-		raise NotImplementedError
+
+		self.model.save(self.params.outpath+'/'+self.params.saveModelName, overwrite=True, include_optimizer=True)
 		return
 
 
