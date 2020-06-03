@@ -47,13 +47,13 @@ def PlainModel(trainX, trainY, testX, testY, params):
 	#
 	if params['model'] is None:
 
-		print('np.shape(trainX[0]):',np.shape(trainX[0]))
-        if len(np.shape(trainX[0]))==3:
-		    modelkind = params['model_image']
-        elif len(np.shape(trainX[0]))==1:
-            modelkind = params['model_feat']
-        else:
-            raise RuntimeError('PlainModel(): The shape of the input is neither 1D (feat) nor 3D (image)')
+		# See whether input is images or features
+		if len(np.shape(trainX[0]))==3:
+			modelkind = params['model_image']
+		elif len(np.shape(trainX[0]))==1:
+			modelkind = params['model_feat']
+		else:
+			raise RuntimeError('PlainModel(): The shape of the input is neither 1D (feat) nor 3D (image)')
 
 
 		# Define model

@@ -93,16 +93,17 @@ npimages=hd.LoadImageList(im_names, params['L'], show=False)
 ## Now Create the Model
 # Create the context
 simPred=t.Ctrain()
-#simPred.UpdateParams(outpath=args.outpath, class_select=classes)
 
 # If saved model exists, we load the model and possibly load the bestweights
-if os.path.exists(args.modelpath+'/'+args.modelname):
-        # Load the model
-        simPred.LoadModel(args.modelpath+'/'+args.modelname)
+mname=args.modelpath+'/'+args.modelname
+if os.path.exists(mname):
 
-        # Load best weights
-        if (args.weightsname is not None) and (os.path.exists(args.modelpath+'/'+args.weightsname) ):
-                simPred.model.load_weights(args.modelpath+'/'+args.weightsname)
+	# Load the model
+	simPred.LoadModel(mname)
+
+	# Load best weights
+	if (args.weightsname is not None) and (os.path.exists(args.modelpath+'/'+args.weightsname) ):
+		simPred.model.load_weights(args.modelpath+'/'+args.weightsname)
 
 # If saved model does not exist, we create a model using the read params, and load bestweights
 else:
@@ -111,24 +112,8 @@ else:
                 
 
 
-raise SystemExit('fine prova')
-
-
-# Initialize and load model
-# model=keras.models.load_model(modelfile)
-params = {
-		'model': 'conv2', 
-		'train': False, 
-		'load': modelfile,
-		'numclasses': len(classes),
-		'lr': 0, # This number should not be relevant, since we don't train
-		}
-history, model = hm.PlainModel(npimages, None, None, None, params)
-
-
-
 # Print prediction
-probs=model.predict(npimages)
+probs=simPred.model.predict(npimages)
 predictions=probs.argmax(axis=1)  # The class that the classifier would bet on
 confidences=probs.max(axis=1)     # equivalent to: [probs[i][predictions[i]] for i in range(len(probs))] 
 predictions_names=np.array([classes[predictions[i]] for i in range(len(npimages))],dtype=object)
@@ -158,14 +143,24 @@ pr=np.array([PR(prob) for prob in probs], dtype=float)
 ##########
 # OUTPUT #
 ##########
+
+# Create output directory
+pathlib.Path(args.outpath).mkdir(parents=True, exist_ok=True)
+
+# Choose whether to display full filenames or not
 if not args.fullname:
 	im_names=np.array([os.path.basename(im) for im in im_names],dtype=object)
 
-
+#
+# Output to file
+#
 header='Name Prediction Confidence Prediction(2ndGuess) Confidence(2ndGuess) participation-ratio'
-if not args.notxt:
-	np.savetxt(args.preddir+'/'+args.predname, np.c_[im_names, predictions_names, confidences, predictions2_names, confidences2, pr], fmt='%s %s %.3f %s %.3f %.3f', header=header)
+np.savetxt(args.outpath+'/'+args.predname, np.c_[im_names, predictions_names, confidences, predictions2_names, confidences2, pr], fmt='%s %s %.3f %s %.3f %.3f', header=header)
 
+
+#
+# Output to screen
+#
 print(header)
 for i in range(len(npimages)):
 	
