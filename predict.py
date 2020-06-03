@@ -44,7 +44,7 @@ params, classes = hd.ReadArgsTxt(args.modelpath)
 
 
 
-sys.exit('fine prova')
+raise SystemExit('fine prova')
 
 
 #If PR filter is unset, just set it to the maximum value that it can assume (i.e. the number of classes)
