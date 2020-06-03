@@ -7,7 +7,7 @@ from keras.layers.core import Activation, Flatten, Dropout, Dense
 from keras.layers import concatenate
 from keras import backend as K
 from keras import metrics as metrics
-
+import numpy as np
 
 def CreateParams(layers= None, lr =None, bs=None, optimizer='sgd', totEpochs= None, dropout=None, callbacks= None, initial_epoch=0, aug=None, model=None, model_feat='mlp', model_image='mlp', load_weights=None, override_lr=False, train=True, numclasses=None):
 	''' Creates an empty dictionary with all possible entries'''
@@ -48,7 +48,12 @@ def PlainModel(trainX, trainY, testX, testY, params):
 	if params['model'] is None:
 
 		print('np.shape(trainX[0]):',np.shape(trainX[0]))
-		modelkind = params['model_image'] if np.shape(trainX[0])>2 else params['model_feat']
+                if len(np.shape(trainX[0]))==3:
+		        modelkind = params['model_image']
+                elif len(np.shape(trainX[0]))==1:
+                        modelkind = params['model_feat']
+                else:
+                        raise RuntimeError('PlainModel(): The shape of the input is neither 1D (feat) nor 3D (image)')
 
 
 		# Define model

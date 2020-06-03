@@ -14,6 +14,7 @@ Launch as:
 import os, keras, argparse, re, glob, pathlib, numpy as np
 import matplotlib.pyplot as plt, seaborn as sns
 from src import helper_data as hd, helper_models as hm
+import train as t
 # from PIL import Image
 import tensorflow as tf
 
@@ -28,7 +29,7 @@ parser.add_argument('-predname', default='predict.txt', help='name of the file w
 parser.add_argument('-fullname', action='store_true', help='Output contains full image path instead of only the name')
 parser.add_argument('-verbose', action='store_true', help='Print lots of useless tensorflow information')
 parser.add_argument('-PRfilter', default=None, type=float, help='Give a threshold value, a>1. Screen output is filtered with the value of the participation ratio (PR) and only includes predictions with PR<a.')
-parser.add_argument('-notxt', action='store_true', help='Avoid writing output to file (only have screen output)')
+parser.add_argument('-outpath', default='./prova_predict/', help='Output path')
 args=parser.parse_args()
 
 if not args.verbose:
@@ -42,9 +43,6 @@ if not os.path.isdir(args.testdir):
 # Read parameters of the model that is loaded
 params, classes = hd.ReadArgsTxt(args.modelpath)
 
-
-
-raise SystemExit('fine prova')
 
 
 #If PR filter is unset, just set it to the maximum value that it can assume (i.e. the number of classes)
@@ -71,22 +69,50 @@ else:
 
 
 # If no model name is given, select the newest one contained in the directory
-if args.weightsname is None:
-	from stat import S_ISREG, ST_CTIME, ST_MODE
-	# Choose model. We load the latest created .hdf5 file, since later is better
-	entries = [modelpath+'/'+entry for entry in os.listdir(modelpath) if '.hdf5' in entry]
-	entries = ((os.stat(path), path) for path in entries)
-	entries = ((stat[ST_CTIME], path) for stat, path in entries if S_ISREG(stat[ST_MODE]))
-	modelfile=sorted(entries)[-1][1]
-	print('Loading last generated model'.format(modelfile))
-else:
-	modelfile = args.modelpath+args.weightsname
-	print('modelfile: {}'.format(modelfile))
+#if args.weightsname is None:
+#	from stat import S_ISREG, ST_CTIME, ST_MODE
+#	# Choose model. We load the latest created .hdf5 file, since later is better
+#	entries = [modelpath+'/'+entry for entry in os.listdir(modelpath) if '.h5' in entry]
+#	entries = ((os.stat(path), path) for path in entries)
+#	entries = ((stat[ST_CTIME], path) for stat, path in entries if S_ISREG(stat[ST_MODE]))
+#	modelfile=sorted(entries)[-1][1]
+#	print('Loading last generated model'.format(modelfile))
+#else:
+#	modelfile = args.modelpath+args.weightsname
+#	print('modelfile: {}'.format(modelfile))
+
+
 
 
 
 # Load images
-npimages=hd.LoadImageList(im_names, L, show=False)
+npimages=hd.LoadImageList(im_names, params['L'], show=False)
+
+
+
+## Now Create the Model
+# Create the context
+simPred=t.Ctrain()
+#simPred.UpdateParams(outpath=args.outpath, class_select=classes)
+
+# If saved model exists, we load the model and possibly load the bestweights
+if os.path.exists(args.modelpath+'/'+args.modelname):
+        # Load the model
+        simPred.LoadModel(args.modelpath+'/'+args.modelname)
+
+        # Load best weights
+        if (args.weightsname is not None) and (os.path.exists(args.modelpath+'/'+args.weightsname) ):
+                simPred.model.load_weights(args.modelpath+'/'+args.weightsname)
+
+# If saved model does not exist, we create a model using the read params, and load bestweights
+else:
+        raise NotImplementedError('NOT IMPLEMENTED: If saved model does not exist, we create a model using the read params, and load bestweights. For the moment, we need the model to exist.')
+
+                
+
+
+raise SystemExit('fine prova')
+
 
 # Initialize and load model
 # model=keras.models.load_model(modelfile)

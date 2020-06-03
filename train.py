@@ -70,7 +70,7 @@ class Ctrain:
 		# I/O
 		parser.add_argument('-datapath', default='./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/', help="Directory with the data.")
 		parser.add_argument('-outpath', default='./out/', help="directory where you want the output saved")
-		parser.add_argument('-load', default=None, help='Path to a previously trained model that should be loaded.')
+		parser.add_argument('-load_weights', default=None, help='Model weights that should be loaded.')
 		parser.add_argument('-saveModelName', default='keras_model.h5', help='Name of the model when it is saved.')
 		# parser.add_argument('-override_lr', action='store_true', help='If true, when loading a previously trained model it discards its LR in favor of args.lr')
 		# User experience
