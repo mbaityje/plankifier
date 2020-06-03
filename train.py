@@ -81,7 +81,7 @@ class Ctrain:
 		parser.add_argument('-bs', type=int, default=32, help="Batch size")
 		parser.add_argument('-lr', type=float, default=0.00005, help="Learning Rate")
 		parser.add_argument('-aug', action='store_true', help="Perform data augmentation. Augmentation parameters are hard-coded.")
-		parser.add_argument('-model', choices=['mlp','conv2','smallvgg'], default='mlp', help='The model. MLP gives decent results, conv2 is the best, smallvgg overfits (*validation* accuracy oscillates).')
+		# parser.add_argument('-model', choices=['mlp','conv2','smallvgg'], default='mlp', help='The model. MLP gives decent results, conv2 is the best, smallvgg overfits (*validation* accuracy oscillates).')
 		parser.add_argument('-model_image', choices=['mlp','conv2','smallvgg'], default='mlp', help='For mixed data models, tells what model to use for the image branch.')
 		parser.add_argument('-model_feat', choices=['mlp'], default='mlp', help='For mixed data models, tells what model to use for the feature branch.')
 		parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Layers for MLP")
@@ -123,7 +123,6 @@ class Ctrain:
 		if args.L<8:
 			raise ValueError('Linear size of the images <8 pixels is too small to be wanted. Abort.')
 
-		# flatten_image = True if args.model in ['mlp'] else False
 		if args.initial_epoch>=args.totEpochs:
 			print('The initial epoch is already equal or larger than the target number of epochs, so there is no need to do anything. Exiting...')
 			raise SystemExit
@@ -149,7 +148,6 @@ class Ctrain:
 
 	def CreateOutDir(self):
 		''' Create a unique output directory, and put inside it a file with the simulation parameters '''
-		# outDir = self.params.outpath+'/'+self.params.model+'_mix/'+datetime.datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")+'/'
 		pathlib.Path(self.params.outpath).mkdir(parents=True, exist_ok=True)
 		self.WriteParams()
 		return
@@ -251,10 +249,10 @@ class Ctrain:
         							dropout = self.params.dropout,
         							callbacks = callbacks,
         							aug = self.aug,
-        							model = self.params.model,
+        							model = self.model,
         							model_image = self.params.model_image,
         							model_feat  = self.params.model_feat,
-        							load = self.params.load,
+        							load_weights = self.params.load_weights,
         							initial_epoch=self.params.initial_epoch
         							)
 
