@@ -194,8 +194,7 @@ class Cpred:
 if __name__=='__main__':
 
 	parser = argparse.ArgumentParser(description='Load a model and use it to make predictions on images')
-	# parser.add_argument('-modelfullname', nargs='+', default=['./out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5','./out/trained-models/conv2_image_sgd_aug_b32_lr5e-5_L128_t1000/keras_model.h5','./out/trained-models/smallvgg_image_sgd_aug_b8_lr5e-6_L192_t5000/keras_model.h5','./out/trained-models/smallvgg_image_adam_aug_b32_lr1e-3_L128_t5000/keras_model.h5'], help='Name of the models to be loaded. Separate them with a space. If more than one model is input, applies ensembling. Must include path')
-	parser.add_argument('-modelfullname', nargs='+', default=['./util-files/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5','./util-files/trained-models/conv2_image_sgd_aug_b32_lr5e-5_L128_t1000/keras_model.h5','./util-files/trained-models/smallvgg_image_sgd_aug_b8_lr5e-6_L192_t5000/keras_model.h5','./util-files/trained-models/smallvgg_image_adam_aug_b32_lr1e-3_L128_t5000/keras_model.h5'], help='Name of the models to be loaded. Separate them with a space. If more than one model is input, applies ensembling. Must include path')
+	parser.add_argument('-modelfullname', nargs='+', default=['./out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5'], help='name of the model to be loaded, must include path')
 	parser.add_argument('-weightsname', default='bestweights.hdf5', help='name of the model to be loaded. If None, choose latest created hdf5 file in the directory')
 	parser.add_argument('-testdir', default='data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/', help='directory of the test data')
 	parser.add_argument('-predname', default='predict', help='name of the file with the model predictions')
