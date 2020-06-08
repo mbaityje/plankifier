@@ -202,8 +202,8 @@ if __name__=='__main__':
 	parser.add_argument('-verbose', action='store_true', help='Print lots of useless tensorflow information')
 	parser.add_argument('-PRfilter', default=None, type=float, help='Give a threshold value, a>1. Screen output is filtered with the value of the participation ratio (PR) and only includes predictions with PR<a.')
 	parser.add_argument('-outpath', default='./prova_predict/', help='Output path')
-	parser.add_argument('-em', default='unanimity', choices=['unanimity','majority','leader','weighted-majority'], help='Ensembling method.')
-	parser.add_argument('-absthres', default=0, type=float, help='Abstention threshold on the confidence.')
+	parser.add_argument('-em', default='unanimity', choices=['unanimity','majority','leader','weighted-majority'], help='Ensembling method. Weighted Majority implements abstention in a different way (a good value is 1).')
+	parser.add_argument('-absthres', default=0, type=float, help='Abstention threshold on the confidence (a good value is 0.8, except for weighted-majority, where it can even be >1).')
 	args=parser.parse_args()
 
 	# Predictions for every model and image
@@ -220,7 +220,10 @@ if __name__=='__main__':
 	classnames=predictor.classes
 
 
-	# Unanimity rule
+	#
+	# Ensembling
+	#
+	guesses=[]
 	for iim,im_name in enumerate(predictor.im_names):
 		predictions = np.array([predictors[imod].predictions[iim] for imod in range(nmodels)])
 		confidences = np.array([predictors[imod].confidences[iim] for imod in range(nmodels)])
@@ -228,7 +231,7 @@ if __name__=='__main__':
 		# print('\n',predictions, confidences)
 
 		# Abstention
-		if args.absthres>0:
+		if args.absthres>0 and (args.em!='weighted-majority'):
 			predictions = predictions[list( filter(lambda i: confidences[i]> args.absthres, range(nmodels)))]
 			confidences = confidences[list( filter(lambda i: confidences[i]> args.absthres, range(nmodels)))]
 
@@ -237,9 +240,9 @@ if __name__=='__main__':
 		if args.em == 'unanimity': # Predict only if all models agree
 			if len(set(predictions))==1:
 				# Since there is unanimity, I can use the prediction of the last one
-				print(im_name, classnames[predictor.predictions[iim]])
+				guess=(im_name, classnames[predictor.predictions[iim]])
 			else:
-				print(im_name, 'Unclassified')
+				guess=(im_name, 'Unclassified')
 
 		elif args.em == 'majority': # Predict with most populat selection
 
@@ -248,17 +251,17 @@ if __name__=='__main__':
 				counter=Counter(predictions)
 				amax = np.argmax( list(counter.values()) )
 				imaj = list(counter.keys())[amax]
-				print(im_name, classnames[imaj])
+				guess=(im_name, classnames[imaj])
 			else:
-				print(im_name, 'Unclassified')
+				guess=(im_name, 'Unclassified')
 
 		elif args.em == 'leader': # Follow-the-leader: only give credit to the most confident prediction
 
 			if len(set(predictions))>0:
 				ileader = np.argmax(confidences)
-				print(im_name, classnames[predictions[ileader]])
+				guess=(im_name, classnames[predictions[ileader]])
 			else:
-				print(im_name, 'Unclassified')
+				guess=(im_name, 'Unclassified')
 
 		elif args.em == 'weighted-majority': # Weighted Majority (like majority, but each is weighted by their confidence)
 			if len(set(predictions))>0:
@@ -270,12 +273,19 @@ if __name__=='__main__':
 							cum_conf[ic]+=confidences[imod]
 				amax = np.argmax(list(cum_conf.values())) 
 				imaj = list(cum_conf.keys())[amax]
-				print(im_name, classnames[imaj])
+
+				if list(cum_conf.values())[amax]>args.absthres:
+					guess=(im_name, classnames[imaj]) 
+				else:
+					guess=(im_name, 'Unclassified')
 			else:
-				print(im_name, 'Unclassified')
+				guess=(im_name, 'Unclassified')
+
+		print("{} {}".format(guess[0], guess[1]) )
+		guesses.append(guess)
 
 
-
-
-
+# Create output directory and save predictions
+pathlib.Path(args.outpath).mkdir(parents=True, exist_ok=True)
+np.savetxt(args.outpath+'/'+args.predname+'.txt', guesses, fmt='%s %s')
 

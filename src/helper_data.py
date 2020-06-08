@@ -272,7 +272,7 @@ class Cdata:
 		return
 
 
-def ReadArgsTxt(modelpath):
+def ReadArgsTxt(modelpath, verbose=False):
 	'''
 	Looks with what arguments the model was trained, and makes a series of consistency checks.
 	Reads the following two files:
@@ -280,8 +280,6 @@ def ReadArgsTxt(modelpath):
 	- classes.npy (numpy file with the list of classes)
 
 	'''
-
-	print('MODELPATH:',modelpath)
 	argsname=modelpath+'/params.txt'
 	params={'L':None,
 			'model':None,
@@ -295,28 +293,30 @@ def ReadArgsTxt(modelpath):
 	# Read Arguments
 	with open(argsname,'r') as fargs:
 		args=fargs.read()
-		print('---------- Arguments for generation of the model ----------')
-		print('{} contains the following parameters:\n{}'.format(argsname,args))
-		print('-----------------------------------------------------------')
+		if verbose:
+			print('---------- Arguments for generation of the model ----------')
+			print('{} contains the following parameters:\n{}'.format(argsname,args))
+			print('-----------------------------------------------------------')
 		for s in re.split('[\,,\),\(]',args):
 			if 'L=' in s:
 				params['L']=np.int64(re.search('(\d+)',s).group(1))
 			if 'model=' in s:
 				params['model']=re.search('=\'(.+)\'$',s).group(1)
-			if 'layers' in s: #first layer
+			if 'layers=' in s: #first layer
 				params['layers'][0]=np.int64(re.search('=\[(.+)$',s).group(1))
 			if re.match('^ \d+',s): #second layer
 				params['layers'][1]=np.int64(re.match('^ (\d+)',s).group(1))
-			if 'datapath' in s:
+			if 'datapath=' in s:
 				params['datapath']=re.search('=\'(.+)\'$',s).group(1)
-			if 'outpath' in s:
+			if 'outpath=' in s:
 				params['outpath']=re.search('=\'(.+)\'$',s).group(1)
 			if 'datakind=' in s:
 				params['datakind']=re.search('=\'(.+)\'$',s).group(1)
 			if 'ttkind=' in s:
 				params['ttkind']=re.search('=\'(.+)\'$',s).group(1)
-		print('We retrieve this subset of parameters:\n',params)
-		print('-----------------------------------------------------------')
+		if verbose:
+			print('We retrieve this subset of parameters:\n',params)
+			print('-----------------------------------------------------------')
 
 	def OutputClassPaths():
 		''' Auxiliary function for error messages '''

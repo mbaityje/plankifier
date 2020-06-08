@@ -40,12 +40,13 @@ from sklearn.metrics import classification_report
 ###############
 
 class Ctrain:
-	def __init__(self, initMode='default'):
+	def __init__(self, initMode='default', verbose=True):
 		self.data=None
 		self.trainSize=None
 		self.testSize=None
 		self.model=None
 		self.opt=None
+		self.verbose=False
 		self.SetParameters(mode=initMode)
 
 		return
@@ -112,8 +113,8 @@ class Ctrain:
 		self.ArgsCheck(args)
 		self.params=args
 
-		print(args)
-
+		if self.verbose:
+			print(args)
 
 		return
 
