@@ -280,6 +280,8 @@ def ReadArgsTxt(modelpath):
 	- classes.npy (numpy file with the list of classes)
 
 	'''
+
+	print('MODELPATH:',modelpath)
 	argsname=modelpath+'/params.txt'
 	params={'L':None,
 			'model':None,
@@ -297,7 +299,7 @@ def ReadArgsTxt(modelpath):
 		print('{} contains the following parameters:\n{}'.format(argsname,args))
 		print('-----------------------------------------------------------')
 		for s in re.split('[\,,\),\(]',args):
-			if 'L' in s:
+			if 'L=' in s:
 				params['L']=np.int64(re.search('(\d+)',s).group(1))
 			if 'model=' in s:
 				params['model']=re.search('=\'(.+)\'$',s).group(1)
