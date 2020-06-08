@@ -6,7 +6,12 @@ Next upgrades:
 	- Put all data in a single pandas dataframe
 
 Launch as:
-	python predict.py -modelpath='./out/conv2/2020-02-06_17h56m55s/' -weightsname='bestweights.hdf5' -testdir='../Q-AQUASCOPE/pictures/annotation_classifier/tommy_for_classifier/tommy_validation/images/' -target='daphnia'
+	python predict.py -modelfullname='./out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5'
+
+
+The program can also handle multiple models, and apply some ensemble rule. for example:
+	python predict.py -testdir 'data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/' -modelfullname './out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5' './out/trained-models/conv2_image_sgd_aug_b32_lr5e-5_L128_t1000/keras_model.h5'
+
 
 '''
 
@@ -17,6 +22,7 @@ from src import helper_data as hd, helper_models as hm
 import train as t
 # from PIL import Image
 import tensorflow as tf
+from collections import Counter
 
 # Participation ratio
 def PR(vec):
@@ -49,6 +55,7 @@ class Cpred:
 		self.im_names = self.GetImageNames(self.testdir)
 
 		# Read parameters of the model that is loaded
+		if modelpath is None: raise ValueError('CPred: modelpath cannot be None.')
 		self.params, self.classes = hd.ReadArgsTxt(self.modelpath)
 
 		# Load images
@@ -91,8 +98,7 @@ class Cpred:
 
 		## Now Create the Model
 		# Create the context
-		self.simPred=t.Ctrain()
-
+		self.simPred=t.Ctrain(verbose=False)
 
 		# If saved model exists, we load the model and possibly load the bestweights
 		mname=self.modelpath+'/'+self.modelname
@@ -115,7 +121,7 @@ class Cpred:
 
 
 	@staticmethod
-	def GetImageNames(testdir):
+	def GetImageNames(testdir, verbose=False):
 		''' Checks that given paths are good, and obtains the list of images contained in `testdir` '''
 
 		# Check that testdir is a directory
@@ -125,7 +131,8 @@ class Cpred:
 
 		# Read names of images that we want to predict on.
 		im_names=np.array(glob.glob(testdir+'/*.jpeg'),dtype=object)
-		print('\nWe will predict the class of {} images'.format(len(im_names)))
+		if verbose:
+			print('\nWe will predict the class of {} images'.format(len(im_names)))
 
 		# Check that the paths contained images
 		if len(im_names)<1:
@@ -134,7 +141,8 @@ class Cpred:
 			print('Content of the folder:',os.listdir(testdir))
 			raise IOError()
 		else:
-			print('There are {} images in {}'.format(len(im_names), testdir))
+			if verbose:
+				print('There are {} images in {}'.format(len(im_names), testdir))
 
 		return im_names
 
@@ -186,21 +194,88 @@ class Cpred:
 if __name__=='__main__':
 
 	parser = argparse.ArgumentParser(description='Load a model and use it to make predictions on images')
-	parser.add_argument('-modelname', default='keras_model.h5', help='name of the model to be loaded')
-	parser.add_argument('-modelpath', default='./util-files/trained-conv2/', help='directory of the model to be loaded')
+	parser.add_argument('-modelfullname', nargs='+', default=['./out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5'], help='name of the model to be loaded, must include path')
 	parser.add_argument('-weightsname', default='bestweights.hdf5', help='name of the model to be loaded. If None, choose latest created hdf5 file in the directory')
 	parser.add_argument('-testdir', default='data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/', help='directory of the test data')
-	parser.add_argument('-predname', default='predict.txt', help='name of the file with the model predictions')
+	parser.add_argument('-predname', default='predict', help='name of the file with the model predictions')
 	parser.add_argument('-fullname', action='store_true', help='Output contains full image path instead of only the name')
 	parser.add_argument('-verbose', action='store_true', help='Print lots of useless tensorflow information')
 	parser.add_argument('-PRfilter', default=None, type=float, help='Give a threshold value, a>1. Screen output is filtered with the value of the participation ratio (PR) and only includes predictions with PR<a.')
 	parser.add_argument('-outpath', default='./prova_predict/', help='Output path')
+	parser.add_argument('-em', default='unanimity', choices=['unanimity','majority','leader','weighted-majority'], help='Ensembling method.')
+	parser.add_argument('-absthres', default=0, type=float, help='Abstention threshold on the confidence.')
 	args=parser.parse_args()
 
+	# Predictions for every model and image
+	nmodels=len(args.modelfullname)
+	predictors = []
+
+	for mname in args.modelfullname:
+
+		modelpath,modelname=os.path.split(mname)
+		predictor = Cpred(modelname=modelname, modelpath=modelpath, weightsname=args.weightsname, testdir=args.testdir)
+		predictor.PredictionBundle()
+		predictors.append(predictor)
+
+	classnames=predictor.classes
 
 
-	predictor = Cpred(modelname=args.modelname, modelpath=args.modelpath, weightsname=args.weightsname, testdir=args.testdir)
-	predictor.PredictionBundle()
-	predictor.Output(outpath=args.outpath, fullname=args.fullname, predname=args.predname, PRfilter=args.PRfilter, stdout=True)
+	# Unanimity rule
+	for iim,im_name in enumerate(predictor.im_names):
+		predictions = np.array([predictors[imod].predictions[iim] for imod in range(nmodels)])
+		confidences = np.array([predictors[imod].confidences[iim] for imod in range(nmodels)])
+
+		# print('\n',predictions, confidences)
+
+		# Abstention
+		if args.absthres>0:
+			predictions = predictions[list( filter(lambda i: confidences[i]> args.absthres, range(nmodels)))]
+			confidences = confidences[list( filter(lambda i: confidences[i]> args.absthres, range(nmodels)))]
+
+		## Different kinds of ensembling
+
+		if args.em == 'unanimity': # Predict only if all models agree
+			if len(set(predictions))==1:
+				# Since there is unanimity, I can use the prediction of the last one
+				print(im_name, classnames[predictor.predictions[iim]])
+			else:
+				print(im_name, 'Unclassified')
+
+		elif args.em == 'majority': # Predict with most populat selection
+
+			if len(set(predictions))>0:
+				print(predictions)
+				counter=Counter(predictions)
+				amax = np.argmax( list(counter.values()) )
+				imaj = list(counter.keys())[amax]
+				print(im_name, classnames[imaj])
+			else:
+				print(im_name, 'Unclassified')
+
+		elif args.em == 'leader': # Follow-the-leader: only give credit to the most confident prediction
+
+			if len(set(predictions))>0:
+				ileader = np.argmax(confidences)
+				print(im_name, classnames[predictions[ileader]])
+			else:
+				print(im_name, 'Unclassified')
+
+		elif args.em == 'weighted-majority': # Weighted Majority (like majority, but each is weighted by their confidence)
+			if len(set(predictions))>0:
+				cum_conf = {} # For each iclass, stores the cumulative confidence
+				for ic in predictions:
+					cum_conf[ic] = 0
+					for imod in range(nmodels):
+						if predictions[imod]==ic:
+							cum_conf[ic]+=confidences[imod]
+				amax = np.argmax(list(cum_conf.values())) 
+				imaj = list(cum_conf.keys())[amax]
+				print(im_name, classnames[imaj])
+			else:
+				print(im_name, 'Unclassified')
+
+
+
+
 
 
