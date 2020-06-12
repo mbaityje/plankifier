@@ -367,7 +367,7 @@ if __name__=='__main__':
 	parser.add_argument('-weightnames', nargs='+', default=['bestweights.hdf5'], help='Name of alternative weights for the model.')
 	parser.add_argument('-testdirs', nargs='+', default=['data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/'], help='directory of the test data')
 	parser.add_argument('-labels', nargs='+', default=None, help='If known, labels of the test data. One per directory.')
-	parser.add_argument('-predname', default='./predict/predict.txt', help='name of the file with the model predictions')
+	parser.add_argument('-predname', default='./predict/predict', help='Name of the file with the model predictions (without extension)')
 	parser.add_argument('-verbose', action='store_true', help='Print lots of useless tensorflow information')
 	parser.add_argument('-ensMethods', nargs='+', default=['unanimity'], help='Ensembling methods. Choose from: \'unanimity\',\'majority\', \'leader\', \'weighted-majority\'. Weighted Majority implements abstention in a different way (a good value is 1).')
 	parser.add_argument('-thresholds', nargs='+', default=[0], type=float, help='Abstention thresholds on the confidence (a good value is 0.8, except for weighted-majority, where it should be >=1).')
@@ -385,9 +385,9 @@ if __name__=='__main__':
 
 	for method in args.ensMethods:
 		for absthres in args.thresholds:
-			print(method, absthres)
+			print('\nMethod:',method, '\tAbs-threshold:',absthres)	
 			ensembler.Ensemble(method=method, absthres=absthres)
-			ensembler.WriteGuesses(args.predname)
+			ensembler.WriteGuesses('{}_{}abs{}.txt'.format(args.predname,method,absthres))
 
 
 '''
