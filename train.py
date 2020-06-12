@@ -360,9 +360,9 @@ class Ctrain:
 
 
 
-print('\nRunning',sys.argv[0],sys.argv[1:])
 
 if __name__=='__main__':
+	print('\nRunning',sys.argv[0],sys.argv[1:])
 	sim=Ctrain(initMode='args')
 	sim.LoadData()
 	sim.CreateOutDir()

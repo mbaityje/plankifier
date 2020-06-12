@@ -154,15 +154,8 @@ def LoadImages(datapath, L, class_select=None, training_data=True):
 		print('class: {} ({})'.format(c, len(classImages)))
 
 		for i,imageName in enumerate(classImages):
-			# image = Image.open(imageName)
-
-			# # Set image's largest dimension to target size, and fill the rest with black pixels
-			# image,rescaled = ResizeWithProportions(image, L) # width and height are assumed to be the same (assertion at the beginning)
-			# npimage = np.array(image.copy(), dtype=np.float32)
-			# image.close()
 
 			npimage,rescaled=LoadImage(imageName,L)
-
 			dfClass.loc[i] = [c,npimage]
 
 		df=pd.concat([df,dfClass], axis=0)
