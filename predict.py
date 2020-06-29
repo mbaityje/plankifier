@@ -46,7 +46,7 @@ def PR(vec):
 	return num/den
 
 
-class Cpred():
+class Cpred:
 	''' 
 	This class loads a model and makes predictions.
 
@@ -151,44 +151,16 @@ class Cpred():
 
 
 
-class Cval:
-	def __init__(self):
-		print('__init__ Cval')
-		pass
-
-	def GetImageNames(self):
-
-		all_labels = []
-		all_names  = []
-		for itd,td in enumerate(self.testdirs):
-			if not os.path.isdir(td):
-				print('You told me to read the images from a directory that does not exist:\n{}'.format(td))
-				raise IOError
-
-			im_names_here = np.array(glob.glob(td+'/*.jpeg'),dtype=object) 
-			all_names.extend( im_names_here)
-
-			if self.labels is not None:
-				all_labels.extend([self.labels[itd] for i in range(len(im_names_here))])
-
-		# Check that the paths contained images
-		if len(all_names)<1:
-			print('We found no .jpeg images')
-			print('Folders that should contain the images:',self.testdirs)
-			print('Content of the folders:',os.listdir(self.testdirs))
-			raise IOError()
-		else:
-			if self.verbose:
-				print('There are {} images in {}'.format(len(im_names), td))
-
-		return np.array(all_names), (None if self.labels==None else np.array(all_labels))
 
 
-class Censemble(Cval):
+
+
+
+class Censemble:
 	''' Class for ensembling predictions from different models'''
 
 	# def __init__(self, modelnames=None, weightsname='bestweights.hdf5', testdir=None, predname='predict', verbose=False, outpath='./predict/', em='unanimity', absthres=0):
-	def __init__(self, modelnames=['./out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5'], weightnames=['bestweights.hdf5'], testdirs=['data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/'], labels=None, verbose=False, ensMethod='unanimity', absthres=0, absmetric='proba'):
+	def __init__(self, modelnames=['./out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5'], weightnames=['bestweights.hdf5'], testdirs=['data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/'], labels=None, verbose=False, ensMethod='unanimity', absthres=0, absmetric='proba', screen=True):
 
 		self.modelnames		= modelnames		# List with the model names
 		assert(len(self.modelnames)==len(set(self.modelnames))) # No repeated models!
@@ -200,13 +172,14 @@ class Censemble(Cval):
 		self.absthres		= absthres			# Abstention threshold
 		self.labels 		= labels
 		self.absmetric		= absmetric			# use confidence or PR for abstention
+		self.screen			= screen
 
 		# Initialize predictors
 		self.predictors, self.classnames = self.InitPredictors()
 		sizes = list(set([self.predictors[im].params['L']  for im in range(self.nmodels)]) )
 
 		# Initialize data  to predict
-		self.im_names, self.im_labels = super().GetImageNames()
+		self.im_names, self.im_labels = self.GetImageNames()
 		self.npimages={} # Models are tailored to specific image sizes
 		for L in sizes:
 			self.npimages[L] = hd.LoadImageList(self.im_names, L, show=False) # Load images
@@ -256,6 +229,33 @@ class Censemble(Cval):
 			return self.classnames[predictions[0]]
 		else:
 			return __UNCLASSIFIED__
+
+	def GetImageNames(self):
+
+		all_labels = []
+		all_names  = []
+		for itd,td in enumerate(self.testdirs):
+			if not os.path.isdir(td):
+				print('You told me to read the images from a directory that does not exist:\n{}'.format(td))
+				raise IOError
+
+			im_names_here = np.array(glob.glob(td+'/*.jpeg'),dtype=object) 
+			all_names.extend( im_names_here)
+
+			if self.labels is not None:
+				all_labels.extend([self.labels[itd] for i in range(len(im_names_here))])
+
+		# Check that the paths contained images
+		if len(all_names)<1:
+			print('We found no .jpeg images')
+			print('Folders that should contain the images:',self.testdirs)
+			print('Content of the folders:',os.listdir(self.testdirs))
+			raise IOError()
+		else:
+			if self.verbose:
+				print('There are {} images in {}'.format(len(im_names), td))
+
+		return np.array(all_names), (None if self.labels==None else np.array(all_labels))
 
 	def Majority(self, predictions):
 
@@ -336,9 +336,13 @@ class Censemble(Cval):
 			elif method == 'weighted-majority': # Weighted Majority (like majority, but each is weighted by their confidence)
 				guess = (im_name, self.WeightedMajority(predictions, confidences, absthres))
 
-			print("{} {}".format(guess[0], guess[1]) )
+			if self.screen:
+				print("{} {}".format(guess[0], guess[1]) )
 			self.guesses.append(guess)
+		
 		self.guesses=np.array(self.guesses)
+		
+		return
 
 
 	def WriteGuesses(self, filename):
@@ -354,6 +358,7 @@ class Censemble(Cval):
 
 
 
+
 if __name__=='__main__':
 
 	parser = argparse.ArgumentParser(description='Load a model and use it to make predictions on images')
@@ -366,7 +371,6 @@ if __name__=='__main__':
 				help='name of the model to be loaded, must include path')
 	parser.add_argument('-weightnames', nargs='+', default=['bestweights.hdf5'], help='Name of alternative weights for the model.')
 	parser.add_argument('-testdirs', nargs='+', default=['data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/'], help='directory of the test data')
-	parser.add_argument('-labels', nargs='+', default=None, help='If known, labels of the test data. One per directory.')
 	parser.add_argument('-predname', default='./predict/predict', help='Name of the file with the model predictions (without extension)')
 	parser.add_argument('-verbose', action='store_true', help='Print lots of useless tensorflow information')
 	parser.add_argument('-ensMethods', nargs='+', default=['unanimity'], help='Ensembling methods. Choose from: \'unanimity\',\'majority\', \'leader\', \'weighted-majority\'. Weighted Majority implements abstention in a different way (a good value is 1).')
@@ -377,7 +381,6 @@ if __name__=='__main__':
 	ensembler=Censemble(modelnames=args.modelfullname, 
 						testdirs=args.testdirs, 
 						weightnames=args.weightnames,
-						labels=args.labels,
 						verbose=args.verbose,
 						)
 	
@@ -385,34 +388,7 @@ if __name__=='__main__':
 
 	for method in args.ensMethods:
 		for absthres in args.thresholds:
-			print('\nMethod:',method, '\tAbs-threshold:',absthres)	
+			print('\nMethod:',method, '\tAbs-threshold:',absthres)
 			ensembler.Ensemble(method=method, absthres=absthres)
 			ensembler.WriteGuesses('{}_{}abs{}.txt'.format(args.predname,method,absthres))
 
-
-'''
-			## Validation
-			nimages=len(ensembler.im_names)
-
-			# Overall validation accuracy
-			ncorrect=(ensembler.guesses[:,1]==ensembler.im_labels).astype(int).sum()
-			print('Totall Recall:',ncorrect/nimages)
-			
-			# Per class validation
-			for myclass in ensembler.labels:
-
-				## Recall
-				# indices of the images that are labeled with this class
-				idLabels = list(filter(lambda i: ensembler.im_labels[i]==myclass, range(nimages) ))
-				ncorrect=(ensembler.guesses[idLabels,1]==ensembler.im_labels[idLabels]).astype(float).sum()
-				print('\n',myclass,'recall:',ncorrect/len(idLabels))
-
-				## Positives
-				# indices of the images that are guesses with this class
-				idGuesses = list(filter(lambda i: ensembler.guesses[i,1]==myclass, range(nimages) ))
-				truePositives = (ensembler.guesses[idGuesses,1]==ensembler.im_labels[idGuesses]).astype(float).sum()/len(idGuesses)
-				print('truePositives:',truePositives)
-
-				falsePositives = (ensembler.guesses[idGuesses,1]!=ensembler.im_labels[idGuesses]).astype(float).sum()/len(idGuesses)
-				print('falsePositives:',falsePositives)
-'''
