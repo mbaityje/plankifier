@@ -4,7 +4,7 @@
 #####################################################
 
 # Spit out basic dataset properties
-python analyze_dataset.py -datapath='./data/2020.02.02_zooplankton_trainingset_EWA/' -kind='mixed'
+python analyze_dataset.py -datapath ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/ ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.07.06
 
 # Train Convolutional model on images
 python train_imgmodel.py -totEpochs=10 -width=128 -height=128 -model=conv2 -aug -resize=keep_proportions -bs=8 -lr=0.0001 -opt=sgd -datapath='./data/2020.02.02_zooplankton_trainingset_EWA/' -datakind='mixed'
