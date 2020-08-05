@@ -55,7 +55,6 @@ outname =outdir+'/'+args.name+'.txt'
 
 # Loop through the dataset
 
-# classes = {'name': [ name for name in os.listdir(args.datapath) if os.path.isdir(os.path.join(args.datapath, name)) ]} # Every directory corresponds to a class. Files that aren't directories are ignored
 sizes=[[] for idata in range(ndatasets)]
 classes = {'name': list(set([ name for idata in range(ndatasets) for name in os.listdir(args.datapath[idata]) if os.path.isdir(os.path.join(args.datapath[idata], name))]))} # Every directory corresponds to a class. Files that aren't directories are ignored. All datasets are searched, and repeated directories count as a single class.
 classes['num']    = len(classes['name'])
