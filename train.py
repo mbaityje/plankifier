@@ -177,11 +177,11 @@ class Ctrain:
 		'''
 
 		# Default values
-		if 	   datapath == None:     datapath = self.params.datapath
-		if 			  L == None:            L = self.params.L
-		# if class_select == None: class_select = self.params.class_select # I think this one is wrong, because class_select==None has an explicit meaning
-		if 	   datakind == None:     datakind = self.params.datakind
-		if training_data== None:training_data = self.params.training_data
+		if 	   datapath == None:      datapath = self.params.datapath
+		if 			  L == None:             L = self.params.L
+		# if class_select == None: class_select = self.params.class_select # This one cannot be set, because class_select==None has the explicit meaning of selecting all the classes
+		if 	   datakind == None:      datakind = self.params.datakind
+		if training_data== None: training_data = self.params.training_data
 
 		# Initialize or Load Data Structure
 		if self.data is None:

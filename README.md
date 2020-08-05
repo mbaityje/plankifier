@@ -5,6 +5,13 @@ This wiki refers to the `master` branch.
 
 ---
 
+## Examples
+
+Examples of usage are contained in the script `master.sh` (launches all relevant the scripts) and in the notebook `example.ipynb` (shows how to train a plankton model).
+
+
+---
+
 ## Datasets
 
 The datasets come from the Scripps Camera from the Pomati group at Eawag. We have two datasets, corresponding to two magnifications of the camera [0.5x (mostly zooplankton) and 5x (mostly phytoplankton)]. Everything we write here applies to both datasets, but was only tested on the 0.5x data.
@@ -72,14 +79,53 @@ The same script can be used to make the joint analysis of two separate datasets:
 python analyze_dataset.py -datapath ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/ ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.07.06
 ```
 
-
-
 ---
 
-## Examples
+## Training models
 
-Examples of usage are contained in the script `master.sh` and in the notebook `example.ipynb`.
+A full example of how to preprocess the data and train models through the plankton classes is shown in `example.ipynb`.
+
+In order to train a model, use `train.py`. The model runs by itsself with default parameters:
+
+```
+python train.py
+```
+There are lots of input commands that can be given to the script. To query them, use the `-h` flag (`python train.py -h`). 
+
+### Description of `train.py`
+We describe the model through its input flags
+
+
+##### I/O
+
+`-datapath`: is the path leading to the directories containing the data.
 
 
 
 
+#### An example
+```
+python train.py -datapath 'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/' -outpath 'out/dummy_output' -opt 'adam' -bs 8 -lr 1e-3 -L=128 -model='conv2' -datakind='image' -testSplit=0.2 -totEpochs=5 -dropout=0.5 -aug
+```
+
+#### Classes
+
+
+
+
+
+
+
+#### To do:
+
+- Scanning of architecture and hyperparameters (e.g. using talos, or create class)
+- Binary classifiers (use binary_crossentropy loss function)
+- Have an explicit control of initial conditions (currently, we're using default, but for example orthogonal initial conditions could be helpful)
+- Implement logging instead of print
+- learning rate schedule
+- Speed up the data reading
+- 
+
+--- 
+
+##
