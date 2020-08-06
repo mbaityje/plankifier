@@ -46,10 +46,11 @@ def ResizeWithProportions(im, desired_size):
 
 	return new_im, rescaled
 
-def ReduceClasses(datapath, class_select):
-	print('datapath:',datapath)
-	print('classes from datapath:',os.listdir(datapath))
-	allClasses = [ name for name in os.listdir(datapath) if os.path.isdir(os.path.join(datapath, name)) ]
+def ReduceClasses(datapaths, class_select):
+	print('datapaths:',datapaths)
+	# allClasses = [ name for name in os.listdir(datapaths) if os.path.isdir(os.path.join(datapaths, name)) ]
+	allClasses = list(set([ name for idata in range(len(datapaths)) for name in os.listdir(datapaths[idata]) if os.path.isdir(os.path.join(datapaths[idata], name))]))
+	print('classes from datapaths:', allClasses)
 	if class_select is None:
 		class_select = allClasses
 	else:
@@ -60,7 +61,10 @@ def ReduceClasses(datapath, class_select):
 			raise ValueError
 	return class_select
 
-def LoadMixed(datapath, L, class_select=None, alsoImages=True):
+
+
+
+def LoadMixed(datapaths, L, class_select=None, alsoImages=True, training_data=True):
 	'''
 	Uses the data in datapath to create a DataFrame with images and features. 
 	For each class, we read a tsv file with the features. This file also contains the name of the corresponding image, which we fetch and resize.
@@ -68,48 +72,58 @@ def LoadMixed(datapath, L, class_select=None, alsoImages=True):
 	Assumes a well-defined directory structure.
 
 	Arguments:
-	datapath 	 - the path where the data is stored. Inside datapath, we expect to find directories with the names of the classes
-	L 			 - images are rescaled to a square of size LxL (maintaining proportions)
-	class_select - a list of the classes to load. If None (default), loads all classes 
-	alsoImages   - flag that tells whether to only load features, or features+images
+	datapaths 	  - list with the paths where the data is stored. Inside each datapath, we expect to find directories with the names of the classes
+	L 			  - images are rescaled to a square of size LxL (maintaining proportions)
+	class_select  - a list of the classes to load. If None (default), loads all classes 
+	alsoImages    - flag that tells whether to only load features, or features+images
+	training_data - flag for adding a subdirectory called training_data
 	Output:
-	df 			 - a dataframe with classname, npimage, rescaled, and all the columns in features.tsv
+	df 		 	  - a dataframe with classname, npimage, rescaled, and all the columns contained in features.tsv
 	'''
+	training_data_dir = '/training_data/' if training_data==True else '/'
+
 	df = pd.DataFrame()
-	class_select=ReduceClasses(datapath, class_select)	# Decide whether to use all available classes
+	class_select=ReduceClasses(datapaths, class_select)	# Decide whether to use all available classes
 
 	# Loop for data loading
 	for c in class_select: # Loop over the classes
 
-		print(c)
-		dfFeat = pd.read_csv(datapath+c+'/features.tsv', sep = '\t')
+		# Read from tsv file, and create column with full path to the image
+		dfFeat = pd.DataFrame()
+		for idp in range(len(datapaths)):
+			dftemp = pd.read_csv(datapaths[idp]+c+'/features.tsv', sep = '\t')
+			dftemp['filename'] = [datapaths[idp]+c+training_data_dir+os.path.basename(dftemp.url[ii]) for ii in range(len(dftemp))]
+			dfFeat = pd.concat([dfFeat, dftemp], axis=0, sort=True)
 
+		print('class: {} ({})'.format(c, len(dfFeat)))
 
-		classPath=datapath+c+'/training_data/'
-
-		# Each line in features.tsv should be associated with an image (the url is slightly different than what appears in the file)
+		
+		# Each line in features.tsv should be associated with classname (and image, if the options say it's true)
 		for index, row in dfFeat.iterrows():
 
 			if alsoImages:
-				imName=datapath+c+'/training_data/'+os.path.basename(row['url'])
-				image=Image.open(imName)
+				image=Image.open(row.filename)
 				image,rescaled = ResizeWithProportions(image, L) # Set image's largest dimension to target size, and fill the rest with black pixels
 				npimage = np.array(image.copy() , dtype=np.float32)			 # Convert to numpy
 
-				dftemp=pd.DataFrame([[c,npimage,rescaled]+row.to_list()] ,columns=['classname','npimage','rescaled']+dfFeat.columns.to_list())
+				dftemp=pd.DataFrame([[c,npimage,rescaled]+row.to_list()], columns=['classname','npimage','rescaled']+dfFeat.columns.to_list())
 				image.close()
 			else: #alsoImages is False here
 				dftemp=pd.DataFrame([[c]+row.to_list()] ,columns=['classname']+dfFeat.columns.to_list())
 
-			df=pd.concat([df,dftemp], axis=0)
+			df=pd.concat([df,dftemp], axis=0, sort=True)
 
 	if alsoImages:
 		df.npimage = df.npimage / 255.0 # scale the raw pixel intensities to the range [0, 1]
 
 	return df.reset_index(drop=True) # The data was loaded without an index, that we add with reset_index()
 
+
+
 def LoadImage(filename, L=None, show=False):
-	''' Loads one image '''
+	''' Loads one image, and rescales it to size L.
+	The pixel values are between 0 and 255, instead of between 0 and 1, so they should be normalized outside of the function 
+	'''
 
 	image = Image.open(filename)
 	# Set image's largest dimension to target size, and fill the rest with black pixels
@@ -125,7 +139,7 @@ def LoadImage(filename, L=None, show=False):
 	return npimage, rescaled
 
 
-def LoadImages(datapath, L, class_select=None, training_data=True):
+def LoadImages(datapaths, L, class_select=None, training_data=True):
 	'''
 	Uses the data in datapath to create a DataFrame with images only. 
 	This cannot be a particular case of the mixed loading, because the mixed depends on the files written in the features.tsv file, whereas here we fetch the images directly.
@@ -140,15 +154,20 @@ def LoadImages(datapath, L, class_select=None, training_data=True):
 	'''
 
 	df = pd.DataFrame()
-	class_select=ReduceClasses(datapath, class_select)	# Decide whether to use all available classes
+	class_select=ReduceClasses(datapaths, class_select)	# Decide whether to use all available classes
 
 	# The following condition is because the taxonomists used different directory structures
 	names='/training_data/*.jp*g' if training_data==True else '/*.jp*g'
 
-	for c in class_select:
-		
 
-		classImages = glob.glob(datapath+'/'+c+'/'+names)
+	for c in class_select:
+
+		# Get names of images belonging to this class, from all the data paths
+		classImages = []
+		for idp in range(len(datapaths)):
+			classImages.extend( glob.glob(datapaths[idp]+'/'+c+'/'+names) )
+
+		# Create an empty dataframe for this class
 		dfClass=pd.DataFrame(columns=['classname','npimage'])
 
 		print('class: {} ({})'.format(c, len(classImages)))
@@ -196,27 +215,27 @@ class Cdata:
 		return
 
 
-	def Load(self, datapath, L, class_select, kind='mixed', training_data=True):
+	def Load(self, datapaths, L, class_select, kind='mixed', training_data=True):
 		''' 
 		Loads dataset 
 		For the moment, only mixed data. Later, also pure images or pure features.
 		'''
 		self.L=L
-		self.datapath=datapath
+		self.datapath=datapaths
 		self.class_select=class_select
 		self.kind=kind
 
 		if kind=='mixed':
-			self.df = LoadMixed(datapath, L, class_select, alsoImages=True)
+			self.df = LoadMixed(datapaths, L, class_select, alsoImages=True)
 		elif kind=='feat':
-			self.df = LoadMixed(datapath, L, class_select, alsoImages=False)
+			self.df = LoadMixed(datapaths, L, class_select, alsoImages=False)
 		elif kind=='image':
-			self.df = LoadImages(datapath, L, class_select, training_data=training_data)
+			self.df = LoadImages(datapaths, L, class_select, training_data=training_data)
 		else:
 			raise NotImplementedError('Only mixed, image or feat data-loading')
 
 		self.classes=self.df['classname'].unique()
-		self.kind=kind 		# Now the data kind is kind. In most cases, we had already kind=self.kind, but it the user tested another kind, it must be changed
+		self.kind=kind 		# Now the data kind is kind. In most cases, we had already kind=self.kind, but if the user tested another kind, it must be changed
 		self.Check()  		# Some sanity checks on the dataset
 		self.CreateXy()		# Creates X and y, i.e. features and labels
 		return
@@ -232,7 +251,7 @@ class Cdata:
 			raise ValueError
 
 		# Columns potentially useful for classification
-		ucols=self.df.drop(columns=['classname','url','file_size','timestamp'], errors='ignore').columns
+		ucols=self.df.drop(columns=['classname','url','filename','file_size','timestamp'], errors='ignore').columns
 		if len(ucols)<1:
 			print('Columns: {}'.format(self.df.columns))
 			raise ValueError('The dataset has no useful columns.')
@@ -240,6 +259,7 @@ class Cdata:
 		# Check for NaNs
 		if self.df.isnull().any().any():
 			print('There are NaN values in the data.')
+			print(self.df)
 			raise ValueError
 
 		# Check that the images have the expected size
@@ -257,7 +277,7 @@ class Cdata:
 		'''
 
 		self.y = self.df.classname
-		self.X = self.df.drop(columns=['classname','url','file_size','timestamp'], errors='ignore')
+		self.X = self.df.drop(columns=['classname','url','filename','file_size','timestamp'], errors='ignore')
 
 		self.Ximage = self.X.npimage if (self.kind != 'feat') else None
 		self.Xfeat  = self.X.drop(columns=['npimage'], errors='ignore') if (self.kind != 'image') else None
@@ -336,10 +356,10 @@ def ReadArgsTxt(modelpath, verbose=False):
 	if (classes1 is None) and (classes2 is None):
 		raise RuntimeError('Classes cannot be found from dataset nor from the model directory')
 	elif classes1 is None:
-		print('Unable to retrive classes from {}, so I use the classes in the datapath diretory {}'.format(modelpath+'/classes.npy',params['datapath']))
+		print('Unable to retrieve classes from {}, so I use the classes in the datapath diretory {}'.format(modelpath+'/classes.npy',params['datapath']))
 		classes=classes2
 	elif classes2 is None:
-		print('Unable to retrive classes from the datapath diretory {}, so I use the classes in {}'.format(params['datapath'],modelpath+'/classes.npy'))
+		print('Unable to retrieve classes from the datapath diretory {}, so I use the classes in {}'.format(params['datapath'],modelpath+'/classes.npy'))
 		classes=classes1
 	else:
 		# If the two classes are not the same, we send an error.

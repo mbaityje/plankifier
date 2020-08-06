@@ -69,7 +69,7 @@ class Ctrain:
 
 		parser = argparse.ArgumentParser(description='Train a model on zooplankton images')
 		# I/O
-		parser.add_argument('-datapath', default='./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/', help="Directory with the data.")
+		parser.add_argument('-datapaths', nargs='*', default=['./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/'], help="Directories with the data.")
 		parser.add_argument('-outpath', default='./out/', help="directory where you want the output saved")
 		parser.add_argument('-load_weights', default=None, help='Model weights that should be loaded.')
 		parser.add_argument('-saveModelName', default='keras_model.h5', help='Name of the model when it is saved.')
@@ -107,7 +107,9 @@ class Ctrain:
 		args=parser.parse_args(string)
 
 		# Add a trailing / to the paths, just for safety
-		args.datapath = args.datapath+'/'
+		for i,elem in enumerate(args.datapaths):
+			args.datapaths[i] = elem +'/'
+		
 		args.outpath  = args.outpath +'/'
 				
 		self.ArgsCheck(args)
@@ -166,18 +168,21 @@ class Ctrain:
 		if kwargs is not None:
 			for key, value in kwargs.items():
 				self.paramsDict[key] = value
+		self.CreateOutDir()
 		self.WriteParams()
 
 		return
 
-	def LoadData(self, datapath=None, L=None, class_select=None, datakind=None, training_data=True):
+	def LoadData(self, datapaths=None, L=None, class_select=None, datakind=None, training_data=True):
 		''' 
 		Loads dataset using the function in the Cdata class.
 		Acts differently in case it is the first time or not that the data is loaded
+
+		The flag `training_data` is there because of how the taxonomists created the data directories. In the folders that I use for training there is an extra subfolder called `training_data`. This subfolder is absent, for example, in the validation directories.
 		'''
 
 		# Default values
-		if 	   datapath == None:      datapath = self.params.datapath
+		if 	   datapaths == None:      datapaths = self.params.datapaths
 		if 			  L == None:             L = self.params.L
 		# if class_select == None: class_select = self.params.class_select # This one cannot be set, because class_select==None has the explicit meaning of selecting all the classes
 		if 	   datakind == None:      datakind = self.params.datakind
@@ -185,12 +190,12 @@ class Ctrain:
 
 		# Initialize or Load Data Structure
 		if self.data is None:
-			self.data = hd.Cdata(datapath, L, class_select, datakind, training_data=training_data)
+			self.data = hd.Cdata(datapaths, L, class_select, datakind, training_data=training_data)
 		else:
-			self.data.Load(datapath, L, class_select ,datakind, training_data=training_data)
+			self.data.Load(datapaths, L, class_select ,datakind, training_data=training_data)
 
 		# Reset parameters	
-		self.params.datapath = self.data.datapath
+		self.params.datapaths = self.data.datapath
 		self.params.L        = self.data.L
 		self.params.class_select = self.data.class_select
 		self.params.datakind = self.data.kind

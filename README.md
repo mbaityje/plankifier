@@ -1,11 +1,28 @@
 # plankifier
 Code for plankton dataset creation and classification.
 
-This wiki refers to the `master` branch.
+End users (field scientists) should refer to the usage guide provided in the [code releases](https://github.com/mbaityje/plankifier/releases).
+
+This readme file refers to the `master` branch.
 
 ---
 
-## Examples
+## Quick Summary
+
+To analyze the datasets, use:
+
+To train, use `train.py`.
+
+To predict, use:
+
+To make ensemble predictions, use:
+
+To validate, use:
+
+
+
+
+### Examples
 
 Examples of usage are contained in the script `master.sh` (launches all relevant the scripts) and in the notebook `example.ipynb` (shows how to train a plankton model).
 
@@ -93,12 +110,35 @@ python train.py
 There are lots of input commands that can be given to the script. To query them, use the `-h` flag (`python train.py -h`). 
 
 ### Description of `train.py`
-We describe the model through its input flags
+
+The script can be used both as a module to load the `Ctrain` class, or can be directly run, to train a model.
+
+We describe the funcitoning of `train.py` through its command-line input flags
 
 
 ##### I/O
 
-`-datapath`: is the path leading to the directories containing the data.
+`-datapaths`: is the path (or paths) leading to the directory (or directories) containing the data.
+
+`-outpath`: is the path where we want the output to be written.
+
+`-load_weights`:
+
+`-saveModelName`:
+
+##### User Experience
+
+##### Hyperparameters
+
+##### Data
+
+##### Training time
+
+
+
+
+
+
 
 
 
@@ -110,7 +150,17 @@ python train.py -datapath 'data/1_zooplankton_0p5x/training/zooplankton_training
 
 #### Classes
 
+`Ctrain`: contained in `train.py`.
 
+
+`Cdata`: contained in `helper_data.py`.
+
+
+`CTrainTestSet`: contained in `helper_data.py`.
+
+`Cval`
+
+`Censemble`
 
 
 
@@ -124,7 +174,9 @@ python train.py -datapath 'data/1_zooplankton_0p5x/training/zooplankton_training
 - Implement logging instead of print
 - learning rate schedule
 - Speed up the data reading
-- 
+- Hybrid labels
+- Cross Validation
+- Write this same list as an *issue*, and remove it from this readme file
 
 --- 
 
