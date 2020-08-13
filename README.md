@@ -1,5 +1,5 @@
 # plankifier
-Code for plankton dataset creation and classification.
+Code for plankton dataset creation and classification based on Keras.
 
 End users (field scientists) should refer to the usage guide provided in the [code releases](https://github.com/mbaityje/plankifier/releases).
 
@@ -122,17 +122,71 @@ We describe the funcitoning of `train.py` through its command-line input flags
 
 `-outpath`: is the path where we want the output to be written.
 
-`-load_weights`:
+`-load_weights`: this flag allows us to initialize the system from a given weight configuration (`.hdf5` file). Loading is done through the `load_weights()` method of the model.
 
-`-saveModelName`:
+`-modelfile`: filename of the model we want to load (`.h5` file). Loading is done through the `keras.models.load_model()` method.
+
+Examples of manual model loading are shown in `example.ipynb`.
+
+`-saveModelName`: Name of the model when it is saved.
 
 ##### User Experience
 
+`-verbose`: Print many messages on screen.
+
+`-plot`: If activated, plots loss and accuracy during training once the run is over.
+
 ##### Hyperparameters
+
+`-opt`: Optimizer. Currently, the two choices are ADAM (with Nesterov momentum) and SGD.
+
+`-bs`: Batch size.
+
+`-lr`: Learning rate
+
+`-`:
+
+`-`:
+
+``:
+
+``:
+
+``:
+
+``:
+
+``:
+
+``:
+
+``:
+
+``:
 
 ##### Data
 
+``:
+
+``:
+
+``:
+
+``:
+
+``:
+
+``:
+
+``:
+
 ##### Training time
+
+``:
+
+``:
+
+``:
 
 
 
@@ -148,7 +202,7 @@ We describe the funcitoning of `train.py` through its command-line input flags
 python train.py -datapath 'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/' -outpath 'out/dummy_output' -opt 'adam' -bs 8 -lr 1e-3 -L=128 -model='conv2' -datakind='image' -testSplit=0.2 -totEpochs=5 -dropout=0.5 -aug
 ```
 
-#### Classes
+#### Main Classes
 
 `Ctrain`: contained in `train.py`.
 
@@ -158,9 +212,14 @@ python train.py -datapath 'data/1_zooplankton_0p5x/training/zooplankton_training
 
 `CTrainTestSet`: contained in `helper_data.py`.
 
-`Cval`
 
-`Censemble`
+`CModelWrapper`: contained in `helper_models.py`
+
+
+`Cval`:
+
+`Censemble`:
+
 
 
 
@@ -168,7 +227,9 @@ python train.py -datapath 'data/1_zooplankton_0p5x/training/zooplankton_training
 
 #### To do:
 
+- Checkpointing wrapper function
 - Scanning of architecture and hyperparameters (e.g. using talos, or create class)
+- Different losses and metrics
 - Binary classifiers (use binary_crossentropy loss function)
 - Have an explicit control of initial conditions (currently, we're using default, but for example orthogonal initial conditions could be helpful)
 - Implement logging instead of print
@@ -176,6 +237,7 @@ python train.py -datapath 'data/1_zooplankton_0p5x/training/zooplankton_training
 - Speed up the data reading
 - Hybrid labels
 - Cross Validation
+- Merge the PlainModel and MixedModel wrappers in a single function
 - Write this same list as an *issue*, and remove it from this readme file
 
 --- 

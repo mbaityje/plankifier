@@ -289,15 +289,18 @@ def ReadArgsTxt(modelpath, verbose=False):
 	'''
 	Looks with what arguments the model was trained, and makes a series of consistency checks.
 	Reads the following two files:
-	- params.txt  (txt file with the simulation parameters)
+	- params.txt  (txt file with the simulation parameters -- parameter names are reconstructed through regex)
 	- classes.npy (numpy file with the list of classes)
 
 	'''
+
+	print('NOTIMPLEMENTED WARNING: ReadArgsTxt only reads some of the input parameters (those that were useful when I wrote the function, which may have changed)')
+
 	argsname=modelpath+'/params.txt'
 	params={'L':None,
 			'model':None,
 			'layers':[None,None],
-			'datapath':None,
+			'datapaths':None,
 			'outpath':None,
 			'datakind':None,
 			'ttkind':None
@@ -319,58 +322,50 @@ def ReadArgsTxt(modelpath, verbose=False):
 				params['layers'][0]=np.int64(re.search('=\[(.+)$',s).group(1))
 			if re.match('^ \d+',s): #second layer
 				params['layers'][1]=np.int64(re.match('^ (\d+)',s).group(1))
-			if 'datapath=' in s:
-				params['datapath']=re.search('=\'(.+)\'$',s).group(1)
+			if 'datapaths=' in s:
+				# print('datapaths: ',s)
+				temp = re.search('=\[\'(.+)\'$',s).group(1)
+				params['datapaths']= [temp]
+				# print('params[datapaths]=',params['datapaths'])
 			if 'outpath=' in s:
 				params['outpath']=re.search('=\'(.+)\'$',s).group(1)
 			if 'datakind=' in s:
 				params['datakind']=re.search('=\'(.+)\'$',s).group(1)
 			if 'ttkind=' in s:
 				params['ttkind']=re.search('=\'(.+)\'$',s).group(1)
+			if 'class_select=' in s:
+				print('class_select: ',s)
+				temp = re.search('=\[\'(.+)\'\]$',s).group(1)
+				print('temp:',temp)
+				params['class_select']= [temp]
+				print('params[class_select]=',params['class_select'])
+
 		if verbose:
 			print('We retrieve this subset of parameters:\n',params)
 			print('-----------------------------------------------------------')
 
 	def OutputClassPaths():
 		''' Auxiliary function for error messages '''
-		print('\nclasses1 are the subdirectories in the following folder: ', datapath)
+		print('\nclasses1 are the subdirectories in the following folders: ', datapaths)
 		print('classes1:',classes1)
 		print('\nclasses2 full filename: ',modelpath+'classes2.npy')
 		print('classes2:',classes2)
 		print('')
 
 
+	# Now we extract the classes. Typically, they should be written in the classes.npy file. 
+	# Since sometimes we reduce the number of classes, these might be fewer than those contained in the dataset.
+
+
 	# Extract classes from npy file in output directory
 	try:
-		classes1=np.load(modelpath+'/classes.npy',allow_pickle=True)
+		classes=np.load(modelpath+'/classes.npy',allow_pickle=True)
 	except FileNotFoundError:
-		classes1=None		
+		# If the classes.npy file does not exist, we just assume that all the classes were used
+		print('INPUT WARNING: the file {} was not found, so we assume that the classes are all those contained in {}'.format(modelpath+'/classes.npy',params['datapaths']))
+		classes=list(set([ name for idata in range(len(params['datapaths'])) for name in os.listdir(params['datapaths'][idata]) if os.path.isdir(os.path.join(params['datapaths'][idata], name))]))		
 
-	# Extract classes from data directory (if datapath is accessible)
-	try:
-		classes2 = [ name for name in os.listdir(params['datapath']) if os.path.isdir(os.path.join(params['datapath'], name)) ]
-	except FileNotFoundError:
-		classes2=None
-
-	# If both class types, I compare them as a check. Otherwise, I take what there is.
-	if (classes1 is None) and (classes2 is None):
-		raise RuntimeError('Classes cannot be found from dataset nor from the model directory')
-	elif classes1 is None:
-		print('Unable to retrieve classes from {}, so I use the classes in the datapath diretory {}'.format(modelpath+'/classes.npy',params['datapath']))
-		classes=classes2
-	elif classes2 is None:
-		print('Unable to retrieve classes from the datapath diretory {}, so I use the classes in {}'.format(params['datapath'],modelpath+'/classes.npy'))
-		classes=classes1
-	else:
-		# If the two classes are not the same, we send an error.
-		# In the future, we might have classes.npy dominate
-		if len(classes1) != len(classes2):
-			OutputClassPaths()
-			raise IndexError('Number of classes in data directory is not the same as in classes.npy')
-		if not np.all(set(classes1)==set(classes2)):
-			OutputClassPaths()
-			raise ValueError('Some of the classes in data directory are not the same as in classes.npy')
-		classes=classes1 # classes1 and classes2 are the same
+	print(classes)
 
 	return params, classes
 

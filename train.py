@@ -72,8 +72,7 @@ class Ctrain:
 		parser.add_argument('-datapaths', nargs='*', default=['./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/'], help="Directories with the data.")
 		parser.add_argument('-outpath', default='./out/', help="directory where you want the output saved")
 		parser.add_argument('-load_weights', default=None, help='Model weights that should be loaded.')
-		parser.add_argument('-saveModelName', default='keras_model.h5', help='Name of the model when it is saved.')
-		# parser.add_argument('-override_lr', action='store_true', help='If true, when loading a previously trained model it discards its LR in favor of args.lr')
+		parser.add_argument('-saveModelName', default='keras_model.h5', help='Name of the model when it is saved at the end of the run.')
 		# User experience
 		parser.add_argument('-verbose', action='store_true', help="Print many messages on screen.")
 		parser.add_argument('-plot', action='store_true', help="Plot loss and accuracy during training once the run is over.")
@@ -82,7 +81,7 @@ class Ctrain:
 		parser.add_argument('-bs', type=int, default=32, help="Batch size")
 		parser.add_argument('-lr', type=float, default=0.00005, help="Learning Rate")
 		parser.add_argument('-aug', action='store_true', help="Perform data augmentation. Augmentation parameters are hard-coded.")
-		# parser.add_argument('-model', choices=['mlp','conv2','smallvgg'], default='mlp', help='The model. MLP gives decent results, conv2 is the best, smallvgg overfits (*validation* accuracy oscillates).')
+		parser.add_argument('-modelfile', default=None, help='The name of the file where a model is stored (to be loaded with keras.models.load_model() )')
 		parser.add_argument('-model_image', choices=['mlp','conv2','smallvgg'], default='mlp', help='For mixed data models, tells what model to use for the image branch.')
 		parser.add_argument('-model_feat', choices=['mlp'], default='mlp', help='For mixed data models, tells what model to use for the feature branch.')
 		parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Layers for MLP")
@@ -99,6 +98,8 @@ class Ctrain:
 		parser.add_argument('-initial_epoch', type=int, default=0, help='Initial epoch of the training')
 		parser.add_argument('-earlyStopping', type=int, default=100, help='If >0, we do early stopping, and this number is the patience (how many epochs without improving)')
 
+		# parser.add_argument('-override_lr', action='store_true', help='If true, when loading a previously trained model it discards its LR in favor of args.lr')
+		# parser.add_argument('-load', default=None, help='Model that should be loaded.')
 		# parser.add_argument('-augtype', default='standard', help='Augmentation type')
 		# parser.add_argument('-augparameter', type=float, default=0, help='Augmentation parameter')
 		# parser.add_argument('-cpu', default=False, help='performs training only on cpus')
@@ -160,6 +161,9 @@ class Ctrain:
 		self.fsummary=open(self.params.outpath+'/params.txt','w')
 		print(self.params, file=self.fsummary); 
 		self.fsummary.flush()
+
+		''' Writes the same simulation parameters in binary '''
+		np.save(self.params.outpath+'/params.npy',self.params)
 		return
 
 	def UpdateParams(self, **kwargs):
@@ -226,7 +230,7 @@ class Ctrain:
 		return
 
 
-	def Train(self):
+	def Train(self, train=True):
 
 		# Save classes
 		np.save(self.params.outpath+'/classes.npy', self.tt.lb.classes_)
@@ -240,35 +244,44 @@ class Ctrain:
 			callbacks.append(earlyStopping)
 
 		self.aug = None if (self.params.aug == False) else ImageDataGenerator(
-                        rotation_range=90,
-                        vertical_flip=True,
-                        horizontal_flip=True,
-                        shear_range=10
-                )
+						rotation_range=90,
+						vertical_flip=True,
+						horizontal_flip=True,
+						shear_range=10
+						)
 
 		self.trainParams=hm.CreateParams(
-									layers = self.params.layers, 
-									lr = self.params.lr,
-        							bs = self.params.bs,
-        							optimizer = self.params.opt,
-        							totEpochs = self.params.totEpochs,
-        							dropout = self.params.dropout,
-        							callbacks = callbacks,
-        							aug = self.aug,
-        							model = self.model,
-        							model_image = self.params.model_image,
-        							model_feat  = self.params.model_feat,
-        							load_weights = self.params.load_weights,
-        							initial_epoch=self.params.initial_epoch
-        							)
+									layers 		= self.params.layers, 
+									lr 			= self.params.lr,
+									bs 			= self.params.bs,
+									optimizer 	= self.params.opt,
+									totEpochs 	= self.params.totEpochs,
+									dropout 	= self.params.dropout,
+									callbacks 	= callbacks,
+									aug 		= self.aug,
+									modelfile 	= self.params.modelfile,
+									model_image = self.params.model_image,
+									model_feat  = self.params.model_feat,
+									load_weights 	= self.params.load_weights,
+									initial_epoch	= self.params.initial_epoch,
+									train=train
+									)
 
 		# train the neural network
 		start=time.time()
 
-		if self.params.ttkind == 'mixed':
-			self.history, self.model = hm.MixedModel([self.tt.trainXimage,self.tt.trainXfeat], self.tt.trainY, [self.tt.testXimage,self.tt.testXfeat], self.tt.testY, self.trainParams)
-		else:
-			self.history, self.model = hm.PlainModel(self.tt.trainX, self.tt.trainY, self.tt.testX, self.tt.testY, self.trainParams)
+
+		# The following lines are deprecated
+		# if self.params.ttkind == 'mixed':
+		# 	self.history, self.model = hm.MixedModel([self.tt.trainXimage,self.tt.trainXfeat], self.tt.trainY, [self.tt.testXimage,self.tt.testXfeat], self.tt.testY, self.trainParams)
+		# else:
+		# 	self.history, self.model = hm.PlainModel(self.tt.trainX, self.tt.trainY, self.tt.testX, self.tt.testY, self.trainParams)
+
+
+		trX, teX = ([self.tt.trainXimage,self.tt.trainXfeat], [self.tt.testXimage,self.tt.testXfeat]) if (self.params.ttkind == 'mixed') else (self.tt.trainX, self.tt.testX)
+		wrapper = hm.CModelWrapper(trX, self.tt.trainY, teX, self.tt.testY, self.trainParams)
+		self.model, self.history = wrapper.model, wrapper.history
+
 
 		trainingTime=time.time()-start
 		print('Training took',trainingTime/60,'minutes')
@@ -284,15 +297,6 @@ class Ctrain:
 		predictions = self.Predict()
 		clrep=classification_report(self.tt.testY.argmax(axis=1), predictions.argmax(axis=1), target_names=self.tt.lb.classes_)
 		print(clrep)
-
-		return
-
-
-	def LoadModel(self, modelfile=None):
-
-		if modelfile is not None:
-			self.params.load = modelfile
-		self.model=keras.models.load_model(self.params.load)
 
 		return
 
@@ -374,6 +378,7 @@ if __name__=='__main__':
 	sim.CreateTrainTestSets()
 	sim.Train()
 	sim.Report()
+	sim.Finalize()
 
 
 
