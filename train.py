@@ -88,7 +88,7 @@ class Ctrain:
 		parser.add_argument('-dropout', type=float, default=None, help="This is a dropout parameter which is passed to the model wrapper but is currently not used (August 2020) because dropouts are currently hardcoded.")
 		# Data
 		parser.add_argument('-L', type=int, default=128, help="Images are resized to a square of LxL pixels")
-		parser.add_argument('-testSplit', type=float, default=0.2, help="Fraction of examples in the validation set")
+		parser.add_argument('-testSplit', type=float, default=0.2, help="Fraction of examples in the test set")
 		parser.add_argument('-class_select', nargs='*', default=None, help='List of classes to be looked at (put the class names one by one, separated by spaces). If None, all available classes are studied.')
 		parser.add_argument('-datakind', choices=['mixed','feat','image'], default='mixed', help="Which data to load: features, images, or both")
 		parser.add_argument('-ttkind', choices=['mixed','feat','image'], default='mixed', help="Which data to use in the test and training sets: features, images, or both")
@@ -99,7 +99,6 @@ class Ctrain:
 		parser.add_argument('-earlyStopping', type=int, default=100, help='If >0, we do early stopping, and this number is the patience (how many epochs without improving)')
 
 		# parser.add_argument('-override_lr', action='store_true', help='If true, when loading a previously trained model it discards its LR in favor of args.lr')
-		# parser.add_argument('-load', default=None, help='Model that should be loaded.')
 		# parser.add_argument('-augtype', default='standard', help='Augmentation type')
 		# parser.add_argument('-augparameter', type=float, default=0, help='Augmentation parameter')
 		# parser.add_argument('-cpu', default=False, help='performs training only on cpus')

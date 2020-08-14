@@ -235,7 +235,10 @@ python train.py -datapath 'data/1_zooplankton_0p5x/training/zooplankton_training
 - learning rate schedule
 - Speed up the data reading
 - Hybrid labels
+- Merging lables (e.g. Carnivores, Herbivores, Plants)
 - Cross Validation
+- Weight averaging
+- Semi-supervised and active learning
 - Write this same list as an *issue*, and remove it from this readme file
 
 --- 
