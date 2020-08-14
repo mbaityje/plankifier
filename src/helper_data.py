@@ -91,9 +91,12 @@ def LoadMixed(datapaths, L, class_select=None, alsoImages=True, training_data=Tr
 		# Read from tsv file, and create column with full path to the image
 		dfFeat = pd.DataFrame()
 		for idp in range(len(datapaths)):
-			dftemp = pd.read_csv(datapaths[idp]+c+'/features.tsv', sep = '\t')
-			dftemp['filename'] = [datapaths[idp]+c+training_data_dir+os.path.basename(dftemp.url[ii]) for ii in range(len(dftemp))]
-			dfFeat = pd.concat([dfFeat, dftemp], axis=0, sort=True)
+			try: # It could happen that a class is contained in one datapath but not in the others
+				dftemp = pd.read_csv(datapaths[idp]+c+'/features.tsv', sep = '\t')
+				dftemp['filename'] = [datapaths[idp]+c+training_data_dir+os.path.basename(dftemp.url[ii]) for ii in range(len(dftemp))]
+				dfFeat = pd.concat([dfFeat, dftemp], axis=0, sort=True)
+			except:
+				pass
 
 		print('class: {} ({})'.format(c, len(dfFeat)))
 
@@ -113,8 +116,9 @@ def LoadMixed(datapaths, L, class_select=None, alsoImages=True, training_data=Tr
 
 			df=pd.concat([df,dftemp], axis=0, sort=True)
 
+	# If images were loaded, scale the raw pixel intensities to the range [0, 1]
 	if alsoImages:
-		df.npimage = df.npimage / 255.0 # scale the raw pixel intensities to the range [0, 1]
+		df.npimage = df.npimage / 255.0 
 
 	return df.reset_index(drop=True) # The data was loaded without an index, that we add with reset_index()
 
