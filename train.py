@@ -176,7 +176,7 @@ class Ctrain:
 
 		return
 
-	def LoadData(self, datapaths=None, L=None, class_select=None, datakind=None, training_data=True):
+	def LoadData(self, datapaths=None, L=None, class_select=-1, datakind=None, training_data=True):
 		''' 
 		Loads dataset using the function in the Cdata class.
 		Acts differently in case it is the first time or not that the data is loaded
@@ -185,9 +185,9 @@ class Ctrain:
 		'''
 
 		# Default values
-		if 	   datapaths == None:      datapaths = self.params.datapaths
+		if 	   datapaths == None:    datapaths = self.params.datapaths
 		if 			  L == None:             L = self.params.L
-		# if class_select == None: class_select = self.params.class_select # This one cannot be set, because class_select==None has the explicit meaning of selecting all the classes
+		if class_select == -1: 	  class_select = self.params.class_select # class_select==None has the explicit meaning of selecting all the classes
 		if 	   datakind == None:      datakind = self.params.datakind
 		if training_data== None: training_data = self.params.training_data
 
@@ -349,7 +349,11 @@ class Ctrain:
 			accs      [i] = whether[confident].sum()/nconfident[i] if nconfident[i]>0 else np.nan
 
 	def Finalize(self):
-		print("Training-time: {:} seconds".format(trainingTime), file=self.fsummary)
+		'''
+		Clean-up operations for the end of a run
+		'''
+
+		# print("Training-time: {:} seconds".format(trainingTime), file=self.fsummary)
 		self.fsummary.close()
 
 
