@@ -82,7 +82,7 @@ class Ctrain:
 		parser.add_argument('-lr', type=float, default=0.00005, help="Learning Rate")
 		parser.add_argument('-aug', action='store_true', help="Perform data augmentation. Augmentation parameters are hard-coded.")
 		parser.add_argument('-modelfile', default=None, help='The name of the file where a model is stored (to be loaded with keras.models.load_model() )')
-		parser.add_argument('-model_image', choices=['mlp','conv2','smallvgg'], default='conv2', help='For mixed data models, tells what model to use for the image branch. For image models, it is the whole model')
+		parser.add_argument('-model_image', choices=['mlp','conv2','smallvgg'], default=None, help='For mixed data models, tells what model to use for the image branch. For image models, it is the whole model')
 		parser.add_argument('-model_feat', choices=['mlp'], default=None, help='For mixed data models, tells what model to use for the feature branch. For feat models, it is the whole model.')
 		parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Layers for MLP")
 		parser.add_argument('-dropout', type=float, default=None, help="This is a dropout parameter which is passed to the model wrapper but is currently not used (August 2020) because dropouts are currently hardcoded.")
@@ -90,8 +90,8 @@ class Ctrain:
 		parser.add_argument('-L', type=int, default=128, help="Images are resized to a square of LxL pixels")
 		parser.add_argument('-testSplit', type=float, default=0.2, help="Fraction of examples in the test set")
 		parser.add_argument('-class_select', nargs='*', default=None, help='List of classes to be looked at (put the class names one by one, separated by spaces). If None, all available classes are studied.')
-		parser.add_argument('-datakind', choices=['mixed','feat','image'], default='image', help="Which data to load: features, images, or both")
-		parser.add_argument('-ttkind', choices=['mixed','feat','image'], default='image', help="Which data to use in the test and training sets: features, images, or both")
+		parser.add_argument('-datakind', choices=['mixed','feat','image'], default=None, help="Which data to load: features, images, or both")
+		parser.add_argument('-ttkind', choices=['mixed','feat','image'], default=None, help="Which data to use in the test and training sets: features, images, or both")
 		parser.add_argument('-training_data', choices=['True','False'], default='True', help="This is to cope with the different directory structures that I was given. Sometimes the class folder has an extra folder inside, called training_data. For the moment, this happens in the training images they gave me, but not with the validation images.")
 		# Training time
 		parser.add_argument('-totEpochs', type=int, default=5, help="Total number of epochs for the training")
@@ -143,10 +143,37 @@ class Ctrain:
 			ngpu=len(keras.backend.tensorflow_backend._get_available_gpus())
 			print('We have {} GPUs'.format(ngpu))
 
-		if args.datakind == 'image':
+
+		#
+		# Set compatible flags for model and data types
+		#
+
+		# Set a default model when none are defined
+		if args.model_image is None and args.model_feat is None:
+			args.model_image = 'conv2'
+			args.datakind == 'image'
 			args.ttkind = 'image'
-		elif args.datakind == 'feat':
+			print('No model was specified by the user, so we analyze images with {}'.format(args.model_image))
+		
+		elif args.model_image is None:
+			args.datakind == 'feat'
 			args.ttkind = 'feat'
+
+		elif args.model_feat is None:
+			args.datakind == 'image'
+			args.ttkind = 'image'
+
+		else:
+			args.datakind == 'mixed'
+			args.ttkind = 'mixed'
+
+		print('kind:',args.ttkind)
+
+
+		if args.ttkind != 'image' and args.aug==True: 
+			print('User asked for data augmentation, but we set it to False, because we only to it for `image` models')
+			args.aug=False
+
 
 		return
 

@@ -1,23 +1,19 @@
 #!/bin/bash
-#####################################################
-# This master script explains how to run everything #
-#####################################################
+########################################################
+# This master script explains how to launch everything #
+########################################################
 
 # Spit out basic dataset properties
 python analyze_dataset.py -datapath ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/ ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.07.06
 
-# Train Convolutional model on images
-python train_imgmodel.py -totEpochs=10 -width=128 -height=128 -model=conv2 -aug -resize=keep_proportions -bs=8 -lr=0.0001 -opt=sgd -datapath='./data/2020.02.02_zooplankton_trainingset_EWA/' -datakind='mixed'
-python train_imgmodel.py -totEpochs=10 -width=128 -height=128 -model=conv2 -aug -resize=keep_proportions -bs=8 -lr=0.0001 -opt=sgd -datapath='./data/2019.11.20_zooplankton_trainingset_15oct_TOM/' -datakind='image'
+# Train Convolutional model on images, using only few classes (bosmina, hydra, dirt)
+python train.py -datapaths ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/ ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.07.06/ -outpath ./dummy_out -opt=adam -class_select bosmina hydra dirt -lr=0.001 -bs=32 -aug -model_image=conv2 -L 128 -datakind=image -ttkind=image -totEpochs=20 -earlyStopping=10
 
-# Train Multi-layer Perceptron model on images
-python train_imgmodel.py -lr=0.001 -totEpochs=2000 -width=128 -height=128 -datapath=./data/2019.11.20_zooplankton_trainingset_15oct_TOM/ -model='mlp' -bs=32  -aug
+# Train Multi-layer Perceptron on features, using only few classes (bosmina, hydra, dirt)
+python train.py -datapaths ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/ ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.07.06/ -outpath ./dummy_out -opt=adam -class_select bosmina hydra dirt -lr=0.001 -bs=32 -aug -model_feat=mlp -layers 128 48 -L 128 -datakind=feat -ttkind=feat -totEpochs=20 -earlyStopping=10
 
-# Train Multi-layer Perceptron on features
-python train_features_mlp.py -lr=0.01 -totEpochs=2000 -layers 256 128 -bs=32 -plot
-
-# Train model on combination of features and images
-python train_mixed.py -totEpochs=500 -width=128 -height=128 -model=mlp -resize=keep_proportions -bs=16 -lr=0.0001 -opt=sgd -datapath='./data/2019.11.20_zooplankton_trainingset_15oct_TOM/'
+# Train model on combination of features and images, using only few classes (bosmina, hydra, dirt)
+python train.py -datapaths ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/ ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.07.06/ -outpath ./dummy_out -opt=adam -class_select bosmina hydra dirt -lr=0.001 -bs=32 -aug -model_feat=mlp -model_image=conv2 -layers 128 48 -L 128 -datakind=mixed -ttkind=mixed -totEpochs=20 -earlyStopping=10
 
 
 

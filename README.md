@@ -13,11 +13,11 @@ To analyze the datasets, use `analyze_dataset.py`.
 
 To train, use `train.py`.
 
-To predict, use:
+To predict, use `predictions.py`.
 
-To make ensemble predictions, use:
+To make ensemble predictions, use `.py`.
 
-To validate, use:
+To validate, use `validation.sh`.
 
 
 
@@ -188,7 +188,7 @@ Examples of manual model loading are shown in `example.ipynb`.
 
 #### An example of training a model
 ```
-python train.py -datapath 'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/' -outpath 'out/dummy_output' -opt 'adam' -bs 8 -lr 1e-3 -L=128 -model='conv2' -datakind='image' -testSplit=0.2 -totEpochs=5 -dropout=0.5 -aug
+python train.py -datapaths ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/ ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.07.06/ -outpath ./dummy_out -opt=adam -class_select bosmina hydra dirt -lr=0.001 -bs=32 -aug -model_image=conv2 -L 128 -datakind=image -ttkind=image -totEpochs=20 -earlyStopping=10
 ```
 
 ---
@@ -197,16 +197,22 @@ python train.py -datapath 'data/1_zooplankton_0p5x/training/zooplankton_training
 ### Main Classes
 
 `Ctrain`: contained in `train.py`.
+Class for training.
 
 `Cdata`: contained in `src/helper_data.py`.
+Class for data loading.
 
-`CTrainTestSet`: contained in `src/helper_data.py`.
+`CTrainTestSet`: contained in `src/helper_tts.py`.
+Class for dataset curation.
 
 `CModelWrapper`: contained in `src/helper_models.py`
+Wrapper class for models.
 
-`Cval`: contained in `.py`
+`Cval`: contained in `validation.py`
+Class for validation.
 
-`Censemble`: contained in `.py`
+`Censemble`: contained in `predict.py`
+Class for applying ensemble methods.
 
 ---
 
