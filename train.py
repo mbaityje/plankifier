@@ -82,10 +82,10 @@ class Ctrain:
 		parser.add_argument('-lr', type=float, default=0.00005, help="Learning Rate")
 		parser.add_argument('-aug', action='store_true', help="Perform data augmentation. Augmentation parameters are hard-coded.")
 		parser.add_argument('-modelfile', default=None, help='The name of the file where a model is stored (to be loaded with keras.models.load_model() )')
-		parser.add_argument('-model_image', choices=['mlp','conv2','smallvgg'], default='mlp', help='For mixed data models, tells what model to use for the image branch.')
-		parser.add_argument('-model_feat', choices=['mlp'], default='mlp', help='For mixed data models, tells what model to use for the feature branch.')
+		parser.add_argument('-model_image', choices=['mlp','conv2','smallvgg'], default='mlp', help='For mixed data models, tells what model to use for the image branch. For image models, it is the whole model')
+		parser.add_argument('-model_feat', choices=['mlp'], default='mlp', help='For mixed data models, tells what model to use for the feature branch. For feat models, it is the whole model.')
 		parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Layers for MLP")
-		parser.add_argument('-dropout', type=float, default=None, help="Drop out")
+		parser.add_argument('-dropout', type=float, default=None, help="This is a dropout parameter which is passed to the model wrapper but is currently not used (August 2020) because dropouts are currently hardcoded.")
 		# Data
 		parser.add_argument('-L', type=int, default=128, help="Images are resized to a square of LxL pixels")
 		parser.add_argument('-testSplit', type=float, default=0.2, help="Fraction of examples in the validation set")
