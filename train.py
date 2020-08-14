@@ -82,17 +82,17 @@ class Ctrain:
 		parser.add_argument('-lr', type=float, default=0.00005, help="Learning Rate")
 		parser.add_argument('-aug', action='store_true', help="Perform data augmentation. Augmentation parameters are hard-coded.")
 		parser.add_argument('-modelfile', default=None, help='The name of the file where a model is stored (to be loaded with keras.models.load_model() )')
-		parser.add_argument('-model_image', choices=['mlp','conv2','smallvgg'], default='mlp', help='For mixed data models, tells what model to use for the image branch. For image models, it is the whole model')
-		parser.add_argument('-model_feat', choices=['mlp'], default='mlp', help='For mixed data models, tells what model to use for the feature branch. For feat models, it is the whole model.')
+		parser.add_argument('-model_image', choices=['mlp','conv2','smallvgg'], default='conv2', help='For mixed data models, tells what model to use for the image branch. For image models, it is the whole model')
+		parser.add_argument('-model_feat', choices=['mlp'], default=None, help='For mixed data models, tells what model to use for the feature branch. For feat models, it is the whole model.')
 		parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Layers for MLP")
 		parser.add_argument('-dropout', type=float, default=None, help="This is a dropout parameter which is passed to the model wrapper but is currently not used (August 2020) because dropouts are currently hardcoded.")
 		# Data
 		parser.add_argument('-L', type=int, default=128, help="Images are resized to a square of LxL pixels")
 		parser.add_argument('-testSplit', type=float, default=0.2, help="Fraction of examples in the test set")
 		parser.add_argument('-class_select', nargs='*', default=None, help='List of classes to be looked at (put the class names one by one, separated by spaces). If None, all available classes are studied.')
-		parser.add_argument('-datakind', choices=['mixed','feat','image'], default='mixed', help="Which data to load: features, images, or both")
-		parser.add_argument('-ttkind', choices=['mixed','feat','image'], default='mixed', help="Which data to use in the test and training sets: features, images, or both")
-		parser.add_argument('-training_data', choices=[True,False], default=True, help="This is to cope with the different directory structures that I was given. Sometimes the class folder has an extra folder inside, called training_data. For the moment, this happens in the training images they gave me, but not with the validation images.")
+		parser.add_argument('-datakind', choices=['mixed','feat','image'], default='image', help="Which data to load: features, images, or both")
+		parser.add_argument('-ttkind', choices=['mixed','feat','image'], default='image', help="Which data to use in the test and training sets: features, images, or both")
+		parser.add_argument('-training_data', choices=['True','False'], default='True', help="This is to cope with the different directory structures that I was given. Sometimes the class folder has an extra folder inside, called training_data. For the moment, this happens in the training images they gave me, but not with the validation images.")
 		# Training time
 		parser.add_argument('-totEpochs', type=int, default=5, help="Total number of epochs for the training")
 		parser.add_argument('-initial_epoch', type=int, default=0, help='Initial epoch of the training')
@@ -111,7 +111,8 @@ class Ctrain:
 			args.datapaths[i] = elem +'/'
 		
 		args.outpath  = args.outpath +'/'
-				
+		args.training_data = True if args.training_data == 'True' else False
+
 		self.ArgsCheck(args)
 		self.params=args
 
@@ -294,7 +295,10 @@ class Ctrain:
 	def Report(self):
 
 		predictions = self.Predict()
-		clrep=classification_report(self.tt.testY.argmax(axis=1), predictions.argmax(axis=1), target_names=self.tt.lb.classes_)
+		clrep=classification_report(self.tt.testY.argmax(axis=1), predictions.argmax(axis=1), 
+									target_names=self.tt.lb.classes_,
+									labels = range(len(self.data.classes))
+									)
 		print(clrep)
 
 		return

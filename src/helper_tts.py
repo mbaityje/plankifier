@@ -100,7 +100,7 @@ class CTrainTestSet:
 
 				
 		if test_size<1:
-			self.trainX, self.testX, self.trainY, self.testY = train_test_split(self.X, self.y, test_size=test_size, random_state=random_state)
+			self.trainX, self.testX, self.trainY, self.testY = train_test_split(self.X, self.y, test_size=test_size, random_state=random_state, shuffle=True)
 		else: # This allows us to pack everything into the test set
 			self.trainX, self.testX, self.trainY, self.testY = None, self.X, None, self.y
 

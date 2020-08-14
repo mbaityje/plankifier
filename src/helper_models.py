@@ -65,6 +65,7 @@ class CModelWrapper:
 		modelname: tells us which specific models we are useing (e.g. MLP, smallvgg, etc...)
 
 		'''
+
 		if (self.params['model_feat'] is None) and (self.params['model_image'] is None):
 			print('Either model_feat ({}) or model_image ({}) should be defined'.format(self.params['model_feat'],self.params['model_image']))
 			self.modelkind = None
