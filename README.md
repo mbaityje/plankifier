@@ -242,13 +242,14 @@ Predictions are made through the `predict.py`, that loads one or more models, an
 python predict.py -testdirs ./data/1_zooplankton_0p5x/validation/tommy_validation/images/bosmina/ -modelfullname ./dummy_out/images//keras_model.h5 -predname dummy_out/predict
 ```
 
----
+In the notebook `predict.py` we show how to manually manage predictions.
 
-## Ensemble methods
 
 ---
 
 ## Validating the results
+
+Due to the wrong format of the validation data, this section is not documented to avoid working twice.
 
 ---
 

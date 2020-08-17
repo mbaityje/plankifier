@@ -177,6 +177,7 @@ class Ctrain:
 
 		return
 
+
 	def CreateOutDir(self):
 		''' Create a unique output directory, and put inside it a file with the simulation parameters '''
 		pathlib.Path(self.params.outpath).mkdir(parents=True, exist_ok=True)
