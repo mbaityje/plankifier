@@ -1,0 +1,6 @@
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/trichocerca/SPC-EAWAG-0P5X-1536883571586749-2566135778045-003609-005-1282-2324-88-52.jpeg trichocerca
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/trichocerca/SPC-EAWAG-0P5X-1536883469660152-2566033769565-002589-014-1950-1716-88-40.jpeg trichocerca
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/trichocerca/SPC-EAWAG-0P5X-1536883469660152-2566033769565-002589-009-990-2010-68-24.jpeg trichocerca
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/trichocerca/SPC-EAWAG-0P5X-1536883781624006-2566345795503-005709-004-1416-2308-76-48.jpeg trichocerca
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/trichocerca/SPC-EAWAG-0P5X-1536883499604819-2566063772059-002889-104-3130-210-44-52.jpeg trichocerca
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/trichocerca/SPC-EAWAG-0P5X-1536883841642390-2566405800491-006309-027-642-1790-44-60.jpeg trichocerca

@@ -1,0 +1,9 @@
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/bosmina/SPC-EAWAG-0P5X-1569920694579972-3102681705028-002849-163-2974-1588-148-208.jpeg bosmina
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/bosmina/SPC-EAWAG-0P5X-1536624600118720-2307167948801-005899-010-2626-1844-88-56.jpeg asplanchna
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/bosmina/SPC-EAWAG-0P5X-1535933093732594-1615671425545-002839-010-1444-1916-116-200.jpeg bosmina
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/bosmina/SPC-EAWAG-0P5X-1540598939850437-6281449238068-005299-094-2468-1010-148-152.jpeg bosmina
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/bosmina/SPC-EAWAG-0P5X-1567501570602950-683593634140-003609-777-3140-620-112-88.jpeg bosmina
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/bosmina/SPC-EAWAG-0P5X-1567501568636529-683591633973-003589-691-1424-748-108-104.jpeg bosmina
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/bosmina/SPC-EAWAG-0P5X-1569920519532639-3102506690480-001099-114-368-1846-232-256.jpeg bosmina
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/bosmina/SPC-EAWAG-0P5X-1567501569586785-683592634057-003599-819-2070-570-112-116.jpeg bosmina
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/bosmina/SPC-EAWAG-0P5X-1537401936374558-3084493152732-003269-078-1846-946-76-72.jpeg dinobryon

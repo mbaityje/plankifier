@@ -1,0 +1,10 @@
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/daphnia/SPC-EAWAG-0P5X-1572948073990979-6130014206306-000649-012-3368-2196-156-212.jpeg daphnia
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/daphnia/SPC-EAWAG-0P5X-1572948075984221-6130016206473-000669-091-2080-36-348-384.jpeg daphnia
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/daphnia/SPC-EAWAG-0P5X-1564477235323339-11382588215103-000259-082-1834-686-300-192.jpeg daphnia
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/daphnia/SPC-EAWAG-0P5X-1533427463508305-5141399365588-002529-071-1664-706-668-412.jpeg daphnia
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/daphnia/SPC-EAWAG-0P5X-1564477679369276-11383032252014-004699-049-1086-1368-324-236.jpeg daphnia
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/daphnia/SPC-EAWAG-0P5X-1569920585558299-3102572695966-001759-119-1568-1824-368-348.jpeg daphnia
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/daphnia/SPC-EAWAG-0P5X-1537401696392124-3084253132780-000869-011-1816-2050-172-116.jpeg dinobryon
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/daphnia/SPC-EAWAG-0P5X-1564477673367317-11383026251516-004639-042-374-1284-284-332.jpeg daphnia
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/daphnia/SPC-EAWAG-0P5X-1572948073002353-6130013206223-000639-068-2896-508-308-436.jpeg daphnia
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/daphnia/SPC-EAWAG-0P5X-1572948077003682-6130017206556-000679-049-2076-1344-576-344.jpeg daphnia

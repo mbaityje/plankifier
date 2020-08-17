@@ -29,6 +29,24 @@ Examples of usage are contained in the script `master.sh` (launches all relevant
 
 ---
 
+## Repo Structure
+
+The repo contains the following directories:
+
+- `src`: contains auxiliary code.
+
+- `out`: the output is stored here (no output is uploaded to GitHub, so it must be created).
+
+- `data`: the input data is stored here.
+
+- `images`: contains a handful of images, so that a user can see them without downloading the repo.
+
+- `val`: folder for validation.
+
+- `trained-models`: contains small trained models for the end users.
+
+---
+
 ## Datasets
 
 The datasets come from the Scripps Camera from the Pomati group at Eawag. We have two datasets, corresponding to two magnifications of the camera [0.5x (mostly zooplankton) and 5x (mostly phytoplankton)]. Everything we write here applies to both datasets, but was only tested on the 0.5x data.
@@ -218,6 +236,12 @@ Class for applying ensemble methods.
 
 ## Making predictions
 
+Predictions are made through the `predict.py`, that loads one or more models, and makes predictions on the requested directories.
+
+```
+python predict.py -testdirs ./data/1_zooplankton_0p5x/validation/tommy_validation/images/bosmina/ -modelfullname ./dummy_out/images//keras_model.h5 -predname dummy_out/predict
+```
+
 ---
 
 ## Ensemble methods
@@ -235,7 +259,7 @@ Class for applying ensemble methods.
 - Checkpointing wrapper function
 - Scanning of architecture and hyperparameters (e.g. using talos, or create class)
 - Different losses and metrics
-- Binary classifiers (use binary_crossentropy loss function)
+- Binary classifiers (use `binary_crossentropy loss` function)
 - Have an explicit control of initial conditions (currently, we're using default, but for example orthogonal initial conditions could be helpful)
 - Implement logging instead of print
 - learning rate schedule
@@ -245,7 +269,8 @@ Class for applying ensemble methods.
 - Cross Validation
 - Weight averaging
 - Semi-supervised and active learning
-- Write this same list as an *issue*, and remove it from this readme file
+- Make unit tests
+- **Write this same list as an *issue*, and remove it from this readme file**
 
 --- 
 

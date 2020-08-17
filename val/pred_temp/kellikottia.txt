@@ -1,0 +1,5 @@
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/kellikottia/SPC-EAWAG-0P5X-1572948039998736-6129980203480-000309-076-1668-340-64-112.jpeg kellikottia
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/kellikottia/SPC-EAWAG-0P5X-1575360024840790-8541928725316-000149-022-2530-580-60-92.jpeg kellikottia
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/kellikottia/SPC-EAWAG-0P5X-1572948560014572-6130500246709-005509-050-906-1196-60-160.jpeg kellikottia
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/kellikottia/SPC-EAWAG-0P5X-1572948592045086-6130532249369-005829-016-1274-1800-112-32.jpeg kellikottia
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/kellikottia/SPC-EAWAG-0P5X-1572948559047992-6130499246626-005499-071-372-490-64-148.jpeg kellikottia

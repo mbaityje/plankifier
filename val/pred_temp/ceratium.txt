@@ -1,0 +1,5 @@
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/ceratium/SPC-EAWAG-0P5X-1572948025002411-6129965202233-000159-035-408-1430-44-56.jpeg ceratium
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/ceratium/SPC-EAWAG-0P5X-1566378012678385-694179340499-000029-153-662-1424-60-48.jpeg ceratium
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/ceratium/SPC-EAWAG-0P5X-1572948189033566-6130129215867-001799-053-996-794-56-52.jpeg ceratium
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/ceratium/SPC-EAWAG-0P5X-1572948140987100-6130081211876-001319-017-1248-1712-40-52.jpeg ceratium
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/ceratium/SPC-EAWAG-0P5X-1572948123993344-6130064210463-001149-058-2438-596-52-44.jpeg ceratium

@@ -44,11 +44,16 @@ class CModelWrapper:
 	'''
 	def __init__(self, trainX, trainY, testX, testY, params, verbose=False):
 
+		self.history, self.model = None, None
+
 		(self.trainX, self.trainY, self.testX, self.testY, self.params, self.verbose) = (trainX, trainY, testX, testY, params, verbose)
 
-		self.numclasses = len(trainY[0]) if (params['numclasses'] is None) else params['numclasses']
 
+		self.numclasses = len(trainY[0]) if (params['numclasses'] is None) else params['numclasses']
 		self.SetArchitecture()   # Defines self.model
+		if params['train'] == False: # If we are not interested in training, we are only loading the model
+			return
+
 		self.InitModelWeights()
 		self.SetOptimizer()
 		self.Compile()
@@ -241,10 +246,6 @@ class CModelWrapper:
 									initial_epoch = self.params['initial_epoch'],
 									steps_per_epoch=len(self.trainX)//self.params['bs']
 									)
-
-		else: #params['train']==False here
-			self.history=None
-
 		return
 
 

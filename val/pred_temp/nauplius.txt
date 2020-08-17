@@ -1,0 +1,10 @@
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/nauplius/SPC-EAWAG-0P5X-1562778467799541-9683844404113-004579-042-2498-1306-64-64.jpeg nauplius
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/nauplius/SPC-EAWAG-0P5X-1575360035825711-8541939726231-000259-008-938-1980-68-88.jpeg nauplius
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/nauplius/SPC-EAWAG-0P5X-1536883415591126-2565979765076-002049-095-3288-180-84-80.jpeg nauplius
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/nauplius/SPC-EAWAG-0P5X-1572948140987100-6130081211876-001319-019-242-1694-56-64.jpeg nauplius
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/nauplius/SPC-EAWAG-0P5X-1572948197000942-6130137216532-001879-025-1578-1634-76-64.jpeg nauplius
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/nauplius/SPC-EAWAG-0P5X-1572948019984492-6129960201817-000109-059-1164-800-72-60.jpeg nauplius
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/nauplius/SPC-EAWAG-0P5X-1575360217869411-8542121741361-002079-024-3246-1162-84-140.jpeg nauplius
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/nauplius/SPC-EAWAG-0P5X-1564477356317595-11382709225163-001469-045-2858-1432-72-72.jpeg nauplius
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/nauplius/SPC-EAWAG-0P5X-1562778233778276-9683610384660-002239-045-1462-1224-76-80.jpeg nauplius
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/nauplius/SPC-EAWAG-0P5X-1572948508039020-6130448242386-004989-015-444-1680-84-56.jpeg nauplius

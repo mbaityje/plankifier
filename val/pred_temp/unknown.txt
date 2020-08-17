@@ -1,0 +1,11 @@
+data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown/SPC-EAWAG-0P5X-1569920691573674-3102678704778-002819-387-1626-684-104-40.jpeg maybe_cyano
+data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown/SPC-EAWAG-0P5X-1569920544622909-3102531692558-001349-353-1390-804-100-60.jpeg maybe_cyano
+data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown/SPC-EAWAG-0P5X-1569920691573674-3102678704778-002819-093-1760-1936-76-64.jpeg maybe_cyano
+data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown/SPC-EAWAG-0P5X-1569920691573674-3102678704778-002819-345-2690-902-36-36.jpeg Unclassified
+data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown/SPC-EAWAG-0P5X-1569920691573674-3102678704778-002819-289-1086-1130-64-40.jpeg maybe_cyano
+data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown/SPC-EAWAG-0P5X-1569920519532639-3102506690480-001099-091-1630-1994-40-48.jpeg asterionella
+data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown/SPC-EAWAG-0P5X-1569920519532639-3102506690480-001099-065-2340-2142-32-52.jpeg rotifers
+data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown/SPC-EAWAG-0P5X-1564477212307917-11382565213191-000029-082-1806-508-36-56.jpeg unknown
+data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown/SPC-EAWAG-0P5X-1569920691573674-3102678704778-002819-413-1780-592-60-48.jpeg maybe_cyano
+data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown/SPC-EAWAG-0P5X-1575360162890525-8542066736788-001529-035-2268-992-84-84.jpeg Unclassified
+data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown/SPC-EAWAG-0P5X-1564477213365220-11382566213275-000039-061-1334-1060-56-52.jpeg Unclassified

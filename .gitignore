@@ -1,18 +1,14 @@
 *~
 *.pyc
-images/
 out/
-examples/
-cazzeggio/
+old_scripts/
+out_old/
 __pycache__/
 **/__pycache__/
 .ipynb_checkpoints
+*.tar.gz
 
-#Stuff that will be deleted anyway
+TODO.md
+
 data/1_zooplankton_0p5x/training/
 data/1_zooplankton_0p5x/validation/
-data/2019.11.20_zooplankton_trainingset_15oct_TOM
-data/2019.11.20_zooplankton_trainingset_TOM
-data/2020.02.02_zooplankton_trainingset_EWA-link
-data/2020.02.02_zooplankton_trainingset_EWA/
-data/feature-data-dummy/

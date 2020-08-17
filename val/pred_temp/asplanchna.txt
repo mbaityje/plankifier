@@ -1,0 +1,5 @@
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/asplanchna/SPC-EAWAG-0P5X-1575360190874811-8542094739116-001809-022-1660-1424-152-156.jpeg asplanchna
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/asplanchna/SPC-EAWAG-0P5X-1572948026985571-6129967202399-000179-077-1724-632-144-192.jpeg asplanchna
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/asplanchna/SPC-EAWAG-0P5X-1572948069995056-6130010205974-000609-015-2248-1838-140-180.jpeg asplanchna
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/asplanchna/SPC-EAWAG-0P5X-1575360290879315-8542194747429-002809-027-2198-770-116-176.jpeg asplanchna
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/asplanchna/SPC-EAWAG-0P5X-1572948143003554-6130083212043-001339-054-328-900-108-208.jpeg asplanchna

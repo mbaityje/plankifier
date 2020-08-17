@@ -1,0 +1,6 @@
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/diaphanosoma/SPC-EAWAG-0P5X-1569920678547758-3102665703698-002689-481-1444-220-344-296.jpeg diaphanosoma
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/diaphanosoma/SPC-EAWAG-0P5X-1564477314344694-11382667221671-001049-052-2820-1192-224-188.jpeg diaphanosoma
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/diaphanosoma/SPC-EAWAG-0P5X-1564477523368888-11382876239046-003139-100-794-368-244-332.jpeg diaphanosoma
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/diaphanosoma/SPC-EAWAG-0P5X-1533427248468897-5141184347715-000379-080-2026-540-268-224.jpeg diaphanosoma
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/diaphanosoma/SPC-EAWAG-0P5X-1569920622543940-3102609699042-002129-136-690-1618-332-404.jpeg diaphanosoma
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/diaphanosoma/SPC-EAWAG-0P5X-1564477243342508-11382596215769-000339-082-2522-782-352-248.jpeg diaphanosoma

@@ -121,8 +121,7 @@ class Ctrain:
 
 		return
 
-	@staticmethod
-	def ArgsCheck(args):
+	def ArgsCheck(self, args):
 		''' Consistency checks for command line arguments '''
 		if args.L<8:
 			raise ValueError('Linear size of the images <8 pixels is too small to be wanted. Abort.')
@@ -153,7 +152,8 @@ class Ctrain:
 			args.model_image = 'conv2'
 			args.datakind == 'image'
 			args.ttkind = 'image'
-			print('No model was specified by the user, so we analyze images with {}'.format(args.model_image))
+			if self.verbose:
+				print('No model was specified by the user, so we analyze images with {}'.format(args.model_image))
 		
 		elif args.model_image is None:
 			args.datakind == 'feat'
@@ -260,7 +260,8 @@ class Ctrain:
 	def Train(self, train=True):
 
 		# Save classes
-		np.save(self.params.outpath+'/classes.npy', self.tt.lb.classes_)
+		if train:
+			np.save(self.params.outpath+'/classes.npy', self.tt.lb.classes_)
 
 		# Callbacks
 		checkpointer    = keras.callbacks.ModelCheckpoint(filepath=self.params.outpath+'/bestweights.hdf5', monitor='val_loss', verbose=0, save_best_only=True) # save the model at every epoch in which there is an improvement in test accuracy
@@ -298,23 +299,24 @@ class Ctrain:
 		start=time.time()
 
 
-		# The following lines are deprecated
-		# if self.params.ttkind == 'mixed':
-		# 	self.history, self.model = hm.MixedModel([self.tt.trainXimage,self.tt.trainXfeat], self.tt.trainY, [self.tt.testXimage,self.tt.testXfeat], self.tt.testY, self.trainParams)
-		# else:
-		# 	self.history, self.model = hm.PlainModel(self.tt.trainX, self.tt.trainY, self.tt.testX, self.tt.testY, self.trainParams)
+		# If train==False the wrapper will only load the model. The other branch is for mixed vs non-mixed models
+		if train==False:
+			trX, trY, teX, teY = (None, None, None, None)
+		elif (self.params.ttkind == 'mixed'):
+			trX, trY, teX, teY = ([self.tt.trainXimage,self.tt.trainXfeat], self.tt.trainY, [self.tt.testXimage,self.tt.testXfeat], self.tt.testY)
+		else:
+			trX, trY, teX, teY = (self.tt.trainX, self.tt.trainY, self.tt.testX, self.tt.testY)
 
-
-		trX, teX = ([self.tt.trainXimage,self.tt.trainXfeat], [self.tt.testXimage,self.tt.testXfeat]) if (self.params.ttkind == 'mixed') else (self.tt.trainX, self.tt.testX)
-		wrapper = hm.CModelWrapper(trX, self.tt.trainY, teX, self.tt.testY, self.trainParams)
+		wrapper = hm.CModelWrapper(trX, trY, teX, teY, self.trainParams)
 		self.model, self.history = wrapper.model, wrapper.history
 
 
-		trainingTime=time.time()-start
-		print('Training took',trainingTime/60,'minutes')
+		if train:
+			trainingTime=time.time()-start
+			print('Training took',trainingTime/60,'minutes')
 
-		print('Saving the last model. These are not the best weights, they are the last ones. For the best weights use the callback output (bestweights.hdf5)]')
-		self.SaveModel()
+			print('Saving the last model. These are not the best weights, they are the last ones. For the best weights use the callback output (bestweights.hdf5)]')
+			self.SaveModel()
 
 		return
 

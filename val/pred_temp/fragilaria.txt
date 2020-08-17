@@ -1,0 +1,6 @@
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/fragilaria/SPC-EAWAG-0P5X-1562778155778315-9683532378176-001459-062-2904-584-80-40.jpeg fragilaria
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/fragilaria/SPC-EAWAG-0P5X-1572948249999502-6130190220938-002409-004-490-2462-136-64.jpeg fragilaria
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/fragilaria/SPC-EAWAG-0P5X-1562778287788703-9683664389149-002779-040-2504-1130-56-36.jpeg fragilaria
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/fragilaria/SPC-EAWAG-0P5X-1562778347822206-9683724394137-003379-038-88-1508-56-24.jpeg fragilaria
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/fragilaria/SPC-EAWAG-0P5X-1567501331667414-683354614271-001219-727-3268-752-48-32.jpeg fragilaria
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/fragilaria/SPC-EAWAG-0P5X-1562778509834292-9683886407605-004999-009-2464-2138-44-56.jpeg fragilaria

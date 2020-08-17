@@ -1,2 +1,0 @@
-Namespace(aug=True, bs=8, datakind='mixed', datapath='./data/2020.02.02_zooplankton_trainingset_EWA/', depth=3, height=128, initial_epoch=0, layers=[256, 128], load=None, lr=0.0001, model='conv2', opt='sgd', outpath='./out/', override_lr=False, plot=False, resize='keep_proportions', testSplit=0.2, totEpochs=5000, verbose=False, width=128)
-Training-time: 184443.08671832085 seconds

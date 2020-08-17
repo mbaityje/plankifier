@@ -1,0 +1,11 @@
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/filament/SPC-EAWAG-0P5X-1580389408335457-1134950957131-001989-044-1724-14-116-104.jpeg filament
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/filament/SPC-EAWAG-0P5X-1580389705363682-1135247981822-004959-023-1140-802-100-80.jpeg filament
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/filament/SPC-EAWAG-0P5X-1580389551387780-1135093969019-003419-017-2696-1132-352-336.jpeg filament
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/filament/SPC-EAWAG-0P5X-1580389607360808-1135149973675-003979-020-1374-1464-252-264.jpeg fish
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/filament/SPC-EAWAG-0P5X-1580389221318653-1134763941585-000119-017-2062-1306-144-108.jpeg filament
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/filament/SPC-EAWAG-0P5X-1580389550408392-1135092968936-003409-018-2566-1468-348-376.jpeg filament
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/filament/SPC-EAWAG-0P5X-1580389229307992-1134771942250-000199-015-3162-1186-88-68.jpeg filament
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/filament/SPC-EAWAG-0P5X-1580389607360808-1135149973675-003979-018-1476-1562-344-428.jpeg eudiaptomus
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/filament/SPC-EAWAG-0P5X-1580389211306172-1134753940754-000019-029-722-782-40-108.jpeg filament
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/filament/SPC-EAWAG-0P5X-1580389437370617-1134979959542-002279-004-1010-1984-176-148.jpeg filament
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/filament/SPC-EAWAG-0P5X-1580389227307525-1134769942084-000179-027-1632-412-72-72.jpeg filament

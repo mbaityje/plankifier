@@ -1,0 +1,2 @@
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/chaoborus/SPC-EAWAG-0P5X-1530835565823808-2549536638201-003559-202-696-492-848-1424.jpeg chaoborus
+data/1_zooplankton_0p5x/validation/validation_2020.04.28/chaoborus/SPC-EAWAG-0P5X-1530835583868437-2549554639697-003739-027-1036-2140-988-252.jpeg leptodora

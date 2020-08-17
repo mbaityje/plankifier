@@ -9,11 +9,11 @@ Next upgrades:
 	[] Use PR for ensembling -  FIRST MAKE A CONFIDENCE VS PR SCATTER PLOT
 
 Launch as:
-	python predict.py -modelfullname='./out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5'
+	python predict.py -modelfullnames='./out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5'
 
 
 The program can also handle multiple models, and apply some ensemble rule. for example:
-	python predict.py -testdir 'data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/' -modelfullname './out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5' './out/trained-models/conv2_image_sgd_aug_b32_lr5e-5_L128_t1000/keras_model.h5'
+	python predict.py -testdir 'data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/' -modelfullnames './out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5' './out/trained-models/conv2_image_sgd_aug_b32_lr5e-5_L128_t1000/keras_model.h5'
 
 
 run predict.py -ensMethods 'leader' -testdirs 'data/1_zooplankton_0p5x/validation/tommy_validation/images/conochilus/' 'data/1_zooplankton_0p5x/validation/tommy_validatio
@@ -63,8 +63,8 @@ class Cpred:
 
 		# Read parameters of the model that is loaded
 		if modelpath is None: raise ValueError('CPred: modelpath cannot be None.')
-		self.params, self.classes = hd.ReadArgsTxt(self.modelpath)
 
+		self.classes = np.load(self.modelpath+'/classes.npy')
 		self.LoadModel()
 
 		return
@@ -94,6 +94,7 @@ class Cpred:
 
 		return
 
+
 	def LoadModel(self):
 
 		## Now Create the Model
@@ -104,20 +105,28 @@ class Cpred:
 		mname=self.modelpath+'/'+self.modelname
 		if os.path.exists(mname):
 
-			# Load the model
-			self.simPred.LoadModel(mname)
+			# Set parameters
+			self.simPred.params=np.load(self.modelpath+'/params.npy' , allow_pickle=True).item()
 
-			# Load best weights
-			if self.weightsname is not None: 
-				if os.path.exists(self.modelpath+'/'+self.weightsname):
-					self.simPred.model.load_weights(self.modelpath+'/'+self.weightsname)
-				else:
-					print('I was asked to load weights file {}, but it does not exist'.format(self.weightsname) )
-					raise IOError
+			# Update paths
+			self.simPred.UpdateParams(modelfile=mname, load_weights=self.modelpath+'/'+self.weightsname)
+
+			# Load the model
+			self.simPred.model=keras.models.load_model(mname)
+
+			# Load weights if available
+			try:
+				self.simPred.model.load_weights(self.modelpath+'/'+self.weightsname)
+			except IOError:
+				print('Did not load weights from {}'.format(self.modelpath+'/'+self.weightsname))
+				pass
 
 		# If saved model does not exist, we create a model using the read params, and load bestweights
 		else:
-			raise NotImplementedError('NOT IMPLEMENTED: If saved model does not exist, we create a model using the read params, and load bestweights. For the moment, we need the model to exist.')
+			print('Model {} does not exist.'.format(mname) )
+			raise FileNotFoundError
+
+
 
 
 	# def Output(self, outpath, fullname=True, predname='predict.txt', PRfilter=None, stdout=True):
@@ -176,7 +185,8 @@ class Censemble:
 
 		# Initialize predictors
 		self.predictors, self.classnames = self.InitPredictors()
-		sizes = list(set([self.predictors[im].params['L']  for im in range(self.nmodels)]) )
+
+		sizes = list(set([self.predictors[im].simPred.params.L  for im in range(self.nmodels)]) )
 
 		# Initialize data  to predict
 		self.im_names, self.im_labels = self.GetImageNames()
@@ -199,15 +209,17 @@ class Censemble:
 			if 0==imn:
 				classnames = predictors[imn].classes
 			else:
-				assert( np.all(classnames==predictors[imn].classes))
+				assert np.all(classnames==predictors[imn].classes), "Class names for different models do not coincide"
 
 		return predictors, classnames
+
 
 	def MakePredictions(self):
 
 		for pred in self.predictors:
-			npimagesL=self.npimages[ pred.params['L'] ]
+			npimagesL=self.npimages[ pred.simPred.params.L ]
 			pred.PredictionBundle(npimagesL)		
+
 
 	def Abstain(self, predictions, confidences, pr, thres=0, metric='prob'):
 		''' Apply abstention according to softmax probability or to participation ratio '''
@@ -222,6 +234,7 @@ class Censemble:
 		pr 			= pr 		 [filtro]
 
 		return predictions, confidences, pr
+
 
 	def Unanimity(self, predictions):
 		''' Applies unanimity rule to predictions '''
@@ -362,7 +375,7 @@ class Censemble:
 if __name__=='__main__':
 
 	parser = argparse.ArgumentParser(description='Load a model and use it to make predictions on images')
-	parser.add_argument('-modelfullname', nargs='+', \
+	parser.add_argument('-modelfullnames', nargs='+', \
 		default=[ \
 				'./out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5', \
 				'./out/trained-models/conv2_image_sgd_aug_b32_lr5e-5_L128_t1000/keras_model.h5', \
@@ -371,14 +384,14 @@ if __name__=='__main__':
 				help='name of the model to be loaded, must include path')
 	parser.add_argument('-weightnames', nargs='+', default=['bestweights.hdf5'], help='Name of alternative weights for the model.')
 	parser.add_argument('-testdirs', nargs='+', default=['data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/'], help='directory of the test data')
-	parser.add_argument('-predname', default='./predict/predict', help='Name of the file with the model predictions (without extension)')
+	parser.add_argument('-predname', default='./out/predictions/predict', help='Name of the file with the model predictions (without extension)')
 	parser.add_argument('-verbose', action='store_true', help='Print lots of useless tensorflow information')
 	parser.add_argument('-ensMethods', nargs='+', default=['unanimity'], help='Ensembling methods. Choose from: \'unanimity\',\'majority\', \'leader\', \'weighted-majority\'. Weighted Majority implements abstention in a different way (a good value is 1).')
 	parser.add_argument('-thresholds', nargs='+', default=[0], type=float, help='Abstention thresholds on the confidence (a good value is 0.8, except for weighted-majority, where it should be >=1).')
 	args=parser.parse_args()
 
 
-	ensembler=Censemble(modelnames=args.modelfullname, 
+	ensembler=Censemble(modelnames=args.modelfullnames, 
 						testdirs=args.testdirs, 
 						weightnames=args.weightnames,
 						verbose=args.verbose,
