@@ -107,7 +107,7 @@ class Cpred:
 		# Create a Ctrain object. Maybe it is not needed, and we could straight out load the model.
 		self.simPred=t.Ctrain(verbose=False)
 		self.simPred.params=np.load(self.modelpath+'/params.npy' , allow_pickle=True).item()
-		self.simPred.LoadModel(self.modelname, self.weightsname)
+		self.simPred.LoadModel(self.modelname, self.weightsname) # Loads models and updates weights
 
 
 
