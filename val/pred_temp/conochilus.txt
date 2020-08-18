@@ -1,6 +1,0 @@
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/conochilus/SPC-EAWAG-0P5X-1535760138271831-1442718395377-001279-062-1646-744-160-112.jpeg asplanchna
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/conochilus/SPC-EAWAG-0P5X-1535760240306692-1442820403857-002299-017-842-1998-160-144.jpeg asplanchna
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/conochilus/SPC-EAWAG-0P5X-1535933219766909-1615797436020-004099-004-910-2266-168-148.jpeg conochilus
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/conochilus/SPC-EAWAG-0P5X-1535760138271831-1442718395377-001279-058-1642-794-164-108.jpeg conochilus
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/conochilus/SPC-EAWAG-0P5X-1535933219766909-1615797436020-004099-005-986-2264-68-88.jpeg fish
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/conochilus/SPC-EAWAG-0P5X-1569920465536447-3102452685990-000559-414-2306-522-108-152.jpeg conochilus

@@ -1,8 +1,0 @@
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/eudiaptomus/SPC-EAWAG-0P5X-1569920689567934-3102676704612-002799-308-1994-992-772-136.jpeg eudiaptomus
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/eudiaptomus/SPC-EAWAG-0P5X-1536883289593583-2565853754601-000789-028-852-1576-124-272.jpeg Unclassified
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/eudiaptomus/SPC-EAWAG-0P5X-1564477339339333-11382692223749-001299-077-3232-958-304-108.jpeg eudiaptomus
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/eudiaptomus/SPC-EAWAG-0P5X-1569920719550116-3102706707106-003099-068-1454-2008-416-268.jpeg eudiaptomus
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/eudiaptomus/SPC-EAWAG-0P5X-1572948320040487-6130260226757-003109-083-3138-424-76-132.jpeg cyclops
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/eudiaptomus/SPC-EAWAG-0P5X-1569920691573674-3102678704778-002819-356-598-760-424-280.jpeg eudiaptomus
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/eudiaptomus/SPC-EAWAG-0P5X-1564477676379662-11383029251765-004669-077-3242-548-168-84.jpeg daphnia
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/eudiaptomus/SPC-EAWAG-0P5X-1569920585558299-3102572695966-001759-199-1534-1462-292-260.jpeg eudiaptomus

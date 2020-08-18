@@ -1,6 +1,0 @@
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/leptodora/SPC-EAWAG-0P5X-1533427397505213-5141333360102-001869-126-2276-0-216-460.jpeg leptodora
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/leptodora/SPC-EAWAG-0P5X-1536624054047235-2306621903410-000439-039-226-1256-160-600.jpeg leptodora
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/leptodora/SPC-EAWAG-0P5X-1536624054047235-2306621903410-000439-058-188-1000-220-352.jpeg leptodora
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/leptodora/SPC-EAWAG-0P5X-1533427397505213-5141333360102-001869-119-2190-166-340-564.jpeg leptodora
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/leptodora/SPC-EAWAG-0P5X-1531353887873762-3067851552683-002779-012-2672-2258-184-260.jpeg leptodora
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/leptodora/SPC-EAWAG-0P5X-1533427523509792-5141459370576-003129-087-1978-1024-584-520.jpeg leptodora

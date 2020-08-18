@@ -129,10 +129,21 @@ class Cval:
 		plt.xticks(rotation=90)
 
 		# Bar plot for all the plankton classes
-		plt.bar(self.df_res.loc[self.__PLANKTONCLASSES__].index, self.df_res.loc[self.__PLANKTONCLASSES__].recall, width=.9, edgecolor='black',label='Per class')
+		plt.bar(self.df_res.loc[self.__PLANKTONCLASSES__].index, self.df_res.loc[self.__PLANKTONCLASSES__].recall, width=.9, edgecolor='black', label='Per class')
 		# Average recall over all plankton classes
-		plt.plot(np.arange(len(self.__PLANKTONCLASSES__)),self.df_res.loc['mean_plank'].recall*np.ones(len(self.__PLANKTONCLASSES__)),'--', linewidth=0.5,color='black', label='Average {}'.format(np.round(self.df_res.loc['mean_plank'].recall,decimals=2)))
+		plt.plot(np.arange(len(self.__PLANKTONCLASSES__)), self.df_res.loc['mean_plank'].recall*np.ones(len(self.__PLANKTONCLASSES__)),'--', 
+				linewidth=0.5,color='black', label='Average {}'.format(np.round(self.df_res.loc['mean_plank'].recall, decimals=2)))
 		ax1.legend(loc='lower right')
+
+		# Put extra labels on the plot with more info
+		for i,c in enumerate(self.__PLANKTONCLASSES__):
+			if np.isnan(self.df_res.loc[c]['TP']):
+				label = 'NaN'
+			else:
+				hits  = int(self.df_res.loc[c]['TP'])
+				total = int(self.df_res.loc[c][['TP','FN']].to_numpy().sum())
+				label = str(hits)+'/'+str(total)
+			plt.annotate(label , xy=(i-0.4, 0.5), fontsize=5)
 
 
 		ax2=plt.subplot(2,1,2)
@@ -147,10 +158,21 @@ class Cval:
 		plt.plot(np.arange(len(self.__PLANKTONCLASSES__)),self.df_res.loc['mean_plank'].precision*np.ones(len(self.__PLANKTONCLASSES__)),'--', linewidth=0.5,color='black', label='Average {}'.format(np.round(self.df_res.loc['mean_plank'].precision,decimals=2)))
 		ax2.legend(loc='lower right')
 
+
+		# Put extra labels on the plot with more info
+		for i,c in enumerate(self.__PLANKTONCLASSES__):
+			if np.isnan(self.df_res.loc[c]['TP']):
+				label = 'NaN'
+			else:
+				hits  = int(self.df_res.loc[c]['TP'])
+				total = int(self.df_res.loc[c][['TP','FP']].to_numpy().sum())
+				label = str(hits)+'/'+str(total)
+			plt.annotate(label , xy=(i-0.4, 0.5), fontsize=5)
+
+
 		plt.show()
 
 		return
-
 
 
 

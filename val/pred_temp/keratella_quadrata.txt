@@ -1,5 +1,0 @@
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/keratella_quadrata/SPC-EAWAG-0P5X-1563026664165210-9932037279651-002549-028-1074-1754-64-36.jpeg keratella_quadrata
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/keratella_quadrata/SPC-EAWAG-0P5X-1575360491907312-8542395764139-004819-014-870-1900-56-52.jpeg keratella_quadrata
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/keratella_quadrata/SPC-EAWAG-0P5X-1575360195859503-8542099739532-001859-020-2384-1318-64-48.jpeg keratella_quadrata
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/keratella_quadrata/SPC-EAWAG-0P5X-1530835631817821-2549602643688-004219-000-1812-2554-40-45.jpeg keratella_quadrata
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/keratella_quadrata/SPC-EAWAG-0P5X-1572948291990397-6130232224429-002829-077-2144-442-72-32.jpeg keratella_quadrata

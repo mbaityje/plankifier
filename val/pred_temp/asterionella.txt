@@ -1,3 +1,0 @@
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/asterionella/SPC-EAWAG-0P5X-1567501323602200-683346613606-001139-076-1640-2242-44-40.jpeg asterionella
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/asterionella/SPC-EAWAG-0P5X-1567501488623475-683511627323-002789-771-2508-522-44-48.jpeg asterionella
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/asterionella/SPC-EAWAG-0P5X-1567501291575909-683314610946-000819-669-1996-944-52-64.jpeg asterionella

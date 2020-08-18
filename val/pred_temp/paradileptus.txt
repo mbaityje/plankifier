@@ -1,6 +1,0 @@
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/paradileptus/SPC-EAWAG-0P5X-1566378145670878-694312351556-001359-055-1350-1958-80-44.jpeg paradileptus
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/paradileptus/SPC-EAWAG-0P5X-1570525235747714-3707213692943-000259-185-1706-1466-48-84.jpeg paradileptus
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/paradileptus/SPC-EAWAG-0P5X-1570525600850341-3707578723287-003909-178-1304-1396-80-76.jpeg paradileptus
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/paradileptus/SPC-EAWAG-0P5X-1570525459818188-3707437711565-002499-210-1584-1236-92-56.jpeg paradileptus
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/paradileptus/SPC-EAWAG-0P5X-1566378070674300-694237345321-000609-165-1496-1344-60-88.jpeg paradileptus
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/paradileptus/SPC-EAWAG-0P5X-1566378056673090-694223344157-000469-310-2444-596-52-76.jpeg paradileptus

@@ -15,11 +15,9 @@ To train, use `train.py`.
 
 To predict, use `predictions.py`.
 
-To make ensemble predictions, use `.py`.
+To validate, use `validation.py`.
 
-To validate, use `validation.sh`.
-
-
+Since keras gives lots of annoying messages, when launching in interactive shell, you might want to send redirect the stderr by appending `2>/dev/null` to your execution.
 
 
 ### Examples
@@ -257,6 +255,8 @@ Explanation of the used parameters:
 - `ensMethods`: Ensembling thresholds. Useless in this example, since there is only one model
 - `predname`: Send output to ./out/predictions/predict.txt
 
+
+
 In the notebook `predict.py` we show how to manually manage predictions.
 
 
@@ -264,7 +264,33 @@ In the notebook `predict.py` we show how to manually manage predictions.
 
 ## Validating the results
 
-Due to the wrong format of the validation data, this section is not documented to avoid working twice.
+
+### Confusion matrix validation
+
+In the main directory you can find the launchable module `validation.py`.
+
+To run a validation just do 
+```
+python validation.py 2>/dev/null
+```
+The models and test directories are currently hard-coded, in order not to have to write them each time.
+Abstention thresholds (`-thresholds`) and ensembling methods (`-ensMethods`) can be given as command-line arguments.
+The program gives a command-line output with data on the confusion matrix, and a plot with the precision and recall
+for all plankton classes (junk classes are excluded).
+
+
+### Counts validation
+
+The count folders are folders in which the taxonomists counted the number of each species, but without labeling the images one by one. We can only compare the total population measured by the taxonomists, with that of the classifier. This is the ultimate task we will give to the classifier, so it is an excellent validation check.
+
+
+Input parameters are currently hard-coded, so the syntax is pretty simple:
+```
+cd ./val/
+python validation-counts.py 2>/dev/null
+cd ..
+```
+The script produces a histogram with the taxonomist and the classifier counts.
 
 ---
 

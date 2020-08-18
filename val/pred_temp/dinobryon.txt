@@ -1,9 +1,0 @@
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/dinobryon/SPC-EAWAG-0P5X-1564477215338897-11382568213441-000059-020-3138-1780-60-80.jpeg asterionella
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/dinobryon/SPC-EAWAG-0P5X-1564477334328722-11382687223334-001249-070-1132-618-56-72.jpeg dinobryon
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/dinobryon/SPC-EAWAG-0P5X-1564477216331238-11382569213524-000069-006-1214-2130-68-60.jpeg dinobryon
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/dinobryon/SPC-EAWAG-0P5X-1572948195003960-6130135216365-001859-046-3336-1222-68-88.jpeg dinobryon
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/dinobryon/SPC-EAWAG-0P5X-1564477212307917-11382565213191-000029-035-3022-1630-48-56.jpeg dinobryon
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/dinobryon/SPC-EAWAG-0P5X-1569920602533706-3102589697380-001929-223-158-1388-56-96.jpeg dinobryon
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/dinobryon/SPC-EAWAG-0P5X-1572948502029557-6130442241887-004929-035-2188-1482-148-64.jpeg dinobryon
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/dinobryon/SPC-EAWAG-0P5X-1564477213365220-11382566213275-000039-046-2912-1336-32-68.jpeg Unclassified
-data/1_zooplankton_0p5x/validation/validation_2020.04.28/dinobryon/SPC-EAWAG-0P5X-1572948194003293-6130134216282-001849-072-2584-604-60-104.jpeg dinobryon
