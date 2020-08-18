@@ -167,9 +167,6 @@ class Ctrain:
 			args.datakind == 'mixed'
 			args.ttkind = 'mixed'
 
-		print('kind:',args.ttkind)
-
-
 		if args.ttkind != 'image' and args.aug==True: 
 			print('User asked for data augmentation, but we set it to False, because we only to it for `image` models')
 			args.aug=False
@@ -308,7 +305,7 @@ class Ctrain:
 		else:
 			trX, trY, teX, teY = (self.tt.trainX, self.tt.trainY, self.tt.testX, self.tt.testY)
 
-		wrapper = hm.CModelWrapper(trX, trY, teX, teY, self.trainParams)
+		wrapper = hm.CModelWrapper(trX, trY, teX, teY, self.trainParams, numclasses=len(self.data.classes))
 		self.model, self.history = wrapper.model, wrapper.history
 
 
@@ -318,6 +315,32 @@ class Ctrain:
 
 			print('Saving the last model. These are not the best weights, they are the last ones. For the best weights use the callback output (bestweights.hdf5)]')
 			self.SaveModel()
+
+		return
+
+
+	def LoadModel(self, modelfile=None, bestweights=None):
+		'''
+		Loads model `modelfile` (.h5 file), and if present, loads weights form `bestweights` (.hdf5 file)
+		'''
+		
+		# Model
+
+		if modelfile is not  None:
+			self.params.modelfile = modelfile
+
+		self.model = keras.models.load_model(self.params.modelfile)
+
+
+		# Best weights
+
+		if bestweights is not None:
+			self.params.bestweights = bestweights
+
+		try:
+			self.model.load_weights(self.params.bestweights)
+		except:
+			print('Did not load bestweights (file: {})'.format(self.params.bestweights))
 
 		return
 

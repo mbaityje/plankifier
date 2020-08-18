@@ -9,9 +9,12 @@ from keras import backend as K
 from keras import metrics as metrics
 import numpy as np
 
-def CreateParams(layers= None, lr =None, bs=None, optimizer='sgd', totEpochs= None, dropout=None, callbacks= None, 
-				 initial_epoch=0, aug=None, modelfile=None, model_feat='mlp', model_image='mlp', load_weights=None, 
-				 override_lr=False, train=True, numclasses=None):
+def CreateParams(layers= None, lr =None, bs=None, optimizer=None, totEpochs= None, dropout=None, callbacks= None, 
+				 initial_epoch=0, aug=None, modelfile=None, model_feat=None, model_image=None, load_weights=None, 
+				 # override_lr=False, 
+				 train=True, 
+				 # numclasses=None
+				 ):
 	''' Creates an empty dictionary with all possible entries'''
 
 	params={
@@ -30,7 +33,7 @@ def CreateParams(layers= None, lr =None, bs=None, optimizer='sgd', totEpochs= No
 		'load_weights': load_weights, # If you want to load weights from file, put the filename (with path) here
 		# 'override_lr': override_lr, # Whether to load model from file
 		'train': train, # Whether to train the model (e.g. maybe you only want to load it)
-		'numclasses': numclasses, # If no labels are given, we must give the number of classes through this variable
+		# 'numclasses': numclasses, # If no labels are given, we must give the number of classes through this variable
 		}
 
 	return params
@@ -42,19 +45,22 @@ class CModelWrapper:
 	'''
 	A wrapper class for models
 	'''
-	def __init__(self, trainX, trainY, testX, testY, params, verbose=False):
+	def __init__(self, trainX, trainY, testX, testY, params, verbose=False, numclasses=None):
 
 		self.history, self.model = None, None
 
 		(self.trainX, self.trainY, self.testX, self.testY, self.params, self.verbose) = (trainX, trainY, testX, testY, params, verbose)
 
+		self.numclasses = numclasses
+		if trainY is not None:
+			assert(len(trainY[0]) == self.numclasses)
 
-		self.numclasses = len(trainY[0]) if (params['numclasses'] is None) else params['numclasses']
 		self.SetArchitecture()   # Defines self.model
+		self.InitModelWeights()
+
 		if params['train'] == False: # If we are not interested in training, we are only loading the model
 			return
 
-		self.InitModelWeights()
 		self.SetOptimizer()
 		self.Compile()
 		self.Train() # Trains if params['train'] is set to True
@@ -92,8 +98,6 @@ class CModelWrapper:
 
 		if self.verbose:
 			print('InferModelKind(): setting model kind to {}'.format(self.modelkind))
-
-		print('modelkind:', self.modelkind)
 
 		return
 
@@ -194,7 +198,7 @@ class CModelWrapper:
 		Weight initialization. This function is only partly implemented, since custom initializations are not done.
 		'''
 
-		if (self.params['load_weights'] is None) and (self.params['modelfile']==None):
+		if (self.params['load_weights'] is None):
 			print('WARNING: At the current state, we are taking the default weight initialization, whatever it is. This must change in order to have better control.')
 		else:
 			print('Loading weights from ',self.params['load_weights'])

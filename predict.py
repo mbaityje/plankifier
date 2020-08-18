@@ -9,7 +9,12 @@ Next upgrades:
 	[] Use PR for ensembling -  FIRST MAKE A CONFIDENCE VS PR SCATTER PLOT
 
 Launch as:
-	python predict.py -modelfullnames='./out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5'
+	python predict.py  -modelfullnames './trained-models/conv2/keras_model.h5' \
+                -weightnames './trained-models/conv2/bestweights.hdf5' \
+                -testdirs 'data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/' \
+                -thresholds 0.6 \
+                -ensMethods 'unanimity' \
+                -predname './out/predictions/predict'
 
 
 The program can also handle multiple models, and apply some ensemble rule. for example:
@@ -53,16 +58,17 @@ class Cpred:
 	Class initialization does everything. To obtain the predictions call the Predict() method
 
 	'''
-	def __init__(self, modelname='keras_model.h5', modelpath=None, weightsname='bestweights.hdf5',verbose=False):
+	def __init__(self, modelname='./keras_model.h5', #modelpath='./', 
+		weightsname='./bestweights.hdf5',verbose=False):
 		
 		# Set class variables
 		self.modelname   = modelname
-		self.modelpath   = modelpath
+		self.modelpath   = os.path.dirname(self.modelname)
 		self.weightsname = weightsname
 		self.verbose	 = verbose
 
 		# Read parameters of the model that is loaded
-		if modelpath is None: raise ValueError('CPred: modelpath cannot be None.')
+		# if modelpath is None: raise ValueError('CPred: modelpath cannot be None.')
 
 		self.classes = np.load(self.modelpath+'/classes.npy')
 		self.LoadModel()
@@ -72,6 +78,7 @@ class Cpred:
 
 	def Predict(self,npimages):
 		return self.simPred.model.predict(npimages)
+
 
 	def PredictionBundle(self, npimages):
 		''' Calculates a bunch of quantities related to the predictions '''
@@ -97,68 +104,10 @@ class Cpred:
 
 	def LoadModel(self):
 
-		## Now Create the Model
-		# Create the context
+		# Create a Ctrain object. Maybe it is not needed, and we could straight out load the model.
 		self.simPred=t.Ctrain(verbose=False)
-
-		# If saved model exists, we load the model and possibly load the bestweights
-		mname=self.modelpath+'/'+self.modelname
-		if os.path.exists(mname):
-
-			# Set parameters
-			self.simPred.params=np.load(self.modelpath+'/params.npy' , allow_pickle=True).item()
-
-			# Update paths
-			self.simPred.UpdateParams(modelfile=mname, load_weights=self.modelpath+'/'+self.weightsname)
-
-			# Load the model
-			self.simPred.model=keras.models.load_model(mname)
-
-			# Load weights if available
-			try:
-				self.simPred.model.load_weights(self.modelpath+'/'+self.weightsname)
-			except IOError:
-				print('Did not load weights from {}'.format(self.modelpath+'/'+self.weightsname))
-				pass
-
-		# If saved model does not exist, we create a model using the read params, and load bestweights
-		else:
-			print('Model {} does not exist.'.format(mname) )
-			raise FileNotFoundError
-
-
-
-
-	# def Output(self, outpath, fullname=True, predname='predict.txt', PRfilter=None, stdout=True):
-	# 	''' Output with a standard format '''
-	# 	# Create output directory
-	# 	pathlib.Path(args.outpath).mkdir(parents=True, exist_ok=True)
-
-	# 	# Choose whether to display full filenames or not
-	# 	if not fullname:
-	# 		# self.im_names=np.array([os.path.basename(im) for im in self.im_names],dtype=object)	
-	# 		self.im_names=np.array(list( map(os.path.basename, self.im_names) ), dtype=object)
-
-	# 	#
-	# 	# Output to file
-	# 	#
-	# 	header='Name Prediction Confidence Prediction(2ndGuess) Confidence(2ndGuess) participation-ratio'
-	# 	np.savetxt(outpath+'/'+predname, np.c_[self.im_names, self.predictions_names, self.confidences, self.predictions2_names, self.confidences2, self.pr], fmt='%s %s %.3f %s %.3f %.3f', header=header)
-
-
-	# 	#
-	# 	# Output to screen
-	# 	#
-	# 	self.SetPRFilter(PRfilter)
-	# 	if stdout:
-	# 		print(header)
-	# 		for i in range(len(self.npimages)):
-				
-	# 			if self.pr[i]<=self.PRfilter:
-	# 				print('{}\t{:20s}\t{:.3f}\t{:20s}\t{:.3f}\t{:.3f}'.format(self.im_names[i], self.classes[self.predictions[i]], self.confidences[i], self.classes[self.predictions2[i]], self.confidences2[i], self.pr[i] ) )
-	# 	return
-
-
+		self.simPred.params=np.load(self.modelpath+'/params.npy' , allow_pickle=True).item()
+		self.simPred.LoadModel(self.modelname, self.weightsname)
 
 
 
@@ -168,8 +117,13 @@ class Cpred:
 class Censemble:
 	''' Class for ensembling predictions from different models'''
 
-	# def __init__(self, modelnames=None, weightsname='bestweights.hdf5', testdir=None, predname='predict', verbose=False, outpath='./predict/', em='unanimity', absthres=0):
-	def __init__(self, modelnames=['./out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5'], weightnames=['bestweights.hdf5'], testdirs=['data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/'], labels=None, verbose=False, ensMethod='unanimity', absthres=0, absmetric='proba', screen=True):
+	def __init__(self, 
+				modelnames=['./trained-models/conv2/keras_model.h5'], 
+				weightnames=['./trained-models/conv2/bestweights.hdf5'], 
+				testdirs=['data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/'], 
+				labels=None, verbose=False, 
+				ensMethod='unanimity', absthres=0, 
+				absmetric='proba', screen=True):
 
 		self.modelnames		= modelnames		# List with the model names
 		assert(len(self.modelnames)==len(set(self.modelnames))) # No repeated models!
@@ -202,8 +156,8 @@ class Censemble:
 
 		for imn,mname in enumerate(self.modelnames):
 
-			modelpath,modelname=os.path.split(mname)
-			predictors.append(Cpred(modelname=modelname, modelpath=modelpath, weightsname=self.weightnames[imn]))
+			# modelpath,modelname=os.path.split(mname)
+			predictors.append(Cpred(modelname=mname, weightsname=self.weightnames[imn]))
 
 			# Check that all models use the same classes
 			if 0==imn:
@@ -243,6 +197,7 @@ class Censemble:
 		else:
 			return __UNCLASSIFIED__
 
+
 	def GetImageNames(self):
 
 		all_labels = []
@@ -270,6 +225,7 @@ class Censemble:
 
 		return np.array(all_names), (None if self.labels==None else np.array(all_labels))
 
+
 	def Majority(self, predictions):
 
 		if len(set(predictions))==0:
@@ -288,6 +244,7 @@ class Censemble:
 				imaj = list(counter.keys())[amax]
 				return self.classnames[imaj]
 
+
 	def WeightedMajority(self, predictions, confidences, absthres):
 		if len(set(predictions))>0:
 			cum_conf = {} # For each iclass, stores the cumulative confidence
@@ -305,6 +262,7 @@ class Censemble:
 				return __UNCLASSIFIED__
 		else:
 			return __UNCLASSIFIED__
+
 
 	def Leader(self, predictions, confidences):
 		if len(set(predictions))>0:
@@ -372,17 +330,14 @@ class Censemble:
 
 
 
+
 if __name__=='__main__':
 
 	parser = argparse.ArgumentParser(description='Load a model and use it to make predictions on images')
 	parser.add_argument('-modelfullnames', nargs='+', \
-		default=[ \
-				'./out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5', \
-				'./out/trained-models/conv2_image_sgd_aug_b32_lr5e-5_L128_t1000/keras_model.h5', \
-				'./out/trained-models/smallvgg_image_sgd_aug_b8_lr5e-6_L192_t5000/keras_model.h5', 	\
-				'./out/trained-models/smallvgg_image_adam_aug_b32_lr1e-3_L128_t5000/keras_model.h5'], \
-				help='name of the model to be loaded, must include path')
-	parser.add_argument('-weightnames', nargs='+', default=['bestweights.hdf5'], help='Name of alternative weights for the model.')
+		default	= ['./trained-models/conv2/keras_model.h5'], \
+		help 	= 'name of the model to be loaded, must include path')
+	parser.add_argument('-weightnames', nargs='+', default=['./trained-models/conv2/bestweights.hdf5'], help='Name of alternative weights for the model. Must include path')
 	parser.add_argument('-testdirs', nargs='+', default=['data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/'], help='directory of the test data')
 	parser.add_argument('-predname', default='./out/predictions/predict', help='Name of the file with the model predictions (without extension)')
 	parser.add_argument('-verbose', action='store_true', help='Print lots of useless tensorflow information')

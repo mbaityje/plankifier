@@ -239,8 +239,23 @@ Class for applying ensemble methods.
 Predictions are made through the `predict.py`, that loads one or more models, and makes predictions on the requested directories.
 
 ```
-python predict.py -testdirs ./data/1_zooplankton_0p5x/validation/tommy_validation/images/bosmina/ -modelfullname ./dummy_out/images//keras_model.h5 -predname dummy_out/predict
+python predict.py   -modelfullnames './trained-models/conv2/keras_model.h5' \  # Names of the models to be loaded
+                    -weightnames './trained-models/conv2/bestweights.hdf5' \   # For each model, weights to be loaded
+                    -testdirs 'data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/' \ # dirs with images to be checked
+                    -thresholds 0.6 \ # Abstention thresholds
+                    -ensMethods 'unanimity' \ # Ensembling thresholds. Useless in this example, since there is only one model
+                    -predname './out/predictions/predict' # Send output to ./out/predictions/predict.txt
+
 ```
+
+Explanation of the used parameters:
+
+- `modelfullnames`: Names of the models to be loaded
+- `weightnames`: For each model, weights to be loaded
+- `testdirs`:dirs with images to be checked
+- `thresholds`: Abstention thresholds (if confidence is lower than threshold, label as uncertain). Useless in this example, since there is only one model
+- `ensMethods`: Ensembling thresholds. Useless in this example, since there is only one model
+- `predname`: Send output to ./out/predictions/predict.txt
 
 In the notebook `predict.py` we show how to manually manage predictions.
 
