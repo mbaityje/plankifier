@@ -73,7 +73,7 @@ python predict.py -testdirs $testdirs -modelfullname $modelfullnames -predname $
 #
 
 # Validation tests
-cd val
-bash validation.sh        # Validate on Tommy-validation
-bash validation-counts.sh # Validate on populations (compare total counts, not single images)
-cd ..
+
+python validation.py 		# Validate on Tommy-validation
+python validation-counts.py # Validate on populations (compare total counts, not single images)
+

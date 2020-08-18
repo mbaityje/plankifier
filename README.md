@@ -22,7 +22,7 @@ Since keras gives lots of annoying messages, when launching in interactive shell
 
 ### Examples
 
-Examples of usage are contained in the script `master.sh` (launches all relevant the scripts) and in the notebook `example.ipynb` (shows how to train a plankton model).
+Examples of usage are contained in the script `master.sh` (launches all relevant the scripts), in the notebook `example.ipynb` (shows how to train a plankton model), and in the notebook `predict.py`.
 
 
 ---
