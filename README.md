@@ -11,11 +11,11 @@ This readme file refers to the `master` branch.
 
 To analyze the datasets, use `analyze_dataset.py`.
 
-To train, use `train.py`.
+To train, use `train.py`, that trains a model on our plankton data.
 
-To predict, use `predictions.py`.
+To predict, use `predictions.py`, that classifies images with the option of using ensemble methods.
 
-To validate, use `validation.py`.
+To validate, use `validation.py` and `validation-counts.py`, which perform two kinds of validation.
 
 Since keras gives lots of annoying messages, when launching in interactive shell, you might want to send redirect the stderr by appending `2>/dev/null` to your execution.
 
