@@ -34,7 +34,7 @@ import predict as pred
 
 class Cval:
 
-	def __init__(self, modelnames, testdirs, labels, ensMethods, thresholds=0):
+	def __init__(self, modelnames, testdirs, weightnames, labels, ensMethods, thresholds=0):
 
 		self.InitClasses()
 
@@ -43,6 +43,7 @@ class Cval:
 
 		self.ensembler=pred.Censemble(
 									modelnames=modelnames, 
+									weightnames=weightnames,
 									testdirs=testdirs, 
 									labels=labels,
 									screen=False
@@ -57,13 +58,13 @@ class Cval:
 	def InitClasses(self):
 		                    
 		self.__PLANKTONCLASSES__ = [\
-		'asplanchna','asterionella','bosmina','ceratium',
-		'chaoborus','conochilus','cyclops','daphnia','diaphanosoma','dinobryon',
-		'eudiaptomus','fragilaria','kellikottia','keratella_cochlearis',
-		'keratella_quadrata','leptodora','nauplius','paradileptus',
-		'rotifers','trichocerca','uroglena']
+		'asplanchna','asterionella','aphanizomenon','bosmina','ceratium','chaoborus',
+		'conochilus','cyclops','daphnia','diaphanosoma',
+		'dinobryon','eudiaptomus','fragilaria','hydra','kellikottia',
+		'keratella_cochlearis','keratella_quadrata','leptodora','nauplius','paradileptus',
+		'polyarthra','rotifers','synchaeta','trichocerca','uroglena']
 		self.__JUNKCLASSES__=[\
-		'dirt','filament','fish','maybe_cyano','unknown','unknown_plankton']
+		'copepod_skins','daphnia_skins','diatom_chain','dirt','filament','fish','maybe_cyano','unknown','unknown_plankton']
 		self.__ALLCLASSES__ = self.__PLANKTONCLASSES__+self.__JUNKCLASSES__
 
 
@@ -162,36 +163,6 @@ if __name__=='__main__':
 	parser.add_argument('-thresholds', nargs='+', default=[0.0], type=float, help='Abstention thresholds on the confidence (a good value is 0.8, except for weighted-majority, where it should be >=1).')
 	args=parser.parse_args()
 
-	testdirs_train = [
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/asplanchna/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/asterionella/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/bosmina/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/ceratium/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/chaoborus/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/conochilus/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/cyclops/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/daphnia/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/diaphanosoma/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/dinobryon/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/eudiaptomus/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/fragilaria/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/kellikottia/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/keratella_cochlearis/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/keratella_quadrata/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/leptodora/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/nauplius/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/paradileptus/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/rotifers/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/trichocerca/training_data', \
-	'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/uroglena/training_data', \
-	] # do not put trailing '/' in the directory names
-	# 'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/dirt/training_data', \
-	# 'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/filament/training_data', \
-	# 'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/fish/training_data', \
-	# 'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/maybe_cyano/training_data', \
-	# 'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/unknown/training_data', \
-	# 'data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/unknown_plankton/training_data', \
-
 	testdirs_tommy = [ \
 				'data/1_zooplankton_0p5x/validation/tommy_validation/images/asplanchna', \
 				'data/1_zooplankton_0p5x/validation/tommy_validation/images/asterionella', \
@@ -222,25 +193,13 @@ if __name__=='__main__':
 				'data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown_plankton', \
 	] # do not put trailing '/' in the directory names
 
-
-
 	testdirs = testdirs_tommy
 	labels = [os.path.split(td)[1] for td in testdirs_tommy]
 	# testdirs=testdirs_train
 
 
-	modelnames = [ \
-				'./out/trained-models/conv2_image_adam_aug_b8_lr1e-3_L128_t500/keras_model.h5']
-				# ,  \
-				# './out/trained-models/conv2_image_sgd_aug_b32_lr5e-5_L128_t1000/keras_model.h5',  \
-				# './out/trained-models/smallvgg_image_sgd_aug_b8_lr5e-6_L192_t5000/keras_model.h5', \
-				# './out/trained-models/smallvgg_image_sgd_aug_b32_lr5e-5_L128_t5000/keras_model.h5', \
-				# './out/trained-models/smallvgg_image_sgd_aug_b32_lr5e-6_L128_t10000/keras_model.h5', \
-				# './out/trained-models/smallvgg_image_sgd_aug_b8_lr5e-6_L128_t10000/keras_model.h5', \
-				# './out/trained-models/smallvgg_image_adam_aug_b32_lr5e-5_L128_t5000/keras_model.h5', \
-				# './out/trained-models/smallvgg_image_adam_aug_b32_lr1e-3_L128_t5000/keras_model.h5',\
-				# './out/trained-models/smallvgg_image_sgd_aug_b32_lr5e-6_L128_t5000/keras_model.h5',\
-				# './out/trained-models/conv2_image_sgd_aug_b4_lr5e-5_L128_t10000/keras_model.h5']
+	modelnames  = ['./trained-models/conv2/keras_model.h5']
+	weightnames = ['./trained-models/conv2/bestweights.hdf5']
 
 
 
@@ -253,8 +212,9 @@ if __name__=='__main__':
 								testdirs=testdirs, 
 								labels=labels,
 								ensMethods=['leader'],
-								thresholds=args.thresholds
-								)
+								thresholds=args.thresholds,
+								weightnames=weightnames
+							)
 			validator.Sweep()
 
 	else:
@@ -264,7 +224,8 @@ if __name__=='__main__':
 							testdirs=testdirs, 
 							labels=labels,
 							ensMethods=args.ensMethods,
-							thresholds=args.thresholds
-							)
+							thresholds=args.thresholds,
+							weightnames=args.weightnames
+						)
 		validator.Sweep()
 
