@@ -42,5 +42,27 @@ outpath="out/experiments/set1/${ttkind}_${model_image}${model_feat}_${opt}_lr${l
 echo $outpath
 
 mkdir -p $outpath
+#python train.py -datapaths $datapaths -outpath $outpath -opt=$opt -lr=$lr -bs=$bs -aug -model_image=$model_image -L $L -datakind=$datakind -ttkind=$ttkind -totEpochs=$totEpochs -earlyStopping=$earlyStopping
+
+
+
+# EXPERIMENT 3
+
+datapaths="./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/ ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.07.06/"
+opt='sgd'
+lr=1e-5
+bs=8
+L=128
+model_feat=''
+model_image='conv2'
+ttkind='image'
+datakind='image'
+totEpochs=5000
+earlyStopping=1000
+outpath="out/experiments/set1/${ttkind}_${model_image}${model_feat}_${opt}_lr${lr}bs${bs}L${L}totEp${totEpochs}es${earlyStopping}"
+
+echo $outpath
+
+mkdir -p $outpath
 python train.py -datapaths $datapaths -outpath $outpath -opt=$opt -lr=$lr -bs=$bs -aug -model_image=$model_image -L $L -datakind=$datakind -ttkind=$ttkind -totEpochs=$totEpochs -earlyStopping=$earlyStopping
 
