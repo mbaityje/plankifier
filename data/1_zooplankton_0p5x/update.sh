@@ -58,8 +58,7 @@ done
 #
 
 # Validation Tommy folder
-rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/tommy_validation ./validation/
-rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/validation* ./validation/
+rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/zooplankton_validationset_????.??.?? ./validation/
 
 
 

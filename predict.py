@@ -198,7 +198,12 @@ class Censemble:
 			return __UNCLASSIFIED__
 
 
-	def GetImageNames(self):
+	def GetImageNames(self, training_data=False):
+		'''
+		training_data is an auxiliary variable introduced to solve inconsistencies in the data structure
+		'''
+
+		training_data_string='/training_data' if training_data else ''
 
 		all_labels = []
 		all_names  = []
@@ -207,7 +212,7 @@ class Censemble:
 				print('You told me to read the images from a directory that does not exist:\n{}'.format(td))
 				raise IOError
 
-			im_names_here = np.array(glob.glob(td+'/*.jpeg'),dtype=object) 
+			im_names_here = np.array(glob.glob(td+training_data_string+'/*.jpeg'),dtype=object) 
 			all_names.extend( im_names_here)
 
 			if self.labels is not None:

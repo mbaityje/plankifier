@@ -185,6 +185,13 @@ if __name__=='__main__':
 	parser.add_argument('-thresholds', nargs='+', default=[0.0], type=float, help='Abstention thresholds on the confidence (a good value is 0.8, except for weighted-majority, where it should be >=1).')
 	args=parser.parse_args()
 
+
+	#
+	# Some hardcoded choices of testdirs:
+	#
+
+	# The Tommy validation dirs are obsolete and will be soon removed. They are only here for backward compatiblity tests.
+
 	testdirs_tommy = [ \
 				'data/1_zooplankton_0p5x/validation/tommy_validation/images/asplanchna', \
 				'data/1_zooplankton_0p5x/validation/tommy_validation/images/asterionella', \
@@ -215,9 +222,74 @@ if __name__=='__main__':
 				'data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown_plankton', \
 	] # do not put trailing '/' in the directory names
 
-	testdirs = testdirs_tommy
-	labels = [os.path.split(td)[1] for td in testdirs_tommy]
-	# testdirs=testdirs_train
+
+	testdirs_all = [ \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/asplanchna', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/asterionella', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/bosmina', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/ceratium', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/chaoborus', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/conochilus', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/cyclops', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/daphnia', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/diaphanosoma', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/dinobryon', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/dirt', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/eudiaptomus', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/filament', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/fragilaria', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/kellikottia', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/keratella_cochlearis', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/keratella_quadrata', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/leptodora', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/maybe_cyano', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/nauplius', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/paradileptus', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/rotifers', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/trichocerca', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/unknown', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/unknown_plankton', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/uroglena', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/aphanizomenon', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/asplanchna', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/asterionella', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/bosmina', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/ceratium', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/chaoborus', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/conochilus', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/copepod_skins', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/cyclops', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/daphnia', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/daphnia_skins', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/diaphanosoma', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/diatom_chain', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/dinobryon', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/dirt', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/eudiaptomus', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/filament', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/fish', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/fragilaria', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/kellikottia', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/keratella_cochlearis', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/keratella_quadrata', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/leptodora', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/nauplius', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/paradileptus', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/polyarthra', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/rotifers', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/synchaeta', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/trichocerca', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/unknown', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/unknown_plankton', \
+				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/uroglena', \
+	]
+
+
+
+	# testdirs = testdirs_tommy
+	testdirs=testdirs_all
+	labels = [os.path.split(td)[1] for td in testdirs]
+
 
 
 	modelnames  = ['./trained-models/conv2/keras_model.h5']
