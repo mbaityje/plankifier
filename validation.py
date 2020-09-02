@@ -7,6 +7,8 @@ Some parameters (especially those involving paths) are hard-coded because it's m
 Arguments:
 - thresholds
 - ensMethods (if None, doesn't ensemble)
+- modelnames
+- weightnames
 
 There is a memory problem when many models are loaded together.
 
@@ -22,7 +24,7 @@ The several metrics are given
 - accuracy: (TP+TN)/(TP+TN+FP+FN)
 
 Runs as:
-python validation.py -thresholds 0.0 0.9
+python validation.py -thresholds 0.0 0.9 -modelnames './trained-models/conv2/keras_model.h5' -weightnames './trained-models/conv2/bestweights.hdf5'
 '''
 
 
@@ -34,7 +36,7 @@ import predict as pred
 
 class Cval:
 
-	def __init__(self, modelnames, testdirs, weightnames, labels, ensMethods, thresholds=0):
+	def __init__(self, modelnames, testdirs, weightnames, labels, ensMethods, thresholds=0, training_data=False):
 
 		self.InitClasses()
 
@@ -46,7 +48,8 @@ class Cval:
 									weightnames=weightnames,
 									testdirs=testdirs, 
 									labels=labels,
-									screen=False
+									screen=False,
+									training_data=training_data
 							)
 		# self.res     = self.Cvres()
 
@@ -179,13 +182,6 @@ class Cval:
 
 if __name__=='__main__':
 
-
-	parser = argparse.ArgumentParser(description='Load a model and use it to make predictions on images')
-	parser.add_argument('-ensMethods', nargs='+', default=None, help='Ensembling methods. Choose from: \'unanimity\',\'majority\', \'leader\', \'weighted-majority\'. Weighted Majority implements abstention in a different way (a good value is 1).')
-	parser.add_argument('-thresholds', nargs='+', default=[0.0], type=float, help='Abstention thresholds on the confidence (a good value is 0.8, except for weighted-majority, where it should be >=1).')
-	args=parser.parse_args()
-
-
 	#
 	# Some hardcoded choices of testdirs:
 	#
@@ -285,6 +281,14 @@ if __name__=='__main__':
 	]
 
 
+	parser = argparse.ArgumentParser(description='Load a model and use it to make predictions on images')
+	parser.add_argument('-ensMethods', nargs='+', default=None, help='Ensembling methods. Choose from: \'unanimity\',\'majority\', \'leader\', \'weighted-majority\'. Weighted Majority implements abstention in a different way (a good value is 1).')
+	parser.add_argument('-thresholds', nargs='+', default=[0.0], type=float, help='Abstention thresholds on the confidence (a good value is 0.8, except for weighted-majority, where it should be >=1).')
+	parser.add_argument('-weightnames', nargs='*', default=[''], help='Name of the weights file (.hdf5, with path)')
+	parser.add_argument('-modelnames', nargs='*', default=['./trained-models/conv2/keras_model.h5'], help='')
+
+	args=parser.parse_args()
+
 
 	# testdirs = testdirs_tommy
 	testdirs=testdirs_all
@@ -292,14 +296,15 @@ if __name__=='__main__':
 
 
 
-	modelnames  = ['./trained-models/conv2/keras_model.h5']
-	weightnames = ['./trained-models/conv2/bestweights.hdf5']
+	# modelnames  = ['./trained-models/conv2/keras_model.h5']
+	# weightnames = ['./trained-models/conv2/bestweights.hdf5']
+
 
 
 
 	if args.ensMethods is None:
 
-		for m in modelnames:
+		for m in args.modelnames:
 			print('model:',m)
 
 			validator = Cval(modelnames=[m], 
@@ -307,19 +312,21 @@ if __name__=='__main__':
 								labels=labels,
 								ensMethods=['leader'],
 								thresholds=args.thresholds,
-								weightnames=weightnames
+								weightnames=args.weightnames,
+								training_data=True
 							)
 			validator.Sweep()
 
 	else:
-		print('models:',modelnames)
+		print('models:',args.modelnames)
 
-		validator = Cval(modelnames=modelnames, 
+		validator = Cval(modelnames=args.modelnames, 
 							testdirs=testdirs, 
 							labels=labels,
 							ensMethods=args.ensMethods,
 							thresholds=args.thresholds,
-							weightnames=args.weightnames
-						)
+							weightnames=args.weightnames,
+							training_data=True
+							)
 		validator.Sweep()
 

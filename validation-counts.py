@@ -37,7 +37,8 @@ print('There are {} images in total'.format(nimages) )
 ensembler=pr.Censemble(modelnames  	= modelnames, 
 						testdirs	= testdirs, 
 						weightnames	= weightnames,
-						screen		= False
+						screen		= False,
+						training_data=False
 						)
 ensembler.MakePredictions()
 ensembler.Ensemble(method=ensMethod, absthres=threshold)
@@ -65,6 +66,16 @@ print('According to the taxonomists, there are {} images'.format(df_tax.sum().va
 #
 
 df=pd.concat([df_cla, df_tax], axis=1, ignore_index=False, sort=True)
-df[['tax','cla']].sort_values(by='tax', ascending=False).plot.bar(logy=True)
+ax=df[['tax','cla']].sort_values(by='tax', ascending=False).plot.bar(logy=True)
+ax.set_ylabel("Taxon count")
+plt.tight_layout()
 plt.show()
 
+
+#
+# Make a nicer plot that excludes classes that are not present in either tax or cla
+#
+ax=df[(df.tax>0) & (df.cla>0)].sort_values(by='tax', ascending=False).plot.bar(logy=True)
+ax.set_ylabel("Taxon count")
+plt.tight_layout()
+plt.show()

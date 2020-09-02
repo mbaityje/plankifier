@@ -199,7 +199,8 @@ def LoadImageList(im_names, L, show=False):
 	for i,im_name in enumerate(im_names):
 		npimage,rescaled=LoadImage(im_name,L, show)
 		npimages[i]=npimage
-	return npimages/255.0
+	npimages/=255.0
+	return npimages
 
 
 class Cdata:

@@ -273,7 +273,12 @@ To run a validation just do
 ```
 python validation.py 2>/dev/null
 ```
-The models and test directories are currently hard-coded, in order not to have to write them each time.
+
+In the following case, we are also specifying abstention threshold, models and specific weights.
+```
+python validation.py -thresholds 0.0 0.9 -modelnames './trained-models/conv2/keras_model.h5' -weightnames './trained-models/conv2/bestweights.hdf5'
+```
+The test directories are currently hard-coded, in order not to have to write them each time, since they are always the same.
 Abstention thresholds (`-thresholds`) and ensembling methods (`-ensMethods`) can be given as command-line arguments.
 The program gives a command-line output with data on the confusion matrix, and a plot with the precision and recall
 for all plankton classes (junk classes are excluded).

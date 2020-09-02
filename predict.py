@@ -106,7 +106,10 @@ class Cpred:
 
 		# Create a Ctrain object. Maybe it is not needed, and we could straight out load the model.
 		self.simPred=t.Ctrain(verbose=False)
-		self.simPred.params=np.load(self.modelpath+'/params.npy' , allow_pickle=True).item()
+		try:
+			self.simPred.params=np.load(self.modelpath+'/params.npy' , allow_pickle=True).item()
+		except:
+			print('WARNING: We were not able to load ',self.modelpath+'/params.npy')
 		self.simPred.LoadModel(self.modelname, self.weightsname) # Loads models and updates weights
 
 
@@ -123,7 +126,8 @@ class Censemble:
 				testdirs=['data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/'], 
 				labels=None, verbose=False, 
 				ensMethod='unanimity', absthres=0, 
-				absmetric='proba', screen=True):
+				absmetric='proba', screen=True, 
+				training_data=False):
 
 		self.modelnames		= modelnames		# List with the model names
 		assert(len(self.modelnames)==len(set(self.modelnames))) # No repeated models!
@@ -143,7 +147,7 @@ class Censemble:
 		sizes = list(set([self.predictors[im].simPred.params.L  for im in range(self.nmodels)]) )
 
 		# Initialize data  to predict
-		self.im_names, self.im_labels = self.GetImageNames()
+		self.im_names, self.im_labels = self.GetImageNames(training_data=training_data)
 		self.npimages={} # Models are tailored to specific image sizes
 		for L in sizes:
 			self.npimages[L] = hd.LoadImageList(self.im_names, L, show=False) # Load images
@@ -208,6 +212,7 @@ class Censemble:
 		all_labels = []
 		all_names  = []
 		for itd,td in enumerate(self.testdirs):
+
 			if not os.path.isdir(td):
 				print('You told me to read the images from a directory that does not exist:\n{}'.format(td))
 				raise IOError
