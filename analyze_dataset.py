@@ -21,7 +21,7 @@ from PIL import Image
 #
 
 parser = argparse.ArgumentParser(description='Train a model on zooplankton images')
-parser.add_argument('-datapath', nargs='*', default=['./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/'], help="Path of the dataset")
+parser.add_argument('-datapath', nargs='*', default=['./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/','./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.07.06/'], help="Path of the dataset")
 parser.add_argument('-outpath', default='./out/', help="Path of the output")
 parser.add_argument('-name', default=None, help="Name for output")
 args=parser.parse_args()

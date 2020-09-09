@@ -77,5 +77,6 @@ plt.show()
 #
 ax=df[(df.tax>0) & (df.cla>0)].sort_values(by='tax', ascending=False).plot.bar(logy=True)
 ax.set_ylabel("Taxon count")
+ax.set_ylim(bottom=1)
 plt.tight_layout()
 plt.show()
