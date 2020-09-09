@@ -9,6 +9,10 @@ import numpy as np, pandas as pd
 
 import sys
 
+
+
+
+
 def ResizeWithProportions(im, desired_size):
 	'''
 	Take and image and resize it to a square of the desired size.

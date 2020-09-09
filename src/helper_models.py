@@ -9,6 +9,21 @@ from keras import backend as K
 from keras import metrics as metrics
 import numpy as np
 
+
+## Added by SK for MobileNet
+from keras.optimizers import Adam
+from keras.metrics import categorical_crossentropy
+from keras.preprocessing import image
+from keras.models import Model
+from keras.applications import imagenet_utils
+from keras.layers import Dense,GlobalAveragePooling2D
+from keras.applications import MobileNet
+from keras.applications.mobilenet import preprocess_input
+from keras.callbacks import ModelCheckpoint
+from keras.layers import Reshape
+from tensorflow.keras.layers import Input
+
+
 def CreateParams(layers= None, lr =None, bs=None, optimizer=None, totEpochs= None, dropout=None, callbacks= None, 
 				 initial_epoch=0, aug=None, modelfile=None, model_feat=None, model_image=None, load_weights=None, 
 				 # override_lr=False, 
@@ -125,10 +140,10 @@ class CModelWrapper:
 
 		elif self.modelname == 'conv2':
 			self.model = Conv2Layer.Build(input_shape=self.trainX[0].shape, classes=self.numclasses, last_activation='softmax')
-
+		elif self.modelname == 'mobile':
+			self.model = MobileNetPK.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)          
 		elif self.modelname == 'smallvgg':
 			self.model = SmallVGGNet.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
-
 		else:
 			raise NotImplementedError('SetModelImage() - chosen model {} is not implemented'.format(self.modelname))
 
@@ -242,7 +257,7 @@ class CModelWrapper:
 									initial_epoch = self.params['initial_epoch'])
 			else:
 				assert(self.modelkind!='feat', self.modelkind!='mixed', "We only augment with image data")
-				self.history = self.model.fit_generator(
+				self.history = self.model.fit(
 									self.params['aug'].flow(self.trainX, self.trainY, batch_size=self.params['bs']), 
 									validation_data=(self.testX, self.testY), 
 									epochs=self.params['totEpochs'], 
@@ -369,6 +384,9 @@ def MixedModel(trainX, trainY, testX, testY, params):
 			input_shape=trainXi[0].shape, classes=nout_i, last_activation = 'sigmoid', layers=params['layers'])
 	elif params['model_image'] == 'conv2':
 		model_image = Conv2Layer.Build(
+			input_shape=trainXi[0].shape, classes=nout_i, last_activation = 'sigmoid')
+	elif params['model_image'] == 'mobile':
+		model_image = MobileNet.Build(
 			input_shape=trainXi[0].shape, classes=nout_i, last_activation = 'sigmoid')
 	elif params['model_image'] == 'smallvgg':
 		model_image = SmallVGGNet.Build(
@@ -603,3 +621,32 @@ class LeNet: # This is from old code - was not tested here
 
 		# return the constructed network architecture
 		return model
+    
+    
+    
+class MobileNetPK:
+	@staticmethod
+	def Build(input_shape, classes):
+		# initialize the model
+		base_model=MobileNet(input_shape=input_shape,weights='imagenet',include_top=False,input_tensor=Input(shape=(128, 128, 3))) #imports the mobilenet model and discards the last 1000 neuron layer.
+		
+    # Add custom layers that needs to be trained
+		shape = (int(1024), 1, 1)
+		x=base_model.output
+		x=GlobalAveragePooling2D()(x)
+		x = Dropout(rate = 0.4, name='dropout1')(x)
+		x = BatchNormalization()(x)
+		x = Dense(512, activation='relu', bias_initializer='zeros')(x)
+		x = Dropout(rate = 0.3, name='dropout2')(x)
+		x = BatchNormalization()(x)  
+		preds = Dense(classes, activation='softmax', kernel_initializer='random_uniform', bias_initializer='zeros')(x)
+		model=Model(inputs=base_model.input,outputs=preds) #now a model has been created based on our architecture
+		for layer in model.layers[-7:]:
+			layer.trainable = True
+		# return the constructed network architecture
+		return model    
+    
+    
+    
+    
+    
