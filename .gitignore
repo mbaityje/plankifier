@@ -1,14 +1,23 @@
+# Useless extensions
 *~
 *.pyc
-out/
+*.tar.gz
+
+
+# Local directories
 old_scripts/
 out_old/
+out.save/
+
+
+# Auxiliary files
 __pycache__/
 **/__pycache__/
 .ipynb_checkpoints
-*.tar.gz
-
 TODO.md
 
+# Soft links to data and output directories
+out
+data
 data/1_zooplankton_0p5x/training/
 data/1_zooplankton_0p5x/validation/
