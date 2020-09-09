@@ -4,8 +4,10 @@
 # Requires access to the Eawag intranet, and the right mounting point for Q.
 #
 
+ZOODIR=data/1_zooplankton_0p5x/
+
 # These are the two dirs that we want to update
-mkdir -p validation training
+mkdir -p $ZOODIR/validation $ZOODIR/training
 
 #############################################################################
 # Full recovery of the directory (UNDESIRED, since includes backups folder) #
@@ -58,7 +60,8 @@ done
 #
 
 # Validation Tommy folder
-rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/zooplankton_validationset_????.??.?? ./validation/
+rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/tommy_validation ./validation/
+rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/validation* ./validation/
 
 
 
