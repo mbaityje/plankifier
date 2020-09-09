@@ -9,6 +9,10 @@ import numpy as np, pandas as pd
 
 import sys
 
+
+
+
+
 def ResizeWithProportions(im, desired_size):
 	'''
 	Take and image and resize it to a square of the desired size.
@@ -199,8 +203,7 @@ def LoadImageList(im_names, L, show=False):
 	for i,im_name in enumerate(im_names):
 		npimage,rescaled=LoadImage(im_name,L, show)
 		npimages[i]=npimage
-	npimages/=255.0
-	return npimages
+	return npimages/255.0
 
 
 class Cdata:
