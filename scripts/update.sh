@@ -4,24 +4,11 @@
 # Requires access to the Eawag intranet, and the right mounting point for Q.
 #
 
-ZOODIR=data/1_zooplankton_0p5x/
+QDIR=../../Q-AQUASCOPE # Root of the disk with the ECO plankton images
+ZOODIR=../data/1_zooplankton_0p5x/ # Dir where we want to place the plankton images
 
-# These are the two dirs that we want to update
+# These are the two zooplankton dirs that we want to update
 mkdir -p $ZOODIR/validation $ZOODIR/training
-
-#############################################################################
-# Full recovery of the directory (UNDESIRED, since includes backups folder) #
-#############################################################################
-
-# rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/* ./
-
-
-###########################################################################################################
-# Full recovery of training and validation folders (UNDESIRED at least now, since it includes raw images) #
-###########################################################################################################
-
-#rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/training/* ./training/
-#rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/* ./validation/
 
 
 #####################################################
@@ -32,7 +19,7 @@ mkdir -p $ZOODIR/validation $ZOODIR/training
 #
 # Loop over training datasets
 #
-for dataset in $(ls -d ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/training/*)
+for dataset in $(ls -d $QDIR/pictures/annotation_classifier/1_zooplankton_0p5x/training/*)
 do
     echo $dataset
     # Loop over classes
@@ -40,7 +27,7 @@ do
     for classdir in $(ls -d  $dataset/*)
     do
 	class=$(basename $classdir)
-	dir_here=training/$(basename $dataset)/$class                                            # The local version of the folder on Q
+	dir_here=$ZOODIR/training/$(basename $dataset)/$class                                            # The local version of the folder on Q
 	mkdir -p $dir_here/training_data                                                         # Create the folder in case it does not exist
 	rsync --exclude 'Thumbs.db' -au $classdir/features.tsv $dir_here/                        # Update the features.tsv file
 	rsync --exclude 'Thumbs.db' -au $classdir/training_data/*.jpeg $dir_here/training_data/  # Update the jpeg images
@@ -55,29 +42,32 @@ do
     printf "In total contains $tot jpeg images\n\n"
 done
 
-#
-# Loop over validation datasets
-#
 
-# Validation Tommy folder
-rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/tommy_validation ./validation/
-rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/validation* ./validation/
 
+#######################
+# Validation datasets #
+#######################
+
+# Validation folder
+rsync -auvr --exclude 'Thumbs.db' $QDIR/pictures/annotation_classifier/1_zooplankton_0p5x/validation/zooplankton_validationset_????.??.?? $ZOODIR/validation/
 
 
 # Counts folder
-rsync -auvr --exclude 'Thumbs.db' ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/counts ./validation/
-countsdir=../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/counts/
-counts_rel_path=$(grep LINUX-PATH-REL validation/counts/path-to-directory.txt|cut -f2 -d' ')
-ls ../../../Q-AQUASCOPE/pictures/annotation_classifier/1_zooplankton_0p5x/validation/counts//../../../../../lab/2020/annotation_workshop/pictures//year_2018/1530403202/0000000000_subset_static_html/images/00000/| grep -v rawcolor | grep -v binary
-countsdir_here=./validation/counts/
+rsync -auvr --exclude 'Thumbs.db' $QDIR/pictures/annotation_classifier/1_zooplankton_0p5x/validation/counts $ZOODIR/validation/
+countsdir=$QDIR/pictures/annotation_classifier/1_zooplankton_0p5x/validation/counts/
+counts_rel_path=$(grep LINUX-PATH-REL $ZOODIR/validation/counts/path-to-directory.txt|cut -f2 -d' ')
+ls $QDIR/pictures/annotation_classifier/1_zooplankton_0p5x/validation/counts//../../../../../lab/2020/annotation_workshop/pictures//year_2018/1530403202/0000000000_subset_static_html/images/00000/| grep -v rawcolor | grep -v binary
+countsdir_here=$ZOODIR/validation/counts/
 
 # Copy one by one to local the folders from which the counts were taken (excluding most of the rubbish that they contain)
 # I should have used the rsync options better and done this in a line
 for year in $(ls -d $countsdir/$counts_rel_path/*)
 do
+
+    echo $year
     for subdir in $(ls -d $year/*)
     do
+	echo $subdir
 	feat_path=$subdir/0000000000_subset_static_html/
 	img_path=$feat_path/images/00000/
 	feat_path_here=$countsdir_here/$(basename $year)/$(basename $subdir)/0000000000_subset_static_html
