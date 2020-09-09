@@ -3,6 +3,8 @@
 # This master script explains how to launch everything #
 ########################################################
 
+cd ..
+
 outdir_feat='./dummy_out/feat/'
 outdir_images='./dummy_out/images/'
 outdir_mixed='./dummy_out/mixed/'
