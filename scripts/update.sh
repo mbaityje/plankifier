@@ -38,7 +38,6 @@ do
 	let tot=$tot+$n
 	printf "$class:\t$n\n"
     done
-#    n=$(ls $dataset/*/training_data/*.jpeg | wc -l)
     printf "In total contains $tot jpeg images\n\n"
 done
 
@@ -56,7 +55,6 @@ rsync -auvr --exclude 'Thumbs.db' $QDIR/pictures/annotation_classifier/1_zooplan
 rsync -auvr --exclude 'Thumbs.db' $QDIR/pictures/annotation_classifier/1_zooplankton_0p5x/validation/counts $ZOODIR/validation/
 countsdir=$QDIR/pictures/annotation_classifier/1_zooplankton_0p5x/validation/counts/
 counts_rel_path=$(grep LINUX-PATH-REL $ZOODIR/validation/counts/path-to-directory.txt|cut -f2 -d' ')
-ls $QDIR/pictures/annotation_classifier/1_zooplankton_0p5x/validation/counts//../../../../../lab/2020/annotation_workshop/pictures//year_2018/1530403202/0000000000_subset_static_html/images/00000/| grep -v rawcolor | grep -v binary
 countsdir_here=$ZOODIR/validation/counts/
 
 # Copy one by one to local the folders from which the counts were taken (excluding most of the rubbish that they contain)
