@@ -3,7 +3,8 @@ Code for plankton dataset creation and classification based on Keras.
 
 End users (field scientists) should refer to the usage guide provided in the [code releases](https://github.com/mbaityje/plankifier/releases).
 
-This readme file refers to the `master` branch.
+For the necessary installations and a quick guide to install a virtual environment, use the script `./scripts/installation.sh`.
+
 
 ---
 
