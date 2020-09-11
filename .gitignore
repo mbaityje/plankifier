@@ -9,6 +9,8 @@ old_scripts/
 out_old/
 out.save/
 
+# Trained models (we only keep conv2 for examples)
+trained-models/mobilenet
 
 # Auxiliary files
 __pycache__/
