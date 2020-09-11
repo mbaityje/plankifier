@@ -66,7 +66,7 @@ python predict.py -testdirs $testdirs -modelfullname $modelfullnames -predname d
 # Predict with a better model
 modelfullnames="trained-models/conv2/keras_model.h5"
 testdirs='./data/1_zooplankton_0p5x/validation/tommy_validation/images/bosmina/ ./data/1_zooplankton_0p5x/validation/tommy_validation/images/uroglena/'
-python predict.py -testdirs $testdirs -modelfullname $modelfullnames -predname $outdir/predict
+python predict.py -testdirs $testdirs -modelfullname $modelfullnames -predname $outdir_images/predict
 
 
 

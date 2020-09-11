@@ -263,10 +263,10 @@ class Ctrain:
 
 		# Callbacks
 		checkpointer    = keras.callbacks.ModelCheckpoint(filepath=self.params.outpath+'/bestweights.hdf5', monitor='val_loss', verbose=0, save_best_only=True) # save the model at every epoch in which there is an improvement in test accuracy
-		logger          = keras.callbacks.callbacks.CSVLogger(self.params.outpath+'/epochs.log', separator=' ', append=False)
+		logger          = keras.callbacks.CSVLogger(self.params.outpath+'/epochs.log', separator=' ', append=False)
 		callbacks=[checkpointer, logger]
 		if self.params.earlyStopping>0:
-			earlyStopping   = keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', patience=self.params.earlyStopping, restore_best_weights=True)
+			earlyStopping   = keras.callbacks.EarlyStopping(monitor='val_loss', patience=self.params.earlyStopping, restore_best_weights=True)
 			callbacks.append(earlyStopping)
 
 		self.aug = None if (self.params.aug == False) else ImageDataGenerator(
