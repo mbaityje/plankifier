@@ -10,16 +10,23 @@ from collections import Counter
 import predict as pr
 
 
+parser = argparse.ArgumentParser(description='Load a model and use it to make predictions on images')
+parser.add_argument('-ensMethod', default='majority', help='Ensembling methods. Choose from: \'unanimity\',\'majority\', \'leader\', \'weighted-majority\'. Weighted Majority implements abstention in a different way (a good value is 1).')
+parser.add_argument('-threshold', default=0.0, type=float, help='Abstention thresholds on the confidence (a good value is 0.8, except for weighted-majority, where it should be >=1).')
+parser.add_argument('-weightnames', nargs='*', default=[''], help='Name of the weights file (.hdf5, with path)')
+parser.add_argument('-modelnames', nargs='*', default=['./trained-models/conv2/keras_model.h5'], help='')
+args=parser.parse_args()
+
 
 #
 # Input parameters (hardcoded, for the moment)
 #
-modelnames	= ['./trained-models/conv2/keras_model.h5']
-weightnames	= ['./trained-models/conv2/bestweights.hdf5']
+# modelnames	= ['./trained-models/conv2/keras_model.h5']
+# weightnames	= ['./trained-models/conv2/bestweights.hdf5']
 testdirs	= glob.glob('./data/1_zooplankton_0p5x/validation/counts/year_*/*/0000000000_subset_static_html/images/00000/')
 testimages	= glob.glob('./data/1_zooplankton_0p5x/validation/counts/year_*/*/0000000000_subset_static_html/images/00000/*')
-ensMethod	= 'majority'
-threshold	= 0.7
+# ensMethod	= 'majority'
+# threshold	= 0.7
 
 
 
@@ -34,14 +41,14 @@ print('There are {} images in total'.format(nimages) )
 # Produce classifier predictions
 #
 
-ensembler=pr.Censemble(modelnames  	= modelnames, 
+ensembler=pr.Censemble(modelnames  	= args.modelnames, 
 						testdirs	= testdirs, 
-						weightnames	= weightnames,
+						weightnames	= args.weightnames,
 						screen		= False,
 						training_data=False
 						)
 ensembler.MakePredictions()
-ensembler.Ensemble(method=ensMethod, absthres=threshold)
+ensembler.Ensemble(method=args.ensMethod, absthres=args.threshold)
 
 # Create a dataframe with the classification counts
 histo_cla = Counter(ensembler.guesses[:,1])
