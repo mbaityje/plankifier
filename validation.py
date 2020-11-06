@@ -172,6 +172,7 @@ class Cval:
 				label = str(hits)+'/'+str(total)
 			plt.annotate(label , xy=(i-0.4, 0.5), fontsize=5)
 
+		plt.tight_layout()
 
 		plt.show()
 
