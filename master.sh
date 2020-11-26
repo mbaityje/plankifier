@@ -31,6 +31,22 @@ python train.py -datapaths ./data/1_zooplankton_0p5x/training/zooplankton_traini
 python train.py -datapaths ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/ ./data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.07.06/ -outpath $outdir_mixed -opt=adam -class_select bosmina hydra dirt -lr=0.001 -bs=32 -aug -model_feat=mlp -model_image=conv2 -layers 128 48 -L 128 -datakind=mixed -ttkind=mixed -totEpochs=20 -earlyStopping=10
 
 
+# New additions to training:
+
+#1)   user can choose the classifier to train from "binary", "multi" or "versusall"
+#2)   user can run Bayesian search hypertuning and can choose more than one model simulataneously by making the hp_tuning parameter to true.
+#3)   user can choose to do either Average ensemble or Stacking ensemble and select the models to be used for ensemble
+#4)  user can now save the preprocessed data and filenames if -save_data is chosen yes
+#5) user can choose either to keep the proportion of the images while preprocessing by controlling the resize parameter either set to 1 or 2
+
+## Preprocess images by keeping the image proportions and train the mixed model
+python train.py -datapaths /local/kyathasr/plankifier/data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/ /local/kyathasr/plankifier/data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.07.06/ -outpath ./trained-models/MultiClass_resize -classifier multi -aug -models_image conv mobile eff0 eff7 incepv3 res50 dense121 -L 128 -datakind=mixed -ttkind=mixed -epochs 150 -hp_tuning yes -max_trials 10 -executions_per_trial 1 -resize_images 1 -Bayesian_epoch 30 -stacking_ensemble yes -Avg_ensemble yes -finetune 1 -compute_extrafeat yes save_data yes -mixed_from_finetune 1 -mixed_from_notune 1
+
+## Preprocess images by keeping the image proportions and train the mixed model
+python train.py -datapaths /local/kyathasr/plankifier/data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.04.28/ /local/kyathasr/plankifier/data/1_zooplankton_0p5x/training/zooplankton_trainingset_2020.07.06/ -outpath ./trained-models/MultiClass_rescale -classifier multi -aug -models_image conv mobile eff0 eff7 incepv3 res50 dense121 -L 128 -datakind=mixed -ttkind=mixed -epochs 150 -hp_tuning yes -max_trials 10 -executions_per_trial 1 -resize_images 2 -Bayesian_epoch 30 -stacking_ensemble yes -Avg_ensemble yes -finetune 1 -compute_extrafeat yes -save_data yes -mixed_from_finetune 1 -mixed_from_notune 1 
+
+
+
 
 
 #

@@ -35,7 +35,8 @@ import train as t
 # from PIL import Image
 import tensorflow as tf
 from collections import Counter
-
+# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 __UNCLASSIFIED__ = 'Unclassified'
 
@@ -145,12 +146,15 @@ class Censemble:
 		self.predictors, self.classnames = self.InitPredictors()
 
 		sizes = list(set([self.predictors[im].simPred.params.L  for im in range(self.nmodels)]) )
-
+        
+		resize_images = self.predictors[0].simPred.params.resize_images ## This needs to be written elegently later
+        
 		# Initialize data  to predict
 		self.im_names, self.im_labels = self.GetImageNames(training_data=training_data)
 		self.npimages={} # Models are tailored to specific image sizes
 		for L in sizes:
-			self.npimages[L] = hd.LoadImageList(self.im_names, L, show=False) # Load images
+# 			self.npimages[L] = hd.LoadImageList(self.im_names, L, show=False) # Load images
+			self.npimages[L] = hd.LoadImageList(self.im_names, L,resize_images, show=False) # Load 
 
 
 	def InitPredictors(self):

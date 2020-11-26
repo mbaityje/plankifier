@@ -9,6 +9,114 @@ import numpy as np, pandas as pd
 
 import sys
 
+import math
+
+# import the necessary packages
+from scipy.spatial import distance as dist
+from imutils import perspective
+from imutils import contours
+import argparse
+import imutils
+import cv2
+import pickle
+from termcolor import colored
+
+import sys, os, keras, argparse, glob, pathlib
+import matplotlib.pyplot as plt, seaborn as sns
+
+
+
+def compute_extrafeat_function(df):
+    
+	dfExtraFeat = pd.DataFrame()
+	dfFeatExtra1=pd.DataFrame(columns=['width','height','w_rot','h_rot','angle_rot','aspect_ratio_2',
+                                 'rect_area','contour_area','contour_perimeter','extent',
+                                 'compactness','formfactor','hull_area','solidity_2','hull_perimeter',
+                                 'ESD','Major_Axis','Minor_Axis','Angle','Eccentricity1','Eccentricity2',
+                                 'Convexity','Roundness'])
+	dfFeatExtra2=pd.DataFrame(columns=['m00', 'm10', 'm01', 'm20', 'm11', 'm02', 'm30', 'm21', 'm12', 'm03',
+       'mu20', 'mu11', 'mu02', 'mu30', 'mu21', 'mu12', 'mu03', 'nu20', 'nu11',
+       'nu02', 'nu30', 'nu21', 'nu12', 'nu03'])
+    
+	for i in range(len(df)):
+		image =cv2.imread(df.filename[i])
+		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+		blur = cv2.blur(gray, (2, 2)) # blur the image
+		ret, thresh = cv2.threshold(blur, 35, 255, cv2.THRESH_BINARY)
+		contours,hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+		# Find the largest contour
+		cnt = max(contours, key = cv2.contourArea)
+		# Bounding rectangle
+		x,y,width,height = cv2.boundingRect(cnt)
+		# Rotated rectangle
+		rot_rect = cv2.minAreaRect(cnt)
+		rot_box = cv2.boxPoints(rot_rect)
+		rot_box = np.int0(rot_box)
+		w_rot=rot_rect[1][0]
+		h_rot=rot_rect[1][1]
+		angle_rot=rot_rect[2]
+		# Find Image moment of largest contour
+		M = cv2.moments(cnt)
+		# Find centroid
+		cx = int(M['m10']/M['m00'])
+		cy = int(M['m01']/M['m00'])
+		# Find the Aspect ratio or elongation --It is the ratio of width to height of bounding rect of the object.
+		aspect_ratio = float(width)/height
+		# Rectangular area
+		rect_area = width*height
+		# Area of the contour
+		contour_area = cv2.contourArea(cnt)
+		# Perimeter of the contour
+		contour_perimeter = cv2.arcLength(cnt,True)
+		# Extent --Extent is the ratio of contour area to bounding rectangle area
+		extent = float(contour_area)/rect_area
+		# Compactness -- from MATLAB
+		compactness = (np.square(contour_perimeter))/(4*np.pi*contour_area)
+		# Form factor
+		formfactor = (4*np.pi*contour_area)/(np.square(contour_perimeter))
+		# Convex hull points
+		hull_2 = cv2.convexHull(cnt)
+		# Convex Hull Area
+		hull_area = cv2.contourArea(hull_2)
+		# solidity --Solidity is the ratio of contour area to its convex hull area.
+		solidity = float(contour_area)/hull_area
+		# Hull perimeter
+		hull_perimeter = cv2.arcLength(hull_2,True)
+		# Equivalent circular Diameter-is the diameter of the circle whose area is same as the contour area.
+		ESD = np.sqrt(4*contour_area/np.pi)
+		# Orientation, Major Axis, Minos axis -Orientation is the angle at which object is directed
+		(x1,y1),(Major_Axis,Minor_Axis),angle = cv2.fitEllipse(cnt)
+		# Eccentricity or ellipticity.
+		Eccentricity1=Minor_Axis/Major_Axis
+		Mu02=M['m02']-(cy*M['m01'])
+		Mu20=M['m20']-(cx*M['m10'])
+		Mu11=M['m11']-(cx*M['m01'])
+		Eccentricity2=(np.square(Mu02-Mu20))+4*Mu11/contour_area
+		# Convexity
+		Convexity=hull_perimeter/contour_perimeter
+		#Roundness
+		Roundness=(4*np.pi*contour_area)/(np.square(hull_perimeter))
+    
+		dfFeatExtra1.loc[i] = [width,height,w_rot,h_rot,angle_rot,aspect_ratio,rect_area,contour_area,
+                         contour_perimeter,extent,compactness,formfactor,hull_area,solidity,
+                         hull_perimeter,ESD,Major_Axis,Minor_Axis,angle,Eccentricity1,
+                         Eccentricity2,Convexity,Roundness]
+		dfFeatExtra2.loc[i] = M
+    
+
+	dfExtraFeat=pd.concat([dfFeatExtra1,dfFeatExtra2], axis=1)
+    
+	return dfExtraFeat
+    
+    
+
+
+def ResizeWithoutProportions(im,desired_size):
+	new_im = im.resize((desired_size, desired_size), Image.LANCZOS)
+	rescaled=1
+	return new_im,rescaled
+
+
 def ResizeWithProportions(im, desired_size):
 	'''
 	Take and image and resize it to a square of the desired size.
@@ -46,25 +154,44 @@ def ResizeWithProportions(im, desired_size):
 
 	return new_im, rescaled
 
-def ReduceClasses(datapaths, class_select):
+def ReduceClasses(datapaths, class_select,classifier):
 	print('datapaths:',datapaths)
 	# allClasses = [ name for name in os.listdir(datapaths) if os.path.isdir(os.path.join(datapaths, name)) ]
 	allClasses = list(set([ name for idata in range(len(datapaths)) for name in os.listdir(datapaths[idata]) if os.path.isdir(os.path.join(datapaths[idata], name))]))
 	print('classes from datapaths:', allClasses)
-	if class_select is None:
-		class_select = allClasses
-	else:
-		if not set(class_select).issubset(allClasses):
-			print('Some of the classes input by the user are not present in the dataset.')
-			print('class_select:',class_select)
-			print('all  classes:',allClasses)
-			raise ValueError
-	return class_select
+    
+	if classifier=='multi':
+		if class_select is None:
+			class_select = allClasses
+		else:
+			if not set(class_select).issubset(allClasses):
+				print('Some of the classes input by the user are not present in the dataset.')
+				print('class_select:',class_select)
+				print('all  classes:',allClasses)
+				raise ValueError
+		return class_select
+	elif classifier=='binary':
+		class_select = class_select
+		return class_select
+	elif classifier=='versusall':
+		class_select_binary = class_select
+		class_select = allClasses  
+        
+		return class_select,class_select_binary
+
+
+# learning rate schedule
+def step_decay(epoch):
+	initial_lrate = 0.01
+	drop = 0.5
+	epochs_drop = 10.0
+	lrate = initial_lrate * math.pow(drop, math.floor((1+epoch)/epochs_drop))
+	return lrate
 
 
 
 
-def LoadMixed(datapaths, L, class_select=None, alsoImages=True, training_data=True):
+def LoadMixed(datapaths, L, class_select=None,classifier=None,resize_images=None, alsoImages=True, training_data=True):
 	'''
 	Uses the data in datapath to create a DataFrame with images and features. 
 	For each class, we read a tsv file with the features. This file also contains the name of the corresponding image, which we fetch and resize.
@@ -83,67 +210,183 @@ def LoadMixed(datapaths, L, class_select=None, alsoImages=True, training_data=Tr
 	training_data_dir = '/training_data/' if training_data==True else '/'
 
 	df = pd.DataFrame()
-	class_select=ReduceClasses(datapaths, class_select)	# Decide whether to use all available classes
+	dfA = pd.DataFrame()
+	dfB = pd.DataFrame()
+    
+	if classifier=='binary':    
+		class_select=ReduceClasses(datapaths, class_select,classifier)	# Decide whether to use all available classes
+		if len(class_select)==2:
+# 			print('LENGTH of CLASS_SELECT: {}'.format(len(class_select)))
+			# Loop for data loading
+			for c in class_select: # Loop over the classes
+				# Read from tsv file, and create column with full path to the image
+				dfFeat = pd.DataFrame()
+				for idp in range(len(datapaths)):
+					try: # It could happen that a class is contained in one datapath but not in the others
+						dftemp = pd.read_csv(datapaths[idp]+c+'/features.tsv', sep = '\t')
+						dftemp['filename'] = [datapaths[idp]+c+training_data_dir+os.path.basename(dftemp.url[ii]) 
+                                              for ii in range(len(dftemp))]
+						dfFeat = pd.concat([dfFeat, dftemp], axis=0, sort=True)
+					except:
+						pass
+				print('class: {} ({})'.format(c, len(dfFeat)))
+				# Each line in features.tsv should be associated with classname (and image, if the options say it's true)
+				for index, row in dfFeat.iterrows():
+					if alsoImages:
+						npimage,rescaled,filename=LoadImage(row.filename,L,resize_images)                                   
 
-	# Loop for data loading
-	for c in class_select: # Loop over the classes
+						dftemp=pd.DataFrame([[c,npimage,rescaled]+row.to_list()], 
+                                            columns ['classname','npimage','rescaled']+dfFeat.columns.to_list())
+					else: #alsoImages is False here
+						dftemp=pd.DataFrame([[c]+row.to_list()] ,columns=['classname']+dfFeat.columns.to_list())
 
-		# Read from tsv file, and create column with full path to the image
-		dfFeat = pd.DataFrame()
-		for idp in range(len(datapaths)):
-			try: # It could happen that a class is contained in one datapath but not in the others
-				dftemp = pd.read_csv(datapaths[idp]+c+'/features.tsv', sep = '\t')
-				dftemp['filename'] = [datapaths[idp]+c+training_data_dir+os.path.basename(dftemp.url[ii]) for ii in range(len(dftemp))]
-				dfFeat = pd.concat([dfFeat, dftemp], axis=0, sort=True)
-			except:
-				pass
-
-		print('class: {} ({})'.format(c, len(dfFeat)))
-
-		
-		# Each line in features.tsv should be associated with classname (and image, if the options say it's true)
-		for index, row in dfFeat.iterrows():
-
+					df=pd.concat([df,dftemp], axis=0, sort=True)
+			# If images were loaded, scale the raw pixel intensities to the range [0, 1]
 			if alsoImages:
-				image=Image.open(row.filename)
-				image,rescaled = ResizeWithProportions(image, L) # Set image's largest dimension to target size, and fill the rest with black pixels
-				npimage = np.array(image.copy() , dtype=np.float32)			 # Convert to numpy
+				df.npimage = df.npimage / 255.0 
+		else:
+			print('Check if the number of classes is equal to TWO (2)')
+			raise ValueError
 
-				dftemp=pd.DataFrame([[c,npimage,rescaled]+row.to_list()], columns=['classname','npimage','rescaled']+dfFeat.columns.to_list())
-				image.close()
-			else: #alsoImages is False here
-				dftemp=pd.DataFrame([[c]+row.to_list()] ,columns=['classname']+dfFeat.columns.to_list())
+	elif classifier=='multi':    
+		class_select=ReduceClasses(datapaths, class_select,classifier)	# Decide whether to use all available classes
+		if len(class_select)>2:
+# 			print('LENGTH of CLASS_SELECT: {}'.format(len(class_select)))
+			# Loop for data loading
+			for c in class_select: # Loop over the classes
+				# Read from tsv file, and create column with full path to the image
+				dfFeat = pd.DataFrame()
+				for idp in range(len(datapaths)):
+					try: # It could happen that a class is contained in one datapath but not in the others
+						dftemp = pd.read_csv(datapaths[idp]+c+'/features.tsv', sep = '\t')
+						dftemp['filename'] = [datapaths[idp]+c+training_data_dir+os.path.basename(dftemp.url[ii]) 
+                                              for ii in range(len(dftemp))]
+						dfFeat = pd.concat([dfFeat, dftemp], axis=0, sort=True)
+					except:
+						pass
+				print('class: {} ({})'.format(c, len(dfFeat)))
+				# Each line in features.tsv should be associated with classname (and image, if the options say it's true)
+				for index, row in dfFeat.iterrows():
+					if alsoImages:
+						npimage,rescaled,filename=LoadImage(row.filename,L,resize_images)                                   
 
-			df=pd.concat([df,dftemp], axis=0, sort=True)
+						dftemp=pd.DataFrame([[c,npimage,rescaled]+row.to_list()], 
+                                            columns=['classname','npimage','rescaled']+dfFeat.columns.to_list())
+					else: #alsoImages is False here
+						dftemp=pd.DataFrame([[c]+row.to_list()] ,columns=['classname']+dfFeat.columns.to_list())
+					df=pd.concat([df,dftemp], axis=0, sort=True)
+			# If images were loaded, scale the raw pixel intensities to the range [0, 1]
+			if alsoImages:
+				df.npimage = df.npimage / 255.0 
+		else:
+			print('Check if the number of classes is greater than TWO (2)')
+			raise ValueError
+     
+	elif classifier=='versusall':    
+			class_select,class_select_binary=ReduceClasses(datapaths, class_select,classifier)
+# 			print('Names of binary class: {}'.format(class_select_binary))
+# 			print('total binary class: {}'.format(len(class_select_binary)))
+			# Get names of images belonging to this class, from all the data paths
+			class_select = [classes for classes in class_select if classes not in class_select_binary]
+			negative_class_name='NOT_' + '_or_'.join(class_select_binary) 
+			if len(class_select_binary)>1:
+				positive_class_name='_or_'.join(class_select_binary)
+			else:
+				positive_class_name='_'.join(class_select_binary) 
+# 			print('POSITIVE class: {}'.format(positive_class_name))
+# 			print('NEGATIVE class: {}'.format(negative_class_name))      
+		# Loop for data loading
+			Total_positive_class=0
+			for c in class_select_binary: # Loop over the classes
+				# Read from tsv file, and create column with full path to the image
+				dfFeatB = pd.DataFrame()
+				for idp in range(len(datapaths)):
+					try: # It could happen that a class is contained in one datapath but not in the others
+						dftempB = pd.read_csv(datapaths[idp]+c+'/features.tsv', sep = '\t')
+						dftempB['filename'] = [datapaths[idp]+c+training_data_dir+os.path.basename(dftempB.url[ii]) 
+                                               for ii in range(len(dftempB))]
+						dfFeatB = pd.concat([dfFeatB, dftempB], axis=0, sort=True)
+					except:
+						pass
+				print('Individual POSITIVE class: {} ({})'.format(c, len(dfFeatB)))
+				Total_positive_class=Total_positive_class+len(dfFeatB)
+				dftempimageBs=[]
+				# Each line in features.tsv should be associated with classname (and image, if the options say it's true)
+				for index, row in dfFeatB.iterrows():
+					if alsoImages:
+						npimageB,rescaledB,filenameB=LoadImage(row.filename,L,resize_images)                                   
+						dftempB=pd.DataFrame([[positive_class_name,npimageB,rescaledB]+row.to_list()], 
+                                             columns=['classname','npimage','rescaled']+dfFeatB.columns.to_list()) 
+# 						image.close()
+					else: #alsoImages is False here
+						dftempB=pd.DataFrame([[positive_class_name]+row.to_list()] ,columns=['classname']+dfFeatB.columns.to_list())
+					dfB=pd.concat([dfB,dftempB],axis=0, sort=True)            
+			print('Total POSITIVE class: {} ({})'.format(positive_class_name, Total_positive_class))         
+# 			If images were loaded, scale the raw pixel intensities to the range [0, 1]
+			if alsoImages:
+				dfB.npimage = dfB.npimage / 255.0 
+			concatenated_list = pd.DataFrame()
 
-	# If images were loaded, scale the raw pixel intensities to the range [0, 1]
-	if alsoImages:
-		df.npimage = df.npimage / 255.0 
+		# Loop for data loading
+			for c in class_select: # Loop over the classes
+				# Read from tsv file, and create column with full path to the image
+				dfFeatA = pd.DataFrame()
+				for idp in range(len(datapaths)):
+					try: # It could happen that a class is contained in one datapath but not in the others
+						dftempA = pd.read_csv(datapaths[idp]+c+'/features.tsv', sep = '\t')
+						dftempA['filename'] = [datapaths[idp]+c+training_data_dir+os.path.basename(dftempA.url[ii]) 
+                                               for ii in range(len(dftempA))]
+						dfFeatA = pd.concat([dfFeatA, dftempA], axis=0, sort=True)
+# 						print('original class: {} ({})'.format(c, len(dfFeatA)))
+						dfFeatA = dfFeatA.sample(frac=0.5, replace=True, random_state=1)
+# 						print('50% class: {} ({})'.format(c, len(dfFeatA)))
+						concatenated_list=pd.concat([concatenated_list,dfFeatA]) 
+# 						print('ConCatenated:({})'.format(len(concatenated_list)))                
+					except:
+						pass
+			Negative_class = concatenated_list.sample(n=len(dfB), replace=True)
+			print('Total NEGATIVE class: {} ({})'.format(negative_class_name, len(Negative_class)))
+			# Each line in features.tsv should be associated with classname (and image, if the options say it's true)
+			for index, row in Negative_class.iterrows():
+				if alsoImages:
+					npimageA,rescaledA,filenameA=LoadImage(row.filename,L,resize_images)                                   
+					dftempA=pd.DataFrame([[negative_class_name,npimageA,rescaledA]+row.to_list()], 
+                                         columns=['classname','npimage','rescaled']+dfFeatA.columns.to_list())
+				else: #alsoImages is False here
+					dftempA=pd.DataFrame([[negative_class_name]+row.to_list()] ,columns=['classname']+dfFeatA.columns.to_list())    
+				dfA=pd.concat([dfA,dftempA], axis=0, sort=True)
+			# If images were loaded, scale the raw pixel intensities to the range [0, 1]
+			if alsoImages:
+				dfA.npimage = dfA.npimage / 255.0 
+			df=pd.concat([dfB,dfA], axis=0)    # Concatenate Selected class and all other class
+	df = df.sample(frac=1).reset_index(drop=True)
+	return df
 
-	return df.reset_index(drop=True) # The data was loaded without an index, that we add with reset_index()
 
 
-
-def LoadImage(filename, L=None, show=False):
+def LoadImage(filename, L=None,resize_images=None,show=False):
 	''' Loads one image, and rescales it to size L.
 	The pixel values are between 0 and 255, instead of between 0 and 1, so they should be normalized outside of the function 
 	'''
 
 	image = Image.open(filename)
 	# Set image's largest dimension to target size, and fill the rest with black pixels
-	if L is None:
+	if resize_images==0 or resize_images is None :
 		rescaled=0
-	else:
+	elif resize_images ==1:
 		image,rescaled = ResizeWithProportions(image, L) # width and height are assumed to be the same (assertion at the beginning)
+	elif resize_images ==2:
+		image,rescaled = ResizeWithoutProportions(image, L) # width and height are assumed to be the same (assertion at the beginning)
 	npimage = np.array(image.copy(), dtype=np.float32)
 
 	if show:
 		image.show()
 	image.close()
-	return npimage, rescaled
+    
+	return npimage, rescaled, filename
 
 
-def LoadImages(datapaths, L, class_select=None, training_data=True):
+def LoadImages(datapaths, L, class_select=None,classifier=None,resize_images=None, training_data=True):
 	'''
 	Uses the data in datapath to create a DataFrame with images only. 
 	This cannot be a particular case of the mixed loading, because the mixed depends on the files written in the features.tsv file, whereas here we fetch the images directly.
@@ -158,38 +401,104 @@ def LoadImages(datapaths, L, class_select=None, training_data=True):
 	'''
 
 	df = pd.DataFrame()
-	class_select=ReduceClasses(datapaths, class_select)	# Decide whether to use all available classes
-
+	dfA = pd.DataFrame()
+	dfB = pd.DataFrame()
+    
 	# The following condition is because the taxonomists used different directory structures
 	names='/training_data/*.jp*g' if training_data==True else '/*.jp*g'
+    
+	if classifier=='multi':    
+		class_select=ReduceClasses(datapaths, class_select,classifier)	# Decide whether to use all available classes
+		if len(class_select)>2:  
+			for c in class_select:
+				# Get names of images belonging to this class, from all the data paths
+				classImages = []
+				for idp in range(len(datapaths)):
+					classImages.extend( glob.glob(datapaths[idp]+'/'+c+'/'+names) )
+				# Create an empty dataframe for this class
+				dfClass=pd.DataFrame(columns=['filename','classname','npimage'])
+				print('class: {} ({})'.format(c, len(classImages)))
+				for i,imageName in enumerate(classImages):
+					npimage,rescaled,filename=LoadImage(imageName,L,resize_images)
+					dfClass.loc[i] = [filename,c,npimage]
+				df=pd.concat([df,dfClass], axis=0)
+			df.npimage = df.npimage / 255.0 
+		else:
+			print('Check if the number of classes is greater than TWO (2)')
+			raise ValueError
+
+	if classifier=='binary':    
+		class_select=ReduceClasses(datapaths, class_select,classifier)	# Decide whether to use all available classes
+		if len(class_select)==2:  
+			for c in class_select:
+				# Get names of images belonging to this class, from all the data paths
+				classImages = []
+				for idp in range(len(datapaths)):
+					classImages.extend( glob.glob(datapaths[idp]+'/'+c+'/'+names) )
+				# Create an empty dataframe for this class
+				dfClass=pd.DataFrame(columns=['filename','classname','npimage'])
+				print('class: {} ({})'.format(c, len(classImages)))
+				for i,imageName in enumerate(classImages):
+					npimage,rescaled,filename=LoadImage(imageName,L,resize_images)
+					dfClass.loc[i] = [filename,c,npimage]
+				df=pd.concat([df,dfClass], axis=0)
+			df.npimage = df.npimage / 255.0 
+		else:
+			print('Check if the number of classes is equal to TWO (2)')
+			raise ValueError 
+     
+	elif classifier=='versusall':    
+			class_select,class_select_binary=ReduceClasses(datapaths, class_select,classifier)
+			class_select = [classes for classes in class_select if classes not in class_select_binary]
+
+			negative_class_name='NOT_' + '_or_'.join(class_select_binary) 
+			if len(class_select_binary)>1:
+				positive_class_name='_or_'.join(class_select_binary)
+			else:
+				positive_class_name='_'.join(class_select_binary)          
+			concatenated_list = []
+			Total_positive_class=0
+			for c in class_select_binary:
+				# Get names of images belonging to this class, from all the data paths
+				BinaryclassImages = []
+				for bidp in range(len(datapaths)):
+					BinaryclassImages.extend( glob.glob(datapaths[bidp]+'/'+c+'/'+names) )
+				# Create an empty dataframe for this class
+				dfBClass=pd.DataFrame(columns=['filename','classname','npimage'])
+				print('Individual POSITIVE class: {} ({})'.format(c, len(BinaryclassImages)))
+				Total_positive_class=Total_positive_class+len(BinaryclassImages)
+				for bi,BinaryimageName in enumerate(BinaryclassImages):
+					npimageB,rescaled,filenameB=LoadImage(BinaryimageName,L,resize_images)
+					dfBClass.loc[bi] = [filenameB,positive_class_name,npimageB]
+				dfB=pd.concat([dfB,dfBClass], axis=0)
+			print('Total POSITIVE class: {} ({})'.format(positive_class_name, Total_positive_class))         
+			dfB.npimage = dfB.npimage / 255.0 
+    
+			for c in class_select:
+				classImages = []
+				for idp in range(len(datapaths)):
+					classImages.extend( glob.glob(datapaths[idp]+'/'+c+'/'+names) )
+				random_classImages = np.random.choice(classImages, int(len(classImages)*0.50))
+#				print('50% data of selected class: {} ({})'.format(c, len(random_classImages)))
+				concatenated_list=np.concatenate([concatenated_list,random_classImages])
+# 				print('class: {} ({})'.format(c, len(classImages))) 
+# 				print('Concatenated images ({})'.format( len(concatenated_list))) 
+			Negative_class = np.random.choice(concatenated_list, len(dfB))
+			print('Total NEGATIVE class: {} ({})'.format(negative_class_name, len(Negative_class))) 
+			# Create an empty dataframe for this class
+			dfAClass=pd.DataFrame(columns=['filename','classname','npimage'])  
+			for i,imageName in enumerate(Negative_class):
+				npimageA,rescaled,filenameA=LoadImage(imageName,L,resize_images)
+				dfAClass.loc[i] = [filenameA,negative_class_name,npimageA]
+			dfA=pd.concat([dfA,dfAClass], axis=0)
+			dfA.npimage = dfA.npimage / 255.0 
+			df=pd.concat([dfB,dfA], axis=0)    # Concatenate Selected class and all other class
+	df = df.sample(frac=1).reset_index(drop=True)
+	return df
 
 
-	for c in class_select:
 
-		# Get names of images belonging to this class, from all the data paths
-		classImages = []
-		for idp in range(len(datapaths)):
-			classImages.extend( glob.glob(datapaths[idp]+'/'+c+'/'+names) )
-
-		# Create an empty dataframe for this class
-		dfClass=pd.DataFrame(columns=['classname','npimage'])
-
-		print('class: {} ({})'.format(c, len(classImages)))
-
-		for i,imageName in enumerate(classImages):
-
-			npimage,rescaled=LoadImage(imageName,L)
-			dfClass.loc[i] = [c,npimage]
-
-		df=pd.concat([df,dfClass], axis=0)
-
-	df.npimage = df.npimage / 255.0 
-
-	return df.reset_index(drop=True)
-
-
-
-def LoadImageList(im_names, L, show=False):
+def LoadImageList(im_names, L,resize_images, show=False):
 	''' 
 	Function that loads a list of images given in im_names, and returns 
 	them in a numpy format that can be used by the classifier.
@@ -197,30 +506,33 @@ def LoadImageList(im_names, L, show=False):
 	npimages=np.ndarray((len(im_names),L,L,3))
 
 	for i,im_name in enumerate(im_names):
-		npimage,rescaled=LoadImage(im_name,L, show)
+		npimage,rescaled,filename=LoadImage(im_name,L,resize_images, show)
 		npimages[i]=npimage
-	npimages/=255.0
-	return npimages
+	return npimages/255.0
 
 
 class Cdata:
 
-	def __init__(self, datapath, L=None, class_select=None, kind='mixed', training_data=True):
+	def __init__(self, datapath, L=None, class_select=None,classifier=None,compute_extrafeat =None, resize_images=None,balance_weight=None, kind='mixed', training_data=True):
 		self.datapath=datapath
 		if L is None and kind!='feat':
 			print('CData: image size needs to be set, unless kind is \'feat\'')
 			raise ValueError
 		self.L=L
 		self.class_select=class_select
+		self.classifier=classifier
+		self.compute_extrafeat=compute_extrafeat
+		self.resize_images=resize_images
+		self.balance_weight=balance_weight
 		self.kind=kind
 		self.df=None
 		self.y=None
 		self.X=None
-		self.Load(self.datapath, self.L, self.class_select, self.kind, training_data=training_data)
+		self.Load(self.datapath, self.L, self.class_select, self.classifier,self.compute_extrafeat, self.resize_images, self.balance_weight, self.kind, training_data=training_data)
 		return
 
 
-	def Load(self, datapaths, L, class_select, kind='mixed', training_data=True):
+	def Load(self, datapaths, L, class_select, classifier,compute_extrafeat,resize_images,balance_weight, kind='mixed', training_data=True):
 		''' 
 		Loads dataset 
 		For the moment, only mixed data. Later, also pure images or pure features.
@@ -229,17 +541,34 @@ class Cdata:
 		self.datapath=datapaths
 		self.class_select=class_select
 		self.kind=kind
-
+		self.classifier=classifier
+		self.compute_extrafeat=compute_extrafeat
+		self.resize_images=resize_images
+        
 		if kind=='mixed':
-			self.df = LoadMixed(datapaths, L, class_select, alsoImages=True)
+			self.df = LoadMixed(datapaths, L, class_select, classifier,resize_images, alsoImages=True)
+			if compute_extrafeat == 'yes':
+				dfExtraFeat=compute_extrafeat_function(self.df)
+				self.df=pd.concat([self.df,dfExtraFeat], axis=1)
+            
 		elif kind=='feat':
-			self.df = LoadMixed(datapaths, L, class_select, alsoImages=False)
+			self.df = LoadMixed(datapaths, L, class_select, classifier,resize_images, alsoImages=False)
+			if compute_extrafeat == 'yes':
+				dfExtraFeat=compute_extrafeat_function(self.df)
+				self.df=pd.concat([self.df,dfExtraFeat], axis=1)
+            
 		elif kind=='image':
-			self.df = LoadImages(datapaths, L, class_select, training_data=training_data)
+			self.df = LoadImages(datapaths, L, class_select, classifier,resize_images, training_data=training_data)
+			if compute_extrafeat == 'yes':
+				dfExtraFeat=compute_extrafeat_function(self.df)
+				self.df=pd.concat([self.df,dfExtraFeat], axis=1)
+            
 		else:
 			raise NotImplementedError('Only mixed, image or feat data-loading')
 
+		print(self.df['classname'].unique())
 		self.classes=self.df['classname'].unique()
+
 		self.kind=kind 		# Now the data kind is kind. In most cases, we had already kind=self.kind, but if the user tested another kind, it must be changed
 		self.Check()  		# Some sanity checks on the dataset
 		self.CreateXy()		# Creates X and y, i.e. features and labels
@@ -251,9 +580,15 @@ class Cdata:
 
 		#Number of different classes
 		classes=self.classes
-		if len(classes)<2:
-			print('There are less than 2 classes ({})'.format(len(classes)))
-			raise ValueError
+		classifier=self.classifier
+		if classifier=='multi':
+			if len(classes)<2:
+				print('There are less than 2 classes ({})'.format(len(classes)))
+				raise ValueError
+		elif classifier=='binary':
+			if len(classes)>2:
+				print('There are more than 2 classes for binary classifier ({})'.format(len(classes)))
+				raise ValueError
 
 		# Columns potentially useful for classification
 		ucols=self.df.drop(columns=['classname','url','filename','file_size','timestamp'], errors='ignore').columns
@@ -282,8 +617,11 @@ class Cdata:
 		'''
 
 		self.y = self.df.classname
+		self.filenames = self.df.filename
 		self.X = self.df.drop(columns=['classname','url','filename','file_size','timestamp'], errors='ignore')
+# 		self.X = self.df.drop(columns=['classname','url','file_size','timestamp'], errors='ignore')
 
+        
 		self.Ximage = self.X.npimage if (self.kind != 'feat') else None
 		self.Xfeat  = self.X.drop(columns=['npimage'], errors='ignore') if (self.kind != 'image') else None
 
@@ -307,6 +645,7 @@ def ReadArgsTxt(modelpath, verbose=False):
 			'layers':[None,None],
 			'datapaths':None,
 			'outpath':None,
+			'classifier':None,
 			'datakind':None,
 			'ttkind':None
 			}
@@ -338,6 +677,8 @@ def ReadArgsTxt(modelpath, verbose=False):
 				params['datakind']=re.search('=\'(.+)\'$',s).group(1)
 			if 'ttkind=' in s:
 				params['ttkind']=re.search('=\'(.+)\'$',s).group(1)
+			if 'classifier=' in s:
+				params['classifier']=re.search('=\'(.+)\'$',s).group(1)
 			if 'class_select=' in s:
 				print('class_select: ',s)
 				temp = re.search('=\[\'(.+)\'\]$',s).group(1)
@@ -378,8 +719,4 @@ def ReadArgsTxt(modelpath, verbose=False):
 
 if __name__=='__main__':
 	pass
-
-
-
-
 
