@@ -292,7 +292,7 @@ python validation.py -thresholds 0.0 0.9 -modelnames './trained-models/conv2/ker
 
 
 ```
-python validation.py -modelnames /local/kyathasr/plankifier/trained-models/Centic_Diatoms_Latest/BestModelsFromBayesianSearch/eff0/keras_model_finetune.h5 -weightnames trained-models/Centic_Diatoms_Latest/BestModelsFromBayesianSearch/eff0/bestweights_finetune.hdf5 -datapaths /local/kyathasr/plankifier/data/Centric_Diatoms_latest/Validation_from_experts/ -classifier binary
+python validation.py -modelnames ./trained-models/Centic_Diatoms_Latest/BestModelsFromBayesianSearch/eff0/keras_model_finetune.h5 -weightnames ./trained-models/Centic_Diatoms_Latest/BestModelsFromBayesianSearch/eff0/bestweights_finetune.hdf5 -datapaths ./data/Centric_Diatoms_latest/Validation_from_experts/ -classifier binary
 ```
 
 The test directories are currently hard-coded, in order not to have to write them each time, since they are always the same.--- RESOLVED --> Now the -datapaths can be defined, the script will extract all the testdirs 
