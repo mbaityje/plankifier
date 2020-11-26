@@ -3,15 +3,12 @@
 Program that performas a validation on the validation dataset. 
 Several models, validation directories, ensembling methods, abstention thresholds are used.
 Some parameters (especially those involving paths) are hard-coded because it's more convenient than putting them as command line argument, since they are always the same.
-
 Arguments:
 - thresholds
 - ensMethods (if None, doesn't ensemble)
 - modelnames
 - weightnames
-
 There is a memory problem when many models are loaded together.
-
 The several metrics are given
 - TP: True Positives
 - FP: False Positives
@@ -22,7 +19,6 @@ The several metrics are given
 - specificity: TN/(TN+FP)
 - informedness: specificity + recall - 1
 - accuracy: (TP+TN)/(TP+TN+FP+FN)
-
 Runs as:
 python validation.py -thresholds 0.0 0.9 -modelnames './trained-models/conv2/keras_model.h5' -weightnames './trained-models/conv2/bestweights.hdf5'
 '''
@@ -33,24 +29,32 @@ import matplotlib.pyplot as plt, seaborn as sns
 from src import helper_data as hd, helper_models as hm
 import train as t
 import predict as pred
+import shutil
+from pathlib import Path
+from sklearn.metrics import classification_report,confusion_matrix
+
+# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 
 class Cval:
 
-	def __init__(self, modelnames, testdirs, weightnames, labels, ensMethods, thresholds=0, training_data=False):
+	def __init__(self, modelnames, testdirs, weightnames, labels, ensMethods,datapaths,classifier,class_select, thresholds=0, training_data=False):
 
 		self.InitClasses()
 
 		self.thresholds = thresholds
 		self.ensMethods = ensMethods
+		self.classifier = classifier
+		self.datapaths=datapaths
+		self.class_select = class_select
 
 		self.ensembler=pred.Censemble(
 									modelnames=modelnames, 
 									weightnames=weightnames,
 									testdirs=testdirs, 
 									labels=labels,
-									screen=False,
-									training_data=training_data
-							)
+									screen=False)
 		# self.res     = self.Cvres()
 
 		self.ensembler.MakePredictions()
@@ -71,24 +75,26 @@ class Cval:
 		self.__ALLCLASSES__ = self.__PLANKTONCLASSES__+self.__JUNKCLASSES__
 
 
-	def PerClassValidation(self, ensembler):
+	def PerClassValidation(self, ensembler,labels):
 
 		df_res = pd.DataFrame(index=ensembler.classnames, columns=['TP','FP','TN','FN','recall','precision','specificity','informedness','accuracy'])
 		df_res.fillna(0) # Fill with zeros
+        
+		df_res1 = pd.DataFrame(index=['Overall'], columns=['TP','FP','TN','FN','recall','precision','specificity','informedness','accuracy'])
+		df_res1.fillna(0) # Fill with zeros
+		df_res=df_res.append(df_res1)
+        
 
 		# Per class validation
-		for myclass in ensembler.labels:
-
+		for myclass in labels:
 			# indices of the truths
 			idLabels = list(filter(lambda i: ensembler.im_labels[i]==myclass, range(self.nimages) ))
 			# how many of the truths were identified
 			TP=(ensembler.guesses[idLabels,1]==ensembler.im_labels[idLabels]).astype(float).sum().astype(float)
 			# how many of the truths were NOT identified
 			FN=float(len(idLabels)-TP)
-
 			# Indices of the guesses
 			idGuesses = list(filter(lambda i: ensembler.guesses[i,1]==myclass, range(self.nimages) ))
-
 			# Number of false positives
 			FP=(ensembler.guesses[idGuesses,1]!=ensembler.im_labels[idGuesses]).astype(float).sum().astype(float)
 			# Number of true negatives
@@ -104,24 +110,54 @@ class Cval:
 			df_res.loc[myclass]['specificity' ] = TN/(TN+FP) if FP+TN>0 else np.nan
 			df_res.loc[myclass]['informedness'] = df_res.loc[myclass]['specificity' ]+df_res.loc[myclass]['recall' ]-1
 			df_res.loc[myclass]['accuracy'    ] = (TP+TN)/(TP+TN+FP+FN)
+                   
+		df_res.loc['Overall']['TP'] = '-'
+		df_res.loc['Overall']['FN'] = '-'
+		df_res.loc['Overall']['FP'] = '-'
+		df_res.loc['Overall']['TN'] = '-'
 
-		df_res.loc['mean_tot'  ] = df_res.mean()
-		df_res.loc['mean_junk' ] = df_res.loc[self.__JUNKCLASSES__    ].mean()
-		df_res.loc['mean_plank'] = df_res.loc[self.__PLANKTONCLASSES__].mean()
+		df_res.loc['Overall']['recall'      ] = df_res.recall.mean()
+		df_res.loc['Overall']['precision'   ] = df_res.precision.mean()
+		df_res.loc['Overall']['specificity' ] = df_res.specificity.mean()
+		df_res.loc['Overall']['informedness'] = df_res.informedness.mean()
+		df_res.loc['Overall']['accuracy'    ] = df_res.accuracy.mean()    
+
+# 		df_res.loc['mean_tot'  ] = df_res.mean()
+# 		df_res.loc['mean_junk' ] = df_res.loc[self.__JUNKCLASSES__    ].mean()
+# 		df_res.loc['mean_plank'] = df_res.loc[self.__PLANKTONCLASSES__].mean()
 		
-		df_res.loc['mean_tot'].accuracy = 1+df_res.loc[self.__ALLCLASSES__].TP/df_res.loc[self.__ALLCLASSES__].FP # TP/(TP+FP)
+# 		df_res.loc['mean_tot'].accuracy = 1+df_res.loc[self.__ALLCLASSES__].TP/df_res.loc[self.__ALLCLASSES__].FP # TP/(TP+FP)
 
 		return df_res
 
-	def Sweep(self):
+	def Sweep(self,labels,outpath,save_misclassified):
 		for method in self.ensMethods:
 			for absthres in self.thresholds:
 				print('\nMethod:',method, '\tAbs-threshold:',absthres)
 				self.ensembler.Ensemble(method=method, absthres=absthres)
-
-				self.df_res=self.PerClassValidation(self.ensembler)
-				print(self.df_res.loc['mean_plank'])
-				self.Plot()
+				self.df_res=self.PerClassValidation(self.ensembler,labels)
+                
+				if save_misclassified =='yes':
+					misclassified = np.argwhere(self.ensembler.im_labels!=self.ensembler.guesses[:,1])
+					for x in misclassified:
+						for indices in x:     
+							destination=(' '.join(map(str, outpath)))+self.ensembler.im_labels[indices]+'_labelled_as_'+self.ensembler.guesses[indices,1]
+							Path(destination).mkdir(parents=True, exist_ok=True)
+							shutil.copy(self.ensembler.im_names[indices], destination)   
+                            
+				clf_report=classification_report(self.ensembler.im_labels, self.ensembler.guesses[:,1])
+				conf_matrix=confusion_matrix(self.ensembler.im_labels, self.ensembler.guesses[:,1])
+				print (self.df_res)
+				print (clf_report)           
+				print (conf_matrix)             
+				filename_to_save=((' '.join(map(str, outpath))+'ValidationReport.txt'))
+				Path((' '.join(map(str, outpath)))).mkdir(parents=True, exist_ok=True)
+				f = open(filename_to_save,'w')
+				f.write('\n\nMethod:{}\n\nAbs-threshold:{}\n\nPerClassValidation:\n{}\n\nClassification Report\n{}\n\nConfusion Matrix\n{}\n'.format(method,absthres, self.df_res,clf_report, conf_matrix))   
+				f.close()
+                
+# 				print(self.df_res.loc['mean_plank'])
+# 				self.Plot()
 
 	def Plot(self):
 
@@ -182,151 +218,64 @@ class Cval:
 
 if __name__=='__main__':
 
-	#
-	# Some hardcoded choices of testdirs:
-	#
-
-	# The Tommy validation dirs are obsolete and will be soon removed. They are only here for backward compatiblity tests.
-
-	testdirs_tommy = [ \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/asplanchna', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/asterionella', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/bosmina', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/ceratium', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/chaoborus', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/conochilus', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/cyclops', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/daphnia', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/diaphanosoma', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/eudiaptomus', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/fragilaria', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/kellikottia', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/keratella_cochlearis', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/keratella_quadrata', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/leptodora', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/nauplius', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/paradileptus', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/rotifers', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/trichocerca', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/uroglena', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/dirt', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/filament', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/fish', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/maybe_cyano', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown', \
-				'data/1_zooplankton_0p5x/validation/tommy_validation/images/unknown_plankton', \
-	] # do not put trailing '/' in the directory names
-
-
-	testdirs_all = [ \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/asplanchna', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/asterionella', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/bosmina', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/ceratium', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/chaoborus', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/conochilus', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/cyclops', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/daphnia', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/diaphanosoma', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/dinobryon', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/dirt', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/eudiaptomus', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/filament', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/fragilaria', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/kellikottia', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/keratella_cochlearis', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/keratella_quadrata', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/leptodora', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/maybe_cyano', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/nauplius', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/paradileptus', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/rotifers', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/trichocerca', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/unknown', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/unknown_plankton', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.04.28/uroglena', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/aphanizomenon', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/asplanchna', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/asterionella', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/bosmina', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/ceratium', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/chaoborus', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/conochilus', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/copepod_skins', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/cyclops', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/daphnia', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/daphnia_skins', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/diaphanosoma', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/diatom_chain', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/dinobryon', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/dirt', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/eudiaptomus', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/filament', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/fish', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/fragilaria', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/kellikottia', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/keratella_cochlearis', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/keratella_quadrata', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/leptodora', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/nauplius', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/paradileptus', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/polyarthra', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/rotifers', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/synchaeta', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/trichocerca', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/unknown', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/unknown_plankton', \
-				'data/1_zooplankton_0p5x/validation/zooplankton_validationset_2020.08.31/uroglena', \
-	]
-
-
+    
 	parser = argparse.ArgumentParser(description='Load a model and use it to make predictions on images')
 	parser.add_argument('-ensMethods', nargs='+', default=None, help='Ensembling methods. Choose from: \'unanimity\',\'majority\', \'leader\', \'weighted-majority\'. Weighted Majority implements abstention in a different way (a good value is 1).')
+	parser.add_argument('-class_select', nargs='*', default=None, help='List of classes to be looked at (put the class names one by one, separated by spaces). If None, all available classes are studied.')
+	parser.add_argument('-classifier', choices=['binary','multi','versusall'], default='multi', help='Choose "binary class " or "multiclass" classifier')
+	parser.add_argument('-datapaths', nargs='*', default=['/local/kyathasr/plankifier/data/1_zooplankton_0p5x/validation/validation_2020.04.28/'], help="Directories with the data.")
+	parser.add_argument('-outpath', nargs='*', default=['/local/kyathasr/plankifier/out/'], help="Directories with the data.")
 	parser.add_argument('-thresholds', nargs='+', default=[0.0], type=float, help='Abstention thresholds on the confidence (a good value is 0.8, except for weighted-majority, where it should be >=1).')
-	parser.add_argument('-weightnames', nargs='*', default=[''], help='Name of the weights file (.hdf5, with path)')
-	parser.add_argument('-modelnames', nargs='*', default=['./trained-models/conv2/keras_model.h5'], help='')
-
+	parser.add_argument('-weightnames', nargs='*', default=['/local/kyathasr/plankifier/trained-models/mobilenet3/bestweights.hdf5'], help='Name of the weights file (.hdf5, with path)')
+	parser.add_argument('-modelnames', nargs='*', default=['/local/kyathasr/plankifier/trained-models/mobilenet3/keras_model.h5'], help='')
+	parser.add_argument('-save_misclassified', choices=['yes','no'], default='no', help="Whether to save misclassified images in a directory or not")  
+# 	parser.add_argument('-misclassified_dir', nargs='*', default=['/local/kyathasr/plankifier/out/'], help="Directory to save misclassified images")
 	args=parser.parse_args()
 
+    
+# 	datapaths=['/local/kyathasr/plankifier/data/1_zooplankton_0p5x/validation/validation_2020.04.28/']
+# 	classifier='binary'
+# 	class_select=None
+# 	testdirs=[]
+# 	labels=[]
 
-	# testdirs = testdirs_tommy
-	testdirs=testdirs_all
-	labels = [os.path.split(td)[1] for td in testdirs]
+	labels,Class_labels_original,testdirs=hm.get_testdirs_and_labels(args.datapaths,
+                                                                     args.classifier,args.class_select)
 
-
-
-	# modelnames  = ['./trained-models/conv2/keras_model.h5']
-	# weightnames = ['./trained-models/conv2/bestweights.hdf5']
-
-
-
+# 	# testdirs = testdirs_tommy
+# 	testdirs=testdirs_all
+# 	labels = [os.path.split(td)[1] for td in testdirs]
 
 	if args.ensMethods is None:
 
 		for m in args.modelnames:
 			print('model:',m)
 
-			validator = Cval(modelnames=[m], 
-								testdirs=testdirs, 
+			validator = Cval(modelnames=[m],
+								testdirs=testdirs,
+								datapaths=args.datapaths,
 								labels=labels,
 								ensMethods=['leader'],
+								classifier=args.classifier,
+								class_select=args.class_select,
 								thresholds=args.thresholds,
 								weightnames=args.weightnames,
 								training_data=True
 							)
-			validator.Sweep()
+			validator.Sweep(labels,args.outpath,args.save_misclassified)
 
 	else:
 		print('models:',args.modelnames)
 
 		validator = Cval(modelnames=args.modelnames, 
-							testdirs=testdirs, 
+							testdirs=testdirs,
+							datapaths=args.datapaths,
 							labels=labels,
 							ensMethods=args.ensMethods,
+							classifier=args.classifier,
+							class_select=args.class_select,
 							thresholds=args.thresholds,
 							weightnames=args.weightnames,
 							training_data=True
 							)
-		validator.Sweep()
-
+		validator.Sweep(labels,args.outpath,args.save_misclassified)

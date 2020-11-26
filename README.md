@@ -237,6 +237,14 @@ Class for applying ensemble methods.
 Predictions are made through the `predict.py`, that loads one or more models, and makes predictions on the requested directories.
 
 ```
+Example usage of predict.py
+
+python predict.py  -modelfullnames './trained-models/eff0_for_DiatomCentrics/keras_model_finetune.h5' -weightnames 
+'./trained-models/eff0_for_DiatomCentrics/bestweights_finetune.hdf5' -testdirs './data/Centric_Diatoms_latest/Validation_from_experts/Centric_Diatoms/' -predname './dummy_out/Centric_Diatoms/'
+```
+
+
+```
 python predict.py   -modelfullnames './trained-models/conv2/keras_model.h5' \  # Names of the models to be loaded
                     -weightnames './trained-models/conv2/bestweights.hdf5' \   # For each model, weights to be loaded
                     -testdirs 'data/1_zooplankton_0p5x/validation/tommy_validation/images/dinobryon/' \ # dirs with images to be checked
@@ -245,6 +253,9 @@ python predict.py   -modelfullnames './trained-models/conv2/keras_model.h5' \  #
                     -predname './out/predictions/predict' # Send output to ./out/predictions/predict.txt
 
 ```
+
+
+
 
 Explanation of the used parameters:
 
@@ -278,7 +289,15 @@ In the following case, we are also specifying abstention threshold, models and s
 ```
 python validation.py -thresholds 0.0 0.9 -modelnames './trained-models/conv2/keras_model.h5' -weightnames './trained-models/conv2/bestweights.hdf5'
 ```
-The test directories are currently hard-coded, in order not to have to write them each time, since they are always the same.
+
+
+```
+python validation.py -modelnames ./trained-models/Centic_Diatoms_Latest/BestModelsFromBayesianSearch/eff0/keras_model_finetune.h5 -weightnames ./trained-models/Centic_Diatoms_Latest/BestModelsFromBayesianSearch/eff0/bestweights_finetune.hdf5 -datapaths ./data/Centric_Diatoms_latest/Validation_from_experts/ -classifier binary
+```
+
+The test directories are currently hard-coded, in order not to have to write them each time, since they are always the same.--- RESOLVED --> Now the -datapaths can be defined, the script will extract all the testdirs 
+
+
 Abstention thresholds (`-thresholds`) and ensembling methods (`-ensMethods`) can be given as command-line arguments.
 The program gives a command-line output with data on the confusion matrix, and a plot with the precision and recall
 for all plankton classes (junk classes are excluded).
@@ -306,10 +325,10 @@ The script produces a histogram with the taxonomist and the classifier counts.
 - Checkpointing wrapper function
 - Scanning of architecture and hyperparameters (e.g. using talos, or create class)
 - Different losses and metrics
-- Binary classifiers (use `binary_crossentropy loss` function)
+- Binary classifiers (use `binary_crossentropy loss` function)-- DONE
 - Have an explicit control of initial conditions (currently, we're using default, but for example orthogonal initial conditions could be helpful)
 - Implement logging instead of print
-- learning rate schedule
+- learning rate schedule -- DONE
 - Speed up the data reading
 - Hybrid labels
 - Merging lables (e.g. Carnivores, Herbivores, Plants)
