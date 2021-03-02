@@ -378,7 +378,7 @@ def LoadImage(filename, L=None,resize_images=None,show=False):
 	elif resize_images ==2:
 		image,rescaled = ResizeWithoutProportions(image, L) # width and height are assumed to be the same (assertion at the beginning)
 	npimage = np.array(image.copy(), dtype=np.float32)
-
+# 	npimage = cv2.cvtColor(npimage,cv2.COLOR_GRAY2RGB) ## FOR WHOI and KAGGLE dataset
 	if show:
 		image.show()
 	image.close()
@@ -405,8 +405,10 @@ def LoadImages(datapaths, L, class_select=None,classifier=None,resize_images=Non
 	dfB = pd.DataFrame()
     
 	# The following condition is because the taxonomists used different directory structures
-	names='/training_data/*.jp*g' if training_data==True else '/*.jp*g'
-    
+	names1='/training_data/*.jp*g' if training_data==True else '/*.jp*g'
+	names2='/training_data/*.png' if training_data==True else '/*.png'
+	names3='/training_data/*.ti*f' if training_data==True else '/*.ti*f'
+	print(names2)
 	if classifier=='multi':    
 		class_select=ReduceClasses(datapaths, class_select,classifier)	# Decide whether to use all available classes
 		if len(class_select)>2:  
@@ -414,7 +416,7 @@ def LoadImages(datapaths, L, class_select=None,classifier=None,resize_images=Non
 				# Get names of images belonging to this class, from all the data paths
 				classImages = []
 				for idp in range(len(datapaths)):
-					classImages.extend( glob.glob(datapaths[idp]+'/'+c+'/'+names) )
+					classImages.extend( glob.glob(datapaths[idp]+'/'+c+'/'+names1) + glob.glob(datapaths[idp]+'/'+c+'/'+names2) + glob.glob(datapaths[idp]+'/'+c+'/'+names3))
 				# Create an empty dataframe for this class
 				dfClass=pd.DataFrame(columns=['filename','classname','npimage'])
 				print('class: {} ({})'.format(c, len(classImages)))
@@ -434,7 +436,7 @@ def LoadImages(datapaths, L, class_select=None,classifier=None,resize_images=Non
 				# Get names of images belonging to this class, from all the data paths
 				classImages = []
 				for idp in range(len(datapaths)):
-					classImages.extend( glob.glob(datapaths[idp]+'/'+c+'/'+names) )
+					classImages.extend( glob.glob(datapaths[idp]+'/'+c+'/'+names1) + glob.glob(datapaths[idp]+'/'+c+'/'+names2)+ glob.glob(datapaths[idp]+'/'+c+'/'+names3) )
 				# Create an empty dataframe for this class
 				dfClass=pd.DataFrame(columns=['filename','classname','npimage'])
 				print('class: {} ({})'.format(c, len(classImages)))
@@ -462,7 +464,7 @@ def LoadImages(datapaths, L, class_select=None,classifier=None,resize_images=Non
 				# Get names of images belonging to this class, from all the data paths
 				BinaryclassImages = []
 				for bidp in range(len(datapaths)):
-					BinaryclassImages.extend( glob.glob(datapaths[bidp]+'/'+c+'/'+names) )
+					BinaryclassImages.extend( glob.glob(datapaths[bidp]+'/'+c+'/'+names1) +glob.glob(datapaths[bidp]+'/'+c+'/'+names2) +glob.glob(datapaths[bidp]+'/'+c+'/'+names3))
 				# Create an empty dataframe for this class
 				dfBClass=pd.DataFrame(columns=['filename','classname','npimage'])
 				print('Individual POSITIVE class: {} ({})'.format(c, len(BinaryclassImages)))
@@ -477,13 +479,21 @@ def LoadImages(datapaths, L, class_select=None,classifier=None,resize_images=Non
 			for c in class_select:
 				classImages = []
 				for idp in range(len(datapaths)):
-					classImages.extend( glob.glob(datapaths[idp]+'/'+c+'/'+names) )
-				random_classImages = np.random.choice(classImages, int(len(classImages)*0.50))
+					classImages.extend( glob.glob(datapaths[idp]+'/'+c+'/'+names1) + glob.glob(datapaths[idp]+'/'+c+'/'+names2)+ glob.glob(datapaths[idp]+'/'+c+'/'+names3) )
+                    
+# 				random_classImages = np.random.choice(classImages, int(len(classImages)*0.50))  ## if positive class has more image than negatives then random sampling of 50% doesnot work. Therefore, it is edited to the line below removing 0.5.
+				random_classImages = np.random.choice(classImages, int(len(classImages)))
+
 #				print('50% data of selected class: {} ({})'.format(c, len(random_classImages)))
 				concatenated_list=np.concatenate([concatenated_list,random_classImages])
 # 				print('class: {} ({})'.format(c, len(classImages))) 
 # 				print('Concatenated images ({})'.format( len(concatenated_list))) 
-			Negative_class = np.random.choice(concatenated_list, len(dfB))
+
+			if len(concatenated_list)>len(dfB):
+				Negative_class = np.random.choice(concatenated_list, len(dfB))
+			else:
+				Negative_class = concatenated_list         
+
 			print('Total NEGATIVE class: {} ({})'.format(negative_class_name, len(Negative_class))) 
 			# Create an empty dataframe for this class
 			dfAClass=pd.DataFrame(columns=['filename','classname','npimage'])  
@@ -568,7 +578,7 @@ class Cdata:
 
 		print(self.df['classname'].unique())
 		self.classes=self.df['classname'].unique()
-
+        
 		self.kind=kind 		# Now the data kind is kind. In most cases, we had already kind=self.kind, but if the user tested another kind, it must be changed
 		self.Check()  		# Some sanity checks on the dataset
 		self.CreateXy()		# Creates X and y, i.e. features and labels

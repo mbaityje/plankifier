@@ -41,8 +41,8 @@ import joblib
 from pathlib import Path
 
 # import os
-# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 ###############
@@ -92,7 +92,7 @@ class Ctrain:
 		parser.add_argument('-lr', type=float, default=0.00005, help="Learning Rate")
 		parser.add_argument('-aug', action='store_true', help="Perform data augmentation. Augmentation parameters are hard-coded.")
 		parser.add_argument('-modelfile', default=None, help='The name of the file where a model is stored (to be loaded with keras.models.load_model() )')
-		parser.add_argument('-model_image', choices=['conv2','smallvgg','mobile','eff0','eff7','incepv3','res50','dense121'], default=None, help='For mixed data models, tells what model to use for the image branch. For image models, it is the whole model')
+		parser.add_argument('-model_image', choices=['conv2','smallvgg','mobile','eff0','eff1','eff2','eff3','eff4','eff5','eff6','eff7','incepv3','res50','dense121'], default=None, help='For mixed data models, tells what model to use for the image branch. For image models, it is the whole model')
 		parser.add_argument('-model_feat', choices=['mlp'], default=None, help='For mixed data models, tells what model to use for the feature branch. For feat models, it is the whole model.')
 		parser.add_argument('-layers',nargs=2, type=int, default=[256,128], help="Layers for MLP")
 		parser.add_argument('-dropout', type=float, default=None, help="This is a dropout parameter which is passed to the model wrapper but is currently not used (August 2020) because dropouts are currently hardcoded.")
@@ -123,7 +123,7 @@ class Ctrain:
 ## For HyperParameter Tuning       
 
 		# Model related
-		parser.add_argument('-models_image', nargs='*', default='mobile', help='select models to train from: conv,mobile,eff0,eff7,incepv3,res50,dense121,incepresinspired,denseinspired,vgginspired,autokeras')
+		parser.add_argument('-models_image', nargs='*', default='mobile', help='select models to train from: conv,mobile,eff0,eff1,eff2,eff3,eff4,eff5,eff6,eff7,incepv3,res50,dense121,incepresinspired,denseinspired,vgginspired,autokeras')
         
 # 		parser.add_argument('-strattifedkfold', type=int, default=5, help="crossvalidation to have robust estimate of the performance of a model on unseen data")                                  
        
@@ -139,15 +139,16 @@ class Ctrain:
 		parser.add_argument('-executions_per_trial', type=int, default=1, help="Total number of trials for each hyperparameter optimization trial")        
 		parser.add_argument('-Bayesian_epoch', type=int, default=50, help="Total number of epochs for the training")
         
-		parser.add_argument('-saved_data', choices=['yes','no'], default='no', help="Whether to load saved data or not")  
-		parser.add_argument('-save_data', choices=['yes','no'], default='no', help="Whether to save the data for later use or not")  
+		parser.add_argument('-saved_data', choices=['yes','no'], default=None, help="Whether to load saved data or not")  
+		parser.add_argument('-save_data', choices=['yes','no'], default=None, help="Whether to save the data for later use or not")  
         
 		parser.add_argument('-compute_extrafeat', choices=['yes','no'], default=None, help="Whether to compute extra features or not")  
 		parser.add_argument('-only_ensemble', choices=['yes','no'], default=None, help="Whether to train only ensemble models")     
 		parser.add_argument('-mixed_from_finetune', type=int, default=0, help="Whether to train mixed models using finetuned image and feature models")    
 		parser.add_argument('-mixed_from_notune', type=int, default=0, help="Whether to train mixed models using Not tuned image and feature models")    
 		parser.add_argument('-mixed_from_scratch', type=int, default=0, help="Whether to train mixed models using image and feature models from scratch")      
-        
+		parser.add_argument('-valid_set', choices=['yes','no'], default='no', help="Select to have valid set. Choose from Yes or No")
+ 
 
 		args=parser.parse_args(string)
 
@@ -247,7 +248,7 @@ class Ctrain:
 
 		return
 
-	def LoadData(self, datapaths=None, L=None, class_select=-1,classifier = None,compute_extrafeat=None, resize_images=None, balance_weight=None, datakind=None, training_data=True):
+	def LoadData(self, datapaths=None, L=None, class_select=-1,classifier = None,compute_extrafeat=None, resize_images=None, balance_weight=None, datakind=None, training_data=None):
 		''' 
 		Loads dataset using the function in the Cdata class.
 		Acts differently in case it is the first time or not that the data is loaded
@@ -285,7 +286,7 @@ class Ctrain:
     
     
     
-	def CreateTrainTestSets(self, ttkind=None, classifier=None, save_data=None, balance_weight=None, testSplit=None, random_state=12345):
+	def CreateTrainTestSets(self, ttkind=None, classifier=None, save_data=None, balance_weight=None, testSplit=None, valid_set=None,random_state=12345):
 		'''
 		Creates train and test sets using the CtrainTestSet class
 		'''
@@ -302,6 +303,11 @@ class Ctrain:
 		else:
 			self.params.testSplit = testSplit
 
+		if valid_set == None:
+			valid_set = self.params.valid_set
+		else:
+			self.params.valid_set = valid_set
+                        
 		if classifier == None:
 			classifier = self.params.classifier
             
@@ -311,36 +317,56 @@ class Ctrain:
 		if balance_weight == None:
 			balance_weight = self.params.balance_weight
 
-		self.tt=htts.CTrainTestSet(self.data.X, self.data.y, self.data.filenames, classifier=classifier,balance_weight=balance_weight, ttkind=ttkind, testSplit=testSplit)
+		self.tt=htts.CTrainTestSet(self.data.X, self.data.y, self.data.filenames, classifier=classifier,balance_weight=balance_weight, ttkind=ttkind, testSplit=testSplit,valid_set=valid_set)
 		self.params.ttkind=self.tt.ttkind
         
 # To save the data
-        
-
 		if self.params.ttkind == 'mixed':
 			scaler = StandardScaler()
 			scaler.fit(self.tt.trainXfeat)
 			dump(scaler,self.params.outpath +'/Features_scaler_used_for_MLP.joblib')
 			self.tt.trainXfeat = scaler.transform(self.tt.trainXfeat)
 			self.tt.testXfeat = scaler.transform(self.tt.testXfeat)
-#               To load Scaler
+			if self.params.valid_set=='yes':
+				self.tt.valXfeat = scaler.transform(self.tt.valXfeat)
+				Data=[self.tt.trainFilenames,self.tt.trainXimage,self.tt.trainY,
+                      self.tt.testFilenames,self.tt.testXimage,self.tt.testY,
+                      self.tt.valFilenames,self.tt.valXimage,self.tt.valY,
+                      self.tt.trainXfeat,self.tt.testXfeat,self.tt.valXfeat]   
+			elif self.params.valid_set=='no':   
+				Data=[self.tt.trainFilenames,self.tt.trainXimage,self.tt.trainY,
+                  self.tt.testFilenames,self.tt.testXimage,self.tt.testY,
+                  self.tt.trainXfeat,self.tt.testXfeat]           
+#  To load Scaler
 # 			scaler = load('Features_scaling.joblib')
 # 			transformed_data = scaler.transform(new_data)
-			Data=[self.tt.trainFilenames,self.tt.trainXimage,self.tt.trainY,
-                  self.tt.testFilenames,self.tt.testXimage,self.tt.testY,
-                  self.tt.trainXfeat,self.tt.testXfeat]
+    
 		elif self.params.ttkind == 'feat':        
 			scaler = StandardScaler()
 			scaler.fit(self.tt.trainX)
 			dump(scaler,self.params.outpath +'/Features_scaler_used_for_MLP.joblib')
 			self.tt.trainX = scaler.transform(self.tt.trainX)
 			self.tt.testX = scaler.transform(self.tt.testX)
-			Data=[self.tt.trainFilenames,self.tt.trainX,self.tt.trainY,
-                  self.tt.testFilenames,self.tt.testX,self.tt.testY]  
+            
+			if self.params.valid_set=='yes':
+				self.tt.valXfeat = scaler.transform(self.tt.valXfeat)
+				Data=[self.tt.trainFilenames,self.tt.trainX,self.tt.trainY,
+                      self.tt.testFilenames,self.tt.testX,self.tt.testY,
+                      self.tt.valFilenames,self.tt.valX,self.tt.valY]   
+			elif self.params.valid_set=='no':
+				Data=[self.tt.trainFilenames,self.tt.trainX,self.tt.trainY,
+                  self.tt.testFilenames,self.tt.testX,self.tt.testY] 
+            
+            
 		elif self.params.ttkind == 'image':
-			Data=[self.tt.trainFilenames,self.tt.trainX,self.tt.trainY,
-                  self.tt.testFilenames,self.tt.testX,self.tt.testY]   
-                
+			if self.params.valid_set=='yes':
+				Data=[self.tt.trainFilenames,self.tt.trainX,self.tt.trainY,
+                      self.tt.testFilenames,self.tt.testX,self.tt.testY,
+                      self.tt.valFilenames,self.tt.valX,self.tt.valY]  
+			elif self.params.valid_set=='no' :
+				Data=[self.tt.trainFilenames,self.tt.trainX,self.tt.trainY,
+                      self.tt.testFilenames,self.tt.testX,self.tt.testY]       
+                        
 		if self.params.save_data == 'yes': 
 			with open(self.params.outpath+'/Data.pickle', 'wb') as a:
 				pickle.dump(Data,a)        
@@ -416,29 +442,60 @@ class Ctrain:
 					trX, trY, teX, teY,c_weights = (self.tt.trainX, self.tt.trainY, self.tt.testX, self.tt.testY,self.tt.d_class_weights)
     
 				wrapper = hm.CModelWrapper(trX, trY, teX, teY,c_weights, self.trainParams, numclasses=len(self.data.classes))
+        
     
 			elif self.params.saved_data == 'yes':
 				Data = pd.read_pickle(self.params.outpath+'/Data.pickle')
 				classes = np.load(self.params.outpath+'/classes.npy')
-				if self.params.ttkind == 'mixed':
-					trainFilenames=Data[0]
-					trainXimage=Data[1]
-					trainY=Data[2]
-					testFilenames=Data[3]
-					testXimage=Data[4]               
-					testY=Data[5]              
-					trainXfeat=Data[6]               
-					testXfeat=Data[7]  
-					trX=[trainXimage,trainXfeat]             
-					teX=[testXimage,testXfeat]                  
-				else:
-					trainFilenames=Data[0]
-					trX=Data[1]
-					trY=Data[2]
-					testFilenames=Data[3]
-					teX=Data[4]               
-					teY=Data[5]  
-    
+                
+				if self.params.valid_set=='no' :
+					if self.params.ttkind == 'mixed':
+						trainFilenames=Data[0]
+						trainXimage=Data[1]
+						trY=Data[2]
+						testFilenames=Data[3]
+						testXimage=Data[4]               
+						teY=Data[5]              
+						trainXfeat=Data[6]               
+						testXfeat=Data[7]  
+						trX=[trainXimage,trainXfeat]             
+						teX=[testXimage,testXfeat]                  
+					else:
+						trainFilenames=Data[0]
+						trX=Data[1]
+						trY=Data[2]
+						testFilenames=Data[3]
+						teX=Data[4]               
+						teY=Data[5]  
+                    
+				elif self.params.valid_set=='yes':
+					if self.params.ttkind == 'mixed':
+						trainFilenames=Data[0]
+						trainXimage=Data[1]
+						trY=Data[2]
+						testFilenames=Data[3]
+						testXimage=Data[4]
+						teY=Data[5]
+						valFilenames=Data[6]
+						valXimage=Data[7]
+						veY=Data[8]
+						trainXfeat=Data[9]
+						testXfeat=Data[10]
+						valXfeat=Data[11]
+						trX=[trainXimage,trainXfeat]             
+						teX=[testXimage,testXfeat]    
+						veX=[valXimage,valXfeat]                         
+					else:
+						trainFilenames=Data[0]
+						trX=Data[1]
+						trY=Data[2]
+						testFilenames=Data[3]
+						teX=Data[4]               
+						teY=Data[5]                   
+						valFilenames=Data[6]
+						veX=Data[7]               
+						veY=Data[8]        
+                      
 				wrapper = hm.CModelWrapper(trX, trY, teX, teY,c_weights, self.trainParams, numclasses=len(classes))
         
 # 			wrapper = hm.CModelWrapper(trX, trY, teX, teY, self.trainParams, numclasses=len(self.data.classes))
@@ -453,53 +510,110 @@ class Ctrain:
                 
       
 		elif self.params.hp_tuning=='yes': 
-                     
                 # Select loss based on the classifier chosen
 			if self.params.classifier == 'binary' or self.params.classifier == 'versusall':
 				self.loss="binary_crossentropy"
 			elif self.params.classifier == 'multi':
 				self.loss="categorical_crossentropy"
-         
 			if self.params.saved_data is None:
 				classes=self.tt.lb.classes_
-				if self.params.ttkind == 'mixed':
-					trainFilenames=self.tt.trainFilenames
-					trainXimage=self.tt.trainXimage
-					trainY=self.tt.trainY
-					testFilenames=self.tt.testFilenames
-					testXimage=self.tt.testXimage              
-					testY=self.tt.testY             
-					trainXfeat=self.tt.trainXfeat             
-					testXfeat=self.tt.testXfeat                
-				else:
-					trainFilenames=self.tt.trainFilenames
-					trainX=self.tt.trainX
-					trainY=self.tt.trainY
-					testFilenames=self.tt.testFilenames
-					testX=self.tt.testX              
-					testY=self.tt.testY 
+				if self.params.valid_set=='no' :   
+					if self.params.ttkind == 'mixed':
+						trainFilenames=self.tt.trainFilenames
+						trainXimage=self.tt.trainXimage
+						trainY=self.tt.trainY
+						testFilenames=self.tt.testFilenames
+						testXimage=self.tt.testXimage              
+						testY=self.tt.testY             
+						trainXfeat=self.tt.trainXfeat             
+						testXfeat=self.tt.testXfeat                
+					else:
+						trainFilenames=self.tt.trainFilenames
+						trainX=self.tt.trainX
+						trainY=self.tt.trainY
+						testFilenames=self.tt.testFilenames
+						testX=self.tt.testX              
+						testY=self.tt.testY 
+				elif self.params.valid_set=='yes' :
+					if self.params.ttkind == 'mixed':
+						trainFilenames=self.tt.trainFilenames
+						trainXimage=self.tt.trainXimage
+						trainY=self.tt.trainY
+						testFilenames=self.tt.testFilenames
+						testXimage=self.tt.testXimage              
+						testY=self.tt.testY  
+						valFilenames=self.tt.valFilenames
+						valXimage=self.tt.valXimage              
+						valY=self.tt.valY 
+						trainXfeat=self.tt.trainXfeat             
+						testXfeat=self.tt.testXfeat 
+						valXfeat=self.tt.valXfeat 
+                        
+					else:
+						trainFilenames=self.tt.trainFilenames
+						trainX=self.tt.trainX
+						trainY=self.tt.trainY
+						testFilenames=self.tt.testFilenames
+						testX=self.tt.testX              
+						testY=self.tt.testY                
+						valFilenames=self.tt.valFilenames
+						valX=self.tt.valX              
+						valY=self.tt.valY                      
                     
 			elif self.params.saved_data == 'yes':
 				Data = pd.read_pickle(self.params.outpath+'/Data.pickle')
-				classes = np.load(self.params.outpath+'/classes.npy')
-				if self.params.ttkind == 'mixed':
-					trainFilenames=Data[0]
-					trainXimage=Data[1]
-					trainY=Data[2]
-					testFilenames=Data[3]
-					testXimage=Data[4]               
-					testY=Data[5]              
-					trainXfeat=Data[6]               
-					testXfeat=Data[7]                  
-				else:
-					trainFilenames=Data[0]
-					trainX=Data[1]
-					trainY=Data[2]
-					testFilenames=Data[3]
-					testX=Data[4]               
-					testY=Data[5]     
-                    
+				classes = np.load(self.params.outpath+'/classes.npy')                  
+				if self.params.valid_set=='yes':
+					if self.params.ttkind == 'mixed':
+						trainFilenames=Data[0]
+						trainXimage=Data[1]
+						trainY=Data[2]
+						testFilenames=Data[3]
+						testXimage=Data[4]
+						testY=Data[5]
+						valFilenames=Data[6]
+						valXimage=Data[7]
+						valY=Data[8]
+						trainXfeat=Data[9]
+						testXfeat=Data[10]
+						valXfeat=Data[11]
+						trX=[trainXimage,trainXfeat]             
+						teX=[testXimage,testXfeat]    
+						veX=[valXimage,valXfeat]                         
+					else:
+						trainFilenames=Data[0]
+						trainX=Data[1]
+						trainY=Data[2]
+						testFilenames=Data[3]
+						testX=Data[4]               
+						testY=Data[5]                   
+						valFilenames=Data[6]
+						valX=Data[7]               
+						valY=Data[8]  
+                        
+				elif self.params.valid_set=='no':
+					if self.params.ttkind == 'mixed':
+						trainFilenames=Data[0]
+						trainXimage=Data[1]
+						trainY=Data[2]
+						testFilenames=Data[3]
+						testXimage=Data[4]
+						testY=Data[5]
+						trainXfeat=Data[6]
+						testXfeat=Data[7]
+						trX=[trainXimage,trainXfeat]             
+						teX=[testXimage,testXfeat]    
+                        
+					else:
+						trainFilenames=Data[0]
+						trainX=Data[1]
+						trainY=Data[2]
+						testFilenames=Data[3]
+						testX=Data[4]               
+						testY=Data[5]                   
 
+                        
+                        
                 # IMAGE
 			if self.params.ttkind == 'image':
 				if self.params.only_ensemble is None:
@@ -519,13 +633,15 @@ class Ctrain:
 						hm.Avg_ensemble(X_test=testX, y_test=testY,
                                     classes=classes,
                                     models_image=self.params.models_image,
-                                    outpath=self.params.outpath,finetune=self.params.finetune,Mixed=0)  
+                                    outpath=self.params.outpath,
+                                        finetune=self.params.finetune,Mixed=0,ReportName='test')  
                 
 					if self.params.stacking_ensemble=='yes':
-						hm.stacking_ensemble(X_test=testX, y_test=testY,
+						hm.stacking_ensemble(X_train=trainX, y_train=trainY,X_test=testX, y_test=testY,
                                          classes=classes,
                                          models_image=self.params.models_image,
-                                         outpath=self.params.outpath,finetune=self.params.finetune)
+                                         outpath=self.params.outpath,
+                                             finetune=self.params.finetune,ReportName='test')
                     
 				elif self.params.only_ensemble == 'yes':
                     
@@ -533,13 +649,15 @@ class Ctrain:
 						hm.Avg_ensemble(X_test=testX, y_test=testY,
                                     classes=classes,
                                     models_image=self.params.models_image,
-                                    outpath=self.params.outpath,finetune=self.params.finetune,Mixed=0)  
+                                    outpath=self.params.outpath,
+                                        finetune=self.params.finetune,Mixed=0,ReportName='test')  
                 
 					if self.params.stacking_ensemble=='yes':
-						hm.stacking_ensemble(X_test=testX, y_test=testY,
+						hm.stacking_ensemble(X_train=trainX, y_train=trainY,X_test=testX, y_test=testY,
                                          classes=classes,
                                          models_image=self.params.models_image,
-                                         outpath=self.params.outpath,finetune=self.params.finetune)
+                                         outpath=self.params.outpath,
+                                             finetune=self.params.finetune,ReportName='test')
                         
              # FEATURE
 			elif self.params.ttkind == 'feat':
@@ -587,20 +705,22 @@ class Ctrain:
 								hm.Avg_ensemble(X_test=[testXimage,testXfeat], y_test=testY,
                                     classes=classes,
                                     models_image=Mixed_models_name,
-                                    outpath=self.params.outpath,finetune=0,Mixed=1)   
+                                    outpath=self.params.outpath,finetune=0,Mixed=1,ReportName='test')   
 							else :
 								print('For Ensemble, models selected should be greater than 1')
 
 						if self.params.stacking_ensemble=='yes':
 							if len(Mixed_models_name) > 1: 
-								hm.stacking_ensemble(X_test=[testXimage,testXfeat], y_test=testY,
+								hm.stacking_ensemble(X_train=[trainXimage,trainXfeat], 
+                                                     y_train=trainY,X_test=[testXimage,testXfeat], y_test=testY,
                                          classes=classes,
                                          models_image=Mixed_models_name,
-                                         outpath=self.params.outpath,finetune=0)  
+                                         outpath=self.params.outpath,finetune=0,ReportName='test')  
 							else :
 								print('For Ensemble, models selected should be greater than 1')
                  
 					if self.params.mixed_from_notune == 1 or self.params.mixed_from_finetune == 1:
+						print('Mixed from fine tune ==1')
 						Xtrain=[trainXimage,trainXfeat]
                 # Feature
 						hm.get_and_train_best_models(X_train=trainXfeat,y_train=trainY,
@@ -658,24 +778,26 @@ class Ctrain:
 								hm.Avg_ensemble(X_test=[testXimage,testXfeat], y_test=testY,
                                     classes=classes,
                                     models_image=Mixed_models_name,
-                                    outpath=self.params.outpath,finetune=0,Mixed=1)  
+                                    outpath=self.params.outpath,finetune=0,Mixed=1,ReportName='test')  
 								hm.Avg_ensemble(X_test=testXimage, y_test=testY,
                                     classes=classes,
                                     models_image=self.params.models_image,
-                                    outpath=self.params.outpath,finetune=0,Mixed=0)  
+                                    outpath=self.params.outpath,finetune=0,Mixed=0,ReportName='test')  
 							else :
 								print('For Ensemble, models selected should be greater than 1')
 
 						if self.params.stacking_ensemble=='yes':
 							if len(Mixed_models_name) > 1: 
-								hm.stacking_ensemble(X_test=[testXimage,testXfeat], y_test=testY,
+								hm.stacking_ensemble(X_train=[trainXimage,trainXfeat],
+                                                     y_train=trainY,X_test=[testXimage,testXfeat], y_test=testY,
                                          classes=classes,
                                          models_image=Mixed_models_name,
-                                         outpath=self.params.outpath,finetune=0)  
-								hm.stacking_ensemble(X_test=testXimage, y_test=testY,
+                                         outpath=self.params.outpath,finetune=0,ReportName='test')  
+								hm.stacking_ensemble(X_train=trainXimage, y_train=trainY,
+                                                     X_test=testXimage, y_test=testY,
                                          classes=classes,
                                          models_image=self.params.models_image,
-                                         outpath=self.params.outpath,finetune=0) 
+                                         outpath=self.params.outpath,finetune=0,ReportName='test') 
 							else :
 								print('For Ensemble, models selected should be greater than 1')
                             
@@ -705,24 +827,26 @@ class Ctrain:
 								hm.Avg_ensemble(X_test=[testXimage,testXfeat], y_test=testY,
                                     classes=classes,
                                     models_image=Mixed_models_name,
-                                    outpath=self.params.outpath,finetune=1,Mixed=1)  
+                                    outpath=self.params.outpath,finetune=1,Mixed=1,ReportName='test')  
 								hm.Avg_ensemble(X_test=testXimage, y_test=testY,
                                     classes=classes,
                                     models_image=self.params.models_image,
-                                    outpath=self.params.outpath,finetune=1,Mixed=0)  
+                                    outpath=self.params.outpath,finetune=1,Mixed=0,ReportName='test')  
 							else :
 								print('For Ensemble, models selected should be greater than 1')
 
 						if self.params.stacking_ensemble=='yes':
 							if len(Mixed_models_name) > 1: 
-								hm.stacking_ensemble(X_test=[testXimage,testXfeat], y_test=testY,
+								hm.stacking_ensemble(X_train=[trainXimage,trainXfeat], y_train=trainY,
+                                                     X_test=[testXimage,testXfeat], y_test=testY,
                                          classes=classes,
                                          models_image=Mixed_models_name,
-                                         outpath=self.params.outpath,finetune=1)  
-								hm.stacking_ensemble(X_test=testXimage, y_test=testY,
+                                         outpath=self.params.outpath,finetune=1,ReportName='test')  
+								hm.stacking_ensemble(X_train=trainXimage, y_train=trainY,
+                                                     X_test=testXimage, y_test=testY,
                                          classes=classes,
                                          models_image=self.params.models_image,
-                                         outpath=self.params.outpath,finetune=1) 
+                                         outpath=self.params.outpath,finetune=1,ReportName='test') 
 							else :
 								print('For Ensemble, models selected should be greater than 1')
 
@@ -739,13 +863,14 @@ class Ctrain:
 							hm.Avg_ensemble(X_test=[testXimage,testXfeat], y_test=testY,
                                     classes=classes,
                                     models_image=Mixed_models_name,
-                                    outpath=self.params.outpath,finetune=0,Mixed=1)  
+                                    outpath=self.params.outpath,finetune=0,Mixed=1,ReportName='test')  
 
 						if self.params.stacking_ensemble=='yes':
-							hm.stacking_ensemble(X_test=[testXimage,testXfeat], y_test=testY,
+							hm.stacking_ensemble(X_train=[trainXimage,trainXfeat], y_train=trainY,
+                                                 X_test=[testXimage,testXfeat], y_test=testY,
                                          classes=classes,
                                          models_image=Mixed_models_name,
-                                         outpath=self.params.outpath,finetune=0)  
+                                         outpath=self.params.outpath,finetune=0,ReportName='test')  
                             
 					if self.params.mixed_from_notune == 1 :  
 
@@ -759,25 +884,27 @@ class Ctrain:
 								hm.Avg_ensemble(X_test=[testXimage,testXfeat], y_test=testY,
                                     classes=classes,
                                     models_image=Mixed_models_name,
-                                    outpath=self.params.outpath,finetune=0,Mixed=1)  
+                                    outpath=self.params.outpath,finetune=0,Mixed=1,ReportName='test')  
 								hm.Avg_ensemble(X_test=testXimage, y_test=testY,
                                     classes=classes,
                                     models_image=self.params.models_image,
-                                    outpath=self.params.outpath,finetune=0,Mixed=0)  
+                                    outpath=self.params.outpath,finetune=0,Mixed=0,ReportName='test')  
 							else :
 								print('For Ensemble, models selected should be greater than 1')
                                 
                                 
 						if self.params.stacking_ensemble=='yes':
 							if len(Mixed_models_name) > 1: 
-								hm.stacking_ensemble(X_test=[testXimage,testXfeat], y_test=testY,
+								hm.stacking_ensemble(X_train=[trainXimage,trainXfeat], y_train=trainY,
+                                                     X_test=[testXimage,testXfeat], y_test=testY,
                                          classes=classes,
                                          models_image=Mixed_models_name,
-                                         outpath=self.params.outpath,finetune=0)  
-								hm.stacking_ensemble(X_test=testXimage, y_test=testY,
+                                         outpath=self.params.outpath,finetune=0,ReportName='test')  
+								hm.stacking_ensemble(X_train=trainXimage, y_train=trainY,
+                                                     X_test=testXimage, y_test=testY,
                                          classes=classes,
                                          models_image=self.params.models_image,
-                                         outpath=self.params.outpath,finetune=0) 
+                                         outpath=self.params.outpath,finetune=0,ReportName='test') 
 							else :
 								print('For Ensemble, models selected should be greater than 1')
           
@@ -792,25 +919,27 @@ class Ctrain:
 								hm.Avg_ensemble(X_test=[testXimage,testXfeat], y_test=testY,
                                     classes=classes,
                                     models_image=Mixed_models_name,
-                                    outpath=self.params.outpath,finetune=1,Mixed=1)  
+                                    outpath=self.params.outpath,finetune=1,Mixed=1,ReportName='test')  
 								hm.Avg_ensemble(X_test=testXimage, y_test=testY,
                                     classes=classes,
                                     models_image=self.params.models_image,
-                                    outpath=self.params.outpath,finetune=1,Mixed=0)  
+                                    outpath=self.params.outpath,finetune=1,Mixed=0,ReportName='test')  
 							else :
 								print('For Ensemble, models selected should be greater than 1')
                                 
                                 
 						if self.params.stacking_ensemble=='yes':
 							if len(Mixed_models_name) > 1: 
-								hm.stacking_ensemble(X_test=[testXimage,testXfeat], y_test=testY,
+								hm.stacking_ensemble(X_train=[trainXimage,trainXfeat],
+                                                     y_train=trainY,X_test=[testXimage,testXfeat], y_test=testY,
                                          classes=classes,
                                          models_image=Mixed_models_name,
-                                         outpath=self.params.outpath,finetune=1)  
-								hm.stacking_ensemble(X_test=testXimage, y_test=testY,
+                                         outpath=self.params.outpath,finetune=1,ReportName='test')  
+								hm.stacking_ensemble(X_train=trainXimage, y_train=trainY,
+                                                     X_test=testXimage, y_test=testY,
                                          classes=classes,
                                          models_image=self.params.models_image,
-                                         outpath=self.params.outpath,finetune=1) 
+                                         outpath=self.params.outpath,finetune=1,ReportName='test') 
 							else :
 								print('For Ensemble, models selected should be greater than 1')                               
 		return
@@ -913,11 +1042,6 @@ class Ctrain:
 
 		self.model.save(self.params.outpath+'/'+self.params.saveModelName, overwrite=True, include_optimizer=True)
 		return
-
-
-
-
-
 
 
 if __name__=='__main__':

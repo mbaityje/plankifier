@@ -40,7 +40,7 @@ from keras.preprocessing.image import ImageDataGenerator
 
 # stacked generalization with linear meta model 
 from sklearn.datasets import make_blobs
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score,f1_score
 from sklearn.linear_model import LogisticRegression,Perceptron,RidgeClassifier,RidgeClassifierCV
 from keras.models import load_model
 from keras.utils import to_categorical
@@ -182,6 +182,18 @@ class CModelWrapper:
 			self.model = MobileNet.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)  
 		elif self.modelname == 'eff0':
 			self.model = EfficientNetB0.Build(input_shape=self.trainX[0].shape, classes=self.numclasses) 
+		elif self.modelname == 'eff1':
+			self.model = EfficientNetB1.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
+		elif self.modelname == 'eff2':
+			self.model = EfficientNetB2.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
+		elif self.modelname == 'eff3':
+			self.model = EfficientNetB3.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
+		elif self.modelname == 'eff4':
+			self.model = EfficientNetB4.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
+		elif self.modelname == 'eff5':
+			self.model = EfficientNetB5.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
+		elif self.modelname == 'eff6':
+			self.model = EfficientNetB6.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
 		elif self.modelname == 'eff7':
 			self.model = EfficientNetB7.Build(input_shape=self.trainX[0].shape, classes=self.numclasses) 
 		elif self.modelname == 'res50':
@@ -456,6 +468,24 @@ class MixedModel:
 		elif modelnames[0] == 'eff0':
 			model_image = EfficientNetB0Model.Build(
 				input_shape=input_shape[0], classes=nout[0])
+		elif modelnames[0] == 'eff1':
+			model_image = EfficientNetB1Model.Build(
+				input_shape=input_shape[0], classes=nout[0])
+		elif modelnames[0] == 'eff2':
+			model_image = EfficientNetB2Model.Build(
+				input_shape=input_shape[0], classes=nout[0])
+		elif modelnames[0] == 'eff3':
+			model_image = EfficientNetB3Model.Build(
+				input_shape=input_shape[0], classes=nout[0])
+		elif modelnames[0] == 'eff4':
+			model_image = EfficientNetB4Model.Build(
+				input_shape=input_shape[0], classes=nout[0])
+		elif modelnames[0] == 'eff5':
+			model_image = EfficientNetB5Model.Build(
+				input_shape=input_shape[0], classes=nout[0])
+		elif modelnames[0] == 'eff6':
+			model_image = EfficientNetB6Model.Build(
+				input_shape=input_shape[0], classes=nout[0])
 		elif modelnames[0] == 'eff7':
 			model_image = EfficientNetB7Model.Build(
 				input_shape=input_shape[0], classes=nout[0])
@@ -576,7 +606,157 @@ class EfficientNetB0Model:
 		model=Model(inputs=base_model.input,outputs=preds) #now a model has been created based on our architecture
 		# return the constructed network architecture
 		return model  
+
+
+class EfficientNetB1Model:
+	@staticmethod
+	def Build(input_shape, classes):
+        
+		# initialize the model
+		base_model=efn.EfficientNetB1(input_shape=input_shape,weights='imagenet',include_top=False,input_tensor=Input(shape=(128, 128, 3)))
+        
+		# Make the base layer untrainable
+		for layer in base_model.layers:
+			layer.trainable = False
+        
+		# Add custom layers
+		x=base_model.output
+		x=GlobalAveragePooling2D()(x)
+		x = Dropout(rate = 0.4, name='dropout1')(x)
+		x = BatchNormalization()(x)
+		x = Dense(512, activation='relu', bias_initializer='zeros')(x)
+		x = Dropout(rate = 0.3, name='dropout2')(x)
+		x = BatchNormalization()(x)  
+		preds = Dense(classes, activation='softmax', kernel_initializer='random_uniform', bias_initializer='zeros')(x)
+		model=Model(inputs=base_model.input,outputs=preds) #now a model has been created based on our architecture
+		# return the constructed network architecture
+		return model 
     
+
+class EfficientNetB2Model:
+	@staticmethod
+	def Build(input_shape, classes):
+        
+		# initialize the model
+		base_model=efn.EfficientNetB2(input_shape=input_shape,weights='imagenet',include_top=False,input_tensor=Input(shape=(128, 128, 3)))
+        
+		# Make the base layer untrainable
+		for layer in base_model.layers:
+			layer.trainable = False
+        
+		# Add custom layers
+		x=base_model.output
+		x=GlobalAveragePooling2D()(x)
+		x = Dropout(rate = 0.4, name='dropout1')(x)
+		x = BatchNormalization()(x)
+		x = Dense(512, activation='relu', bias_initializer='zeros')(x)
+		x = Dropout(rate = 0.3, name='dropout2')(x)
+		x = BatchNormalization()(x)  
+		preds = Dense(classes, activation='softmax', kernel_initializer='random_uniform', bias_initializer='zeros')(x)
+		model=Model(inputs=base_model.input,outputs=preds) #now a model has been created based on our architecture
+		# return the constructed network architecture
+		return model 
+    
+
+class EfficientNetB3Model:
+	@staticmethod
+	def Build(input_shape, classes):
+        
+		# initialize the model
+		base_model=efn.EfficientNetB3(input_shape=input_shape,weights='imagenet',include_top=False,input_tensor=Input(shape=(128, 128, 3)))
+        
+		# Make the base layer untrainable
+		for layer in base_model.layers:
+			layer.trainable = False
+        
+		# Add custom layers
+		x=base_model.output
+		x=GlobalAveragePooling2D()(x)
+		x = Dropout(rate = 0.4, name='dropout1')(x)
+		x = BatchNormalization()(x)
+		x = Dense(512, activation='relu', bias_initializer='zeros')(x)
+		x = Dropout(rate = 0.3, name='dropout2')(x)
+		x = BatchNormalization()(x)  
+		preds = Dense(classes, activation='softmax', kernel_initializer='random_uniform', bias_initializer='zeros')(x)
+		model=Model(inputs=base_model.input,outputs=preds) #now a model has been created based on our architecture
+		# return the constructed network architecture
+		return model 
+    
+
+class EfficientNetB4Model:
+	@staticmethod
+	def Build(input_shape, classes):
+        
+		# initialize the model
+		base_model=efn.EfficientNetB4(input_shape=input_shape,weights='imagenet',include_top=False,input_tensor=Input(shape=(128, 128, 3)))
+        
+		# Make the base layer untrainable
+		for layer in base_model.layers:
+			layer.trainable = False
+        
+		# Add custom layers
+		x=base_model.output
+		x=GlobalAveragePooling2D()(x)
+		x = Dropout(rate = 0.4, name='dropout1')(x)
+		x = BatchNormalization()(x)
+		x = Dense(512, activation='relu', bias_initializer='zeros')(x)
+		x = Dropout(rate = 0.3, name='dropout2')(x)
+		x = BatchNormalization()(x)  
+		preds = Dense(classes, activation='softmax', kernel_initializer='random_uniform', bias_initializer='zeros')(x)
+		model=Model(inputs=base_model.input,outputs=preds) #now a model has been created based on our architecture
+		# return the constructed network architecture
+		return model 
+    
+
+class EfficientNetB5Model:
+	@staticmethod
+	def Build(input_shape, classes):
+        
+		# initialize the model
+		base_model=efn.EfficientNetB5(input_shape=input_shape,weights='imagenet',include_top=False,input_tensor=Input(shape=(128, 128, 3)))
+        
+		# Make the base layer untrainable
+		for layer in base_model.layers:
+			layer.trainable = False
+        
+		# Add custom layers
+		x=base_model.output
+		x=GlobalAveragePooling2D()(x)
+		x = Dropout(rate = 0.4, name='dropout1')(x)
+		x = BatchNormalization()(x)
+		x = Dense(512, activation='relu', bias_initializer='zeros')(x)
+		x = Dropout(rate = 0.3, name='dropout2')(x)
+		x = BatchNormalization()(x)  
+		preds = Dense(classes, activation='softmax', kernel_initializer='random_uniform', bias_initializer='zeros')(x)
+		model=Model(inputs=base_model.input,outputs=preds) #now a model has been created based on our architecture
+		# return the constructed network architecture
+		return model 
+    
+class EfficientNetB6Model:
+	@staticmethod
+	def Build(input_shape, classes):
+        
+		# initialize the model
+		base_model=efn.EfficientNetB6(input_shape=input_shape,weights='imagenet',include_top=False,input_tensor=Input(shape=(128, 128, 3)))
+        
+		# Make the base layer untrainable
+		for layer in base_model.layers:
+			layer.trainable = False
+        
+		# Add custom layers
+		x=base_model.output
+		x=GlobalAveragePooling2D()(x)
+		x = Dropout(rate = 0.4, name='dropout1')(x)
+		x = BatchNormalization()(x)
+		x = Dense(512, activation='relu', bias_initializer='zeros')(x)
+		x = Dropout(rate = 0.3, name='dropout2')(x)
+		x = BatchNormalization()(x)  
+		preds = Dense(classes, activation='softmax', kernel_initializer='random_uniform', bias_initializer='zeros')(x)
+		model=Model(inputs=base_model.input,outputs=preds) #now a model has been created based on our architecture
+		# return the constructed network architecture
+		return model 
+
+
 class EfficientNetB7Model:
 	@staticmethod
 	def Build(input_shape, classes):
@@ -674,13 +854,6 @@ class DenseNet121Model:
 		return model     
     
     
-    
-    
-    
-    
-    
-    
-    
 
 class Explore_MLP(HyperModel):
     def __init__(self, input_shape, num_classes,loss):
@@ -700,6 +873,32 @@ class Explore_MLP(HyperModel):
         model.compile(optimizer=keras.optimizers.Adam(hp.Choice('learning_rate',values=[1e-2, 1e-3, 1e-4, 1e-5])),loss=self.loss,metrics=['accuracy'])
         return model
 
+# class Explore_Conv(HyperModel):
+#     def __init__(self, input_shape, num_classes,loss):
+#         self.input_shape = input_shape
+#         self.num_classes = num_classes
+#         self.loss = loss
+
+#     def build(self, hp):  
+#         model = Sequential()
+#         model.add(Conv2D(filters=hp.Int('Conv_filter_1', 32, 128, step=32, default=64),
+#                          kernel_size=hp.Int('Kernel_size_1', 8, 32, step=8),activation='relu',
+#                          input_shape=self.input_shape,
+#                          bias_regularizer=regularizers.l2(hp.Float('Bias_regularizer_1',0.0, 0.1, step=0.05))))
+#         for i in range(hp.Int('n_layers',1,3)):
+#             model.add(Conv2D(hp.Int(f"Conv_filter_{i+2}",16,64,step=16),
+#                              kernel_size=hp.Int('Kernel_size_'+ str(i+2), 10, 30,step=4),
+#                              activation='relu',
+#                              kernel_regularizer=regularizers.l2(hp.Float('Kernel_regularizer_'+ str(i+2),0.0, 0.2, step=0.05)), 
+#                              bias_regularizer=regularizers.l2(hp.Float('Bias_regularizer_'+ str(i+2),0.0, 0.2, step=0.05))))
+#             model.add(Activation('relu'))
+#         model.add(BatchNormalization(axis=-1)) #chanDim
+#         model.add(MaxPooling2D(pool_size=(2, 2)))
+#         model.add(Flatten())
+#         model.add(Dense(self.num_classes, activation='softmax'))
+#         model.compile(optimizer=keras.optimizers.Adam(hp.Choice('learning_rate',values=[1e-2, 1e-3, 1e-4, 1e-5])),loss=self.loss,metrics=['accuracy'])
+#         return model
+
 
 class Explore_Conv(HyperModel):
     def __init__(self, input_shape, num_classes,loss):
@@ -710,23 +909,22 @@ class Explore_Conv(HyperModel):
     def build(self, hp):  
         model = Sequential()
         model.add(Conv2D(filters=hp.Int('Conv_filter_1', 32, 128, step=32, default=64),
-                         kernel_size=hp.Int('Kernel_size_1', 8, 32, step=8),activation='relu',
+                         kernel_size=hp.Int('Kernel_size_1', 8, 32,step=8),activation='relu',
                          input_shape=self.input_shape,
                          bias_regularizer=regularizers.l2(hp.Float('Bias_regularizer_1',0.0, 0.1, step=0.05))))
-        for i in range(hp.Int('n_layers',1,3)):
-            model.add(Conv2D(hp.Int(f"Conv_filter_{i+2}",16,64,step=16),
-                             kernel_size=hp.Int('Kernel_size_'+ str(i+2), 10, 30,step=4),
-                             activation='relu',
-                             kernel_regularizer=regularizers.l2(hp.Float('Kernel_regularizer_'+ str(i+2),0.0, 0.2, step=0.05)), 
-                             bias_regularizer=regularizers.l2(hp.Float('Bias_regularizer_'+ str(i+2),0.0, 0.2, step=0.05))))
-            model.add(Activation('relu'))
+        
+        model.add(Conv2D(hp.Int('Conv_filter_2',16,64,step=16),
+                         kernel_size=hp.Int('Kernel_size_2', 10, 30,step=4),activation='relu',
+                         kernel_regularizer=regularizers.l2(hp.Float('Kernel_regularizer_2',0.0,0.1,step=0.05)), 
+                         bias_regularizer=regularizers.l2(hp.Float('Bias_regularizer_2',0.0,0.1,step=0.05))))
+        
+        model.add(Activation('relu'))
         model.add(BatchNormalization(axis=-1)) #chanDim
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
         model.add(Dense(self.num_classes, activation='softmax'))
         model.compile(optimizer=keras.optimizers.Adam(hp.Choice('learning_rate',values=[1e-2, 1e-3, 1e-4, 1e-5])),loss=self.loss,metrics=['accuracy'])
         return model
-
     
     
 class Explore_Mobile(HyperModel):
@@ -791,7 +989,188 @@ class Explore_EfficientNetB0(HyperModel):
                       loss=self.loss,metrics=['accuracy'])
         return model
 
-
+class Explore_EfficientNetB1(HyperModel):
+    def __init__(self, input_shape, num_classes,loss):
+        self.input_shape = input_shape
+        self.num_classes = num_classes
+        self.loss = loss
+        
+    def build(self, hp):
+        base_model=efn.EfficientNetB1(input_shape=self.input_shape,
+                                      weights='imagenet',include_top=False,
+                                      input_tensor=Input(shape=(128, 128, 3))) 
+        #imports the mobilenet model and discards the last 1000 neuron layer.
+        for layer in base_model.layers:
+            layer.trainable = False
+        x=base_model.output
+        x=GlobalAveragePooling2D()(x)
+        x = Dropout(hp.Float('dropout1', 0.0, 0.7, step=0.1, default=0.5))(x)
+        x = BatchNormalization()(x)
+        x = Dense(hp.Int('hidden_size', 50, 1000, step=100, default=50),
+                  activation='relu', bias_initializer='zeros')(x)
+        x = Dropout(hp.Float('dropout2', 0.0, 0.7, step=0.1, default=0.2))(x)
+        x = BatchNormalization()(x)
+        preds = Dense(self.num_classes, activation='softmax', 
+                      kernel_initializer='random_uniform', bias_initializer='zeros')(x)
+        model=Model(inputs=base_model.input,outputs=preds) 
+        #now a model has been created based on our architecture
+        model.compile(optimizer=keras.optimizers.Adam(hp.Choice('learning_rate',
+                                                                values=[1e-2, 1e-3, 1e-4, 1e-5])),
+                      loss=self.loss,metrics=['accuracy'])
+        return model
+    
+class Explore_EfficientNetB2(HyperModel):
+    def __init__(self, input_shape, num_classes,loss):
+        self.input_shape = input_shape
+        self.num_classes = num_classes
+        self.loss = loss
+        
+    def build(self, hp):
+        base_model=efn.EfficientNetB2(input_shape=self.input_shape,
+                                      weights='imagenet',include_top=False,
+                                      input_tensor=Input(shape=(128, 128, 3))) 
+        #imports the mobilenet model and discards the last 1000 neuron layer.
+        for layer in base_model.layers:
+            layer.trainable = False
+        x=base_model.output
+        x=GlobalAveragePooling2D()(x)
+        x = Dropout(hp.Float('dropout1', 0.0, 0.7, step=0.1, default=0.5))(x)
+        x = BatchNormalization()(x)
+        x = Dense(hp.Int('hidden_size', 50, 1000, step=100, default=50),
+                  activation='relu', bias_initializer='zeros')(x)
+        x = Dropout(hp.Float('dropout2', 0.0, 0.7, step=0.1, default=0.2))(x)
+        x = BatchNormalization()(x)
+        preds = Dense(self.num_classes, activation='softmax', 
+                      kernel_initializer='random_uniform', bias_initializer='zeros')(x)
+        model=Model(inputs=base_model.input,outputs=preds) 
+        #now a model has been created based on our architecture
+        model.compile(optimizer=keras.optimizers.Adam(hp.Choice('learning_rate',
+                                                                values=[1e-2, 1e-3, 1e-4, 1e-5])),
+                      loss=self.loss,metrics=['accuracy'])
+        return model
+    
+class Explore_EfficientNetB3(HyperModel):
+    def __init__(self, input_shape, num_classes,loss):
+        self.input_shape = input_shape
+        self.num_classes = num_classes
+        self.loss = loss
+        
+    def build(self, hp):
+        base_model=efn.EfficientNetB3(input_shape=self.input_shape,
+                                      weights='imagenet',include_top=False,
+                                      input_tensor=Input(shape=(128, 128, 3))) 
+        #imports the mobilenet model and discards the last 1000 neuron layer.
+        for layer in base_model.layers:
+            layer.trainable = False
+        x=base_model.output
+        x=GlobalAveragePooling2D()(x)
+        x = Dropout(hp.Float('dropout1', 0.0, 0.7, step=0.1, default=0.5))(x)
+        x = BatchNormalization()(x)
+        x = Dense(hp.Int('hidden_size', 50, 1000, step=100, default=50),
+                  activation='relu', bias_initializer='zeros')(x)
+        x = Dropout(hp.Float('dropout2', 0.0, 0.7, step=0.1, default=0.2))(x)
+        x = BatchNormalization()(x)
+        preds = Dense(self.num_classes, activation='softmax', 
+                      kernel_initializer='random_uniform', bias_initializer='zeros')(x)
+        model=Model(inputs=base_model.input,outputs=preds) 
+        #now a model has been created based on our architecture
+        model.compile(optimizer=keras.optimizers.Adam(hp.Choice('learning_rate',
+                                                                values=[1e-2, 1e-3, 1e-4, 1e-5])),
+                      loss=self.loss,metrics=['accuracy'])
+        return model
+    
+    
+class Explore_EfficientNetB4(HyperModel):
+    def __init__(self, input_shape, num_classes,loss):
+        self.input_shape = input_shape
+        self.num_classes = num_classes
+        self.loss = loss
+        
+    def build(self, hp):
+        base_model=efn.EfficientNetB4(input_shape=self.input_shape,
+                                      weights='imagenet',include_top=False,
+                                      input_tensor=Input(shape=(128, 128, 3))) 
+        #imports the mobilenet model and discards the last 1000 neuron layer.
+        for layer in base_model.layers:
+            layer.trainable = False
+        x=base_model.output
+        x=GlobalAveragePooling2D()(x)
+        x = Dropout(hp.Float('dropout1', 0.0, 0.7, step=0.1, default=0.5))(x)
+        x = BatchNormalization()(x)
+        x = Dense(hp.Int('hidden_size', 50, 1000, step=100, default=50),
+                  activation='relu', bias_initializer='zeros')(x)
+        x = Dropout(hp.Float('dropout2', 0.0, 0.7, step=0.1, default=0.2))(x)
+        x = BatchNormalization()(x)
+        preds = Dense(self.num_classes, activation='softmax', 
+                      kernel_initializer='random_uniform', bias_initializer='zeros')(x)
+        model=Model(inputs=base_model.input,outputs=preds) 
+        #now a model has been created based on our architecture
+        model.compile(optimizer=keras.optimizers.Adam(hp.Choice('learning_rate',
+                                                                values=[1e-2, 1e-3, 1e-4, 1e-5])),
+                      loss=self.loss,metrics=['accuracy'])
+        return model
+    
+class Explore_EfficientNetB5(HyperModel):
+    def __init__(self, input_shape, num_classes,loss):
+        self.input_shape = input_shape
+        self.num_classes = num_classes
+        self.loss = loss
+        
+    def build(self, hp):
+        base_model=efn.EfficientNetB5(input_shape=self.input_shape,
+                                      weights='imagenet',include_top=False,
+                                      input_tensor=Input(shape=(128, 128, 3))) 
+        #imports the mobilenet model and discards the last 1000 neuron layer.
+        for layer in base_model.layers:
+            layer.trainable = False
+        x=base_model.output
+        x=GlobalAveragePooling2D()(x)
+        x = Dropout(hp.Float('dropout1', 0.0, 0.7, step=0.1, default=0.5))(x)
+        x = BatchNormalization()(x)
+        x = Dense(hp.Int('hidden_size', 50, 1000, step=100, default=50),
+                  activation='relu', bias_initializer='zeros')(x)
+        x = Dropout(hp.Float('dropout2', 0.0, 0.7, step=0.1, default=0.2))(x)
+        x = BatchNormalization()(x)
+        preds = Dense(self.num_classes, activation='softmax', 
+                      kernel_initializer='random_uniform', bias_initializer='zeros')(x)
+        model=Model(inputs=base_model.input,outputs=preds) 
+        #now a model has been created based on our architecture
+        model.compile(optimizer=keras.optimizers.Adam(hp.Choice('learning_rate',
+                                                                values=[1e-2, 1e-3, 1e-4, 1e-5])),
+                      loss=self.loss,metrics=['accuracy'])
+        return model 
+    
+class Explore_EfficientNetB6(HyperModel):
+    def __init__(self, input_shape, num_classes,loss):
+        self.input_shape = input_shape
+        self.num_classes = num_classes
+        self.loss = loss
+        
+    def build(self, hp):
+        base_model=efn.EfficientNetB6(input_shape=self.input_shape,
+                                      weights='imagenet',include_top=False,
+                                      input_tensor=Input(shape=(128, 128, 3))) 
+        #imports the mobilenet model and discards the last 1000 neuron layer.
+        for layer in base_model.layers:
+            layer.trainable = False
+        x=base_model.output
+        x=GlobalAveragePooling2D()(x)
+        x = Dropout(hp.Float('dropout1', 0.0, 0.7, step=0.1, default=0.5))(x)
+        x = BatchNormalization()(x)
+        x = Dense(hp.Int('hidden_size', 50, 1000, step=100, default=50),
+                  activation='relu', bias_initializer='zeros')(x)
+        x = Dropout(hp.Float('dropout2', 0.0, 0.7, step=0.1, default=0.2))(x)
+        x = BatchNormalization()(x)
+        preds = Dense(self.num_classes, activation='softmax', 
+                      kernel_initializer='random_uniform', bias_initializer='zeros')(x)
+        model=Model(inputs=base_model.input,outputs=preds) 
+        #now a model has been created based on our architecture
+        model.compile(optimizer=keras.optimizers.Adam(hp.Choice('learning_rate',
+                                                                values=[1e-2, 1e-3, 1e-4, 1e-5])),
+                      loss=self.loss,metrics=['accuracy'])
+        return model
+    
+    
 class Explore_EfficientNetB7(HyperModel):
     def __init__(self, input_shape, num_classes,loss):
         self.input_shape = input_shape
@@ -938,16 +1317,16 @@ def Bayesian_optimization_search(model,X_train,y_train,X_test,y_test,Bayesian_ep
     best_model = tuner_Bayesian.hypermodel.build(selected_hps)
     
     # Train the best model
-    compile_and_train(best_model,outpath,model_to_train,1e-07,
+    compile_and_train(best_model,outpath,model_to_train,0.0001,
                       X_train,y_train,X_test,y_test,epochs,aug,loss,0,classes,ttkind,Mixed) # here learning rate is not used for training
         
     if finetune==1:
         # Fine tune the best model
-        compile_and_train(best_model,outpath,model_to_train,1e-07,
-                          X_train,y_train,X_test,y_test,finetune_epochs,aug,loss,1,classes,ttkind,Mixed)
+        compile_and_train(best_model,outpath,model_to_train,1e-04,
+                          X_train,y_train,X_test,y_test,finetune_epochs,aug,loss,1,classes,ttkind,Mixed) # here learning rate is used 
     
 
-def print_performance(model,X_test,y_test,outpath,model_to_train,classes,finetune,ttkind,Mixed):
+def print_performance(model,ReportName,X_test,y_test,outpath,model_to_train,classes,finetune,Mixed):
     
 #     print('MODEL to TRAIN{}'.format(model_to_train))
 #     print('CLASSES {}'.format(classes))
@@ -963,18 +1342,19 @@ def print_performance(model,X_test,y_test,outpath,model_to_train,classes,finetun
 #     print('model_loss: %.5f, accuracy: %.5f' % (model_loss,accuracy))
 
     
-    predictions_names=get_predictions_names(model,classes,X_test,ttkind,Mixed)
+    predictions_names=get_predictions_names(model,classes,X_test,Mixed)
 #     print('Shape of predictions_names{}'.format(predictions_names.shape))
 
     # Print and save classification report
     
     clf_report=classification_report(y_test_label, predictions_names)
     conf_matrix=confusion_matrix(y_test_label, predictions_names)
+    f1=f1_score(y_test_label, predictions_names, average='macro')
     
     if Mixed ==1:
-        pathname=outpath+'BestModelsFromBayesianSearch/Mixed/'+ model_to_train
+        pathname=outpath+'BestModelsFromBayesianSearch/Mixed/'+ model_to_train +'/'
     else:
-        pathname=outpath+'BestModelsFromBayesianSearch/'+ model_to_train
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ model_to_train +'/'
 
 #     pathname=outpath+'BestModelsFromBayesianSearch/'+model_to_train
     stringlist = []
@@ -982,14 +1362,14 @@ def print_performance(model,X_test,y_test,outpath,model_to_train,classes,finetun
     short_model_summary = "\n".join(stringlist)
     
     if finetune ==0:
-        f = open(pathname+'/Report.txt', 'w')
-        f.write('\nModel Name: \n\n{}\n\nModel Summary \n\n{}\n\nTest Accuracy\n\n{}\n\nTest Loss\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n'.format(model_to_train,short_model_summary,accuracy,model_loss,clf_report, conf_matrix))
+        f = open(pathname+ReportName+'.txt', 'w')
+        f.write('\nModel Name: \n\n{}\n\nTest Accuracy\n\n{}\n\nTest Loss\n\n{}\n\nF1 Score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n\nModel Summary \n\n{}\n'.format(model_to_train,accuracy,model_loss,f1,clf_report, conf_matrix,short_model_summary))
         f.close()
 
 
     elif finetune ==1 and Mixed!=1:
-        f = open(pathname+'/Report_Finetuned.txt', 'w')
-        f.write('\nModel Name: \n\n{}\n\nModel Summary \n\n{}\n\nTest Accuracy\n\n{}\n\nTest Loss\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n'.format(model_to_train,short_model_summary,accuracy,model_loss,clf_report, conf_matrix))
+        f = open(pathname+ReportName+'_Finetuned.txt', 'w')
+        f.write('\nModel Name: \n\n{}\n\nTest Accuracy\n\n{}\n\nTest Loss\n\n{}\n\nF1 Score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n\nModel Summary \n\n{}\n'.format(model_to_train,accuracy,model_loss,f1,clf_report, conf_matrix,short_model_summary))
         f.close()
 
 def get_callbacks(bestmodelpath,patience,finetune):
@@ -1049,7 +1429,11 @@ def compile_and_train(model,outpath,foldername,learning_rate,
 #     if finetune ==1:
     if finetune ==1 and ttkind!='mixed':
         model=load_best_model(outpath,foldername,finetune=0)
-        for layer in model.layers[-15:]:
+        
+#         for layer in model.layers[-15:]:
+#             layer.trainable = True
+            
+        for layer in model.layers:
             layer.trainable = True
         model.compile(loss=loss, 
                   optimizer=keras.optimizers.Adam(learning_rate=learning_rate), 
@@ -1089,9 +1473,13 @@ def compile_and_train(model,outpath,foldername,learning_rate,
         with open(bestmodelpath+'/history_finetune', 'wb') as file_pi:
             pickle.dump(history.history, file_pi)
     
-    print_performance(model,X_test=X_test,y_test=y_test,outpath=outpath,
+    print_performance(model,'Report_test',X_test=X_test,y_test=y_test,outpath=outpath,
                       model_to_train=foldername,classes=classes,
-                      finetune=finetune,ttkind=ttkind,Mixed=Mixed)
+                      finetune=finetune,Mixed=Mixed)
+    
+#     print_performance(model,'Report_valid',X_test=X_val,y_test=y_val,outpath=outpath,
+#                       model_to_train=foldername,classes=classes,
+#                       finetune=finetune,ttkind=ttkind,Mixed=Mixed)
             
 def get_and_train_best_models(X_train,y_train,
                               X_test,y_test,
@@ -1103,7 +1491,7 @@ def get_and_train_best_models(X_train,y_train,
     if model_to_train=='mlp':
         model = Explore_MLP(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)   
     
-    elif model_to_train=='conv':
+    elif model_to_train=='conv2':
         model = Explore_Conv(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)   
         
     elif model_to_train=='mobile':
@@ -1111,7 +1499,20 @@ def get_and_train_best_models(X_train,y_train,
 
     elif model_to_train=='eff0':
         model = Explore_EfficientNetB0(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
-      
+
+    elif model_to_train=='eff1':
+        model = Explore_EfficientNetB1(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
+    elif model_to_train=='eff2':
+        model = Explore_EfficientNetB2(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
+    elif model_to_train=='eff3':
+        model = Explore_EfficientNetB3(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
+    elif model_to_train=='eff4':
+        model = Explore_EfficientNetB4(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
+    elif model_to_train=='eff5':
+        model = Explore_EfficientNetB5(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
+    elif model_to_train=='eff6':
+        model = Explore_EfficientNetB6(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
+
     elif model_to_train=='eff7':
         model = Explore_EfficientNetB7(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
     
@@ -1174,7 +1575,7 @@ def evaluate_n_members(members, n_members, X_test, y_test_label,classes,models_i
 	return accuracy_score(y_test_label, yhat_names),members_name
 
 
-def Avg_ensemble(X_test,y_test,classes,models_image,outpath,finetune,Mixed):
+def Avg_ensemble(X_test,y_test,classes,models_image,outpath,finetune,Mixed,ReportName):
     
     members=combine_models(models_image,outpath,finetune=finetune)
 
@@ -1195,7 +1596,7 @@ def Avg_ensemble(X_test,y_test,classes,models_image,outpath,finetune,Mixed):
         pathname=outpath+'BestModelsFromBayesianSearch/Finetuned_Average_Ensemble_of_'+Models_for_Avg_ensemble
         Path(pathname).mkdir(parents=True, exist_ok=True)
 
-    f = open(pathname+'/Ensemble_Scores.txt', 'w')
+    f = open(pathname+'/Ensemble_Scores_'+ReportName+'.txt', 'w')
     
     np.save(pathname+'/classes.npy', classes)
 
@@ -1225,8 +1626,11 @@ def Avg_ensemble(X_test,y_test,classes,models_image,outpath,finetune,Mixed):
     clf_report=classification_report(y_test_label, predictions_names)
     conf_matrix=confusion_matrix(y_test_label, predictions_names)
     
-    f = open(pathname+'/Report.txt', 'w')
-    f.write('\n\nModel Name: \n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n'.format(foldername,clf_report, conf_matrix))
+    acc_ensemble= accuracy_score(y_test_label, predictions_names)
+    f1=f1_score(y_test_label, predictions_names, average='macro')
+    
+    f = open(pathname+'/Report_'+ ReportName +'.txt', 'w')
+    f.write('\n\nModel Name: \n\n{}\n\nTest Accuracy\n\n{}\n\n F1 score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n'.format(foldername,acc_ensemble,f1,clf_report, conf_matrix))
     f.close()
 
 
@@ -1246,57 +1650,57 @@ def stacked_dataset(members, X_test):
 	stackX = stackX.reshape((stackX.shape[0], stackX.shape[1]*stackX.shape[2]))
 	return stackX  
 
-def fit_stacked_ensemble_and_save(stackedX, model,foldername,y_test_label,outpath,classes):
-    # fit standalone model
+def fit_stacked_ensemble_and_save(stackedXtrain,stackedXtest,model,foldername,
+                                  y_train_label,y_test_label,outpath,classes,ReportName):
+    # fit standalone model on trained stack
     stacked_model = make_pipeline(StandardScaler(),model(max_iter=5000, tol=1e-5))
-    stacked_model.fit(stackedX, y_test_label)
-    
-    # evaluate model on test set
-    yhat_stacked = stacked_model.predict(stackedX)
-    acc_stacked = accuracy_score(y_test_label, yhat_stacked)
-    print(foldername+'__Accuracy: %.3f' % acc_stacked)
-    
-    # Get the prediction names
-    predictions_names = stacked_model.predict(stackedX)
- 
+    stacked_model.fit(stackedXtrain, y_train_label)
+
     # save the model to disk
     pathname=outpath+'BestModelsFromBayesianSearch/Stacking_Ensemble/'+ foldername
     Path(pathname).mkdir(parents=True, exist_ok=True)
     filename=pathname +'/model.sav'
     joblib.dump(stacked_model, filename)
-    
     np.save(pathname+'/classes.npy', classes)
     
-    # Print and save classification report
+    # Get the prediction names on test
+    predictions_names = stacked_model.predict(stackedXtest)
+    acc_stacked = accuracy_score(y_test_label, predictions_names)
     clf_report=classification_report(y_test_label, predictions_names)
     conf_matrix=confusion_matrix(y_test_label, predictions_names)
-    
-    
-#     stringlist = []
-#     stacked_model.summary(print_fn=lambda x: stringlist.append(x))
-#     short_model_summary = "\n".join(stringlist)
-    
-    f = open(pathname+'/Report.txt', 'w')
-    f.write('\nModel Name: \n\n{}\n\nTest Accuracy\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n'.format(foldername,acc_stacked,clf_report, conf_matrix))
-    f.close()
+    f1=f1_score(y_test_label, predictions_names, average='macro')
+    print(foldername+'__Accuracy: %.3f' % acc_stacked)
 
-#     with open(pathname+'/Accuracy.txt', 'w') as f:
-#         print(foldername+'__Accuracy: %.3f' % acc_stacked, file=f)  # Python 3.x
+    f = open(pathname+'/Report_'+ ReportName +'.txt', 'w')
+    f.write('\nModel Name: \n\n{}\n\nTest Accuracy\n\n{}\n\n F1 score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n'.format(foldername,acc_stacked,f1,clf_report, conf_matrix))
+    f.close()
+    
 
         
-def stacking_ensemble(X_test,y_test,classes,models_image,outpath,finetune):
+def stacking_ensemble(X_train,y_train,X_test,y_test,classes,models_image,outpath,finetune,ReportName):
     members=combine_models(models_image,outpath,finetune=finetune)
-    predictions=y_test.argmax(axis=1)  # The class that the classifier would bet on
-    y_test_label=np.array([classes[predictions[i]] for i in range(len(predictions))],dtype=object)
-    stackedX = stacked_dataset(members, X_test)
+    
+    # On train Data
+    predictions_train=y_train.argmax(axis=1)  # The class that the classifier would bet on
+    y_train_label=np.array([classes[predictions_train[i]] for i in range(len(predictions_train))],dtype=object)
+    stackedXtrain = stacked_dataset(members, X_train)
+    
+    # On test data
+    predictions_test=y_test.argmax(axis=1)  # The class that the classifier would bet on
+    y_test_label=np.array([classes[predictions_test[i]] for i in range(len(predictions_test))],dtype=object)
+    stackedX_test = stacked_dataset(members, X_test)
+    
+    
 #     Models_for_stacking = '_'.join([str(elem) for elem in models_image]) 
     Models_for_stacking = '_'.join(map(str, models_image)) 
     if finetune ==0:
-        fit_stacked_ensemble_and_save(stackedX,LogisticRegression,'StackedLR_of_'+Models_for_stacking,
-                                  y_test_label,outpath,classes)
+        fit_stacked_ensemble_and_save(stackedXtrain,stackedX_test,LogisticRegression,
+                                      'StackedLR_of_'+Models_for_stacking, y_train_label,
+                                  y_test_label,outpath,classes,ReportName)
     elif finetune ==1:
-        fit_stacked_ensemble_and_save(stackedX,LogisticRegression,'Finetuned_StackedLR_of_'+Models_for_stacking,
-                                  y_test_label,outpath,classes)
+        fit_stacked_ensemble_and_save(stackedXtrain,stackedX_test,LogisticRegression,
+                                      'Finetuned_StackedLR_of_'+Models_for_stacking,
+                                      y_train_label,y_test_label,outpath,classes,ReportName)
 
 def define_Mixed_model(members,num_classes,loss):
 	# update all layers in all models to not be trainable
@@ -1363,6 +1767,18 @@ def Select_Mixed_Model_from_scratch(X_train,classes,ImageName):
         members.append(MobileNetModel.Build(input_shape=X_train[0][0].shape, classes=len(classes)))
     elif ImageName == 'eff0':
         members.append(EfficientNetB0Model.Build(input_shape=X_train[0][0].shape, classes=len(classes)))
+    elif ImageName == 'eff1':
+        members.append(EfficientNetB1Model.Build(input_shape=X_train[0][0].shape, classes=len(classes)))
+    elif ImageName == 'eff2':
+        members.append(EfficientNetB2Model.Build(input_shape=X_train[0][0].shape, classes=len(classes)))
+    elif ImageName == 'eff3':
+        members.append(EfficientNetB3Model.Build(input_shape=X_train[0][0].shape, classes=len(classes)))
+    elif ImageName == 'eff4':
+        members.append(EfficientNetB4Model.Build(input_shape=X_train[0][0].shape, classes=len(classes)))
+    elif ImageName == 'eff5':
+        members.append(EfficientNetB5Model.Build(input_shape=X_train[0][0].shape, classes=len(classes)))
+    elif ImageName == 'eff6':
+        members.append(EfficientNetB6Model.Build(input_shape=X_train[0][0].shape, classes=len(classes)))
     elif ImageName == 'eff7':
         members.append(EfficientNetB7Model.Build(input_shape=X_train[0][0].shape, classes=len(classes)))
     elif ImageName == 'res50':
@@ -1381,7 +1797,7 @@ def Select_Mixed_Model_from_scratch(X_train,classes,ImageName):
 
 
 
-def get_predictions_names(model,classes,X_test,ttkind,Mixed):
+def get_predictions_names(model,classes,X_test,Mixed):
     
     probs = model.predict(X_test)
     predictions=probs.argmax(axis=1)  # The class that the classifier would bet on

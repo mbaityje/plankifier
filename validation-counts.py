@@ -14,12 +14,12 @@ import predict as pr
 #
 # Input parameters (hardcoded, for the moment)
 #
-modelnames	= ['./trained-models/conv2/keras_model.h5']
-weightnames	= ['./trained-models/conv2/bestweights.hdf5']
+modelnames	= ['./trained-models/EfficientNetB7/keras_model_finetune.h5']
+weightnames	= ['./trained-models/EfficientNetB7/bestweights_finetune.hdf5']
 testdirs	= glob.glob('./data/1_zooplankton_0p5x/validation/counts/year_*/*/0000000000_subset_static_html/images/00000/')
 testimages	= glob.glob('./data/1_zooplankton_0p5x/validation/counts/year_*/*/0000000000_subset_static_html/images/00000/*')
 ensMethod	= 'majority'
-threshold	= 0.7
+threshold	= 0.8
 
 
 
@@ -70,6 +70,7 @@ ax=df[['tax','cla']].sort_values(by='tax', ascending=False).plot.bar(logy=True)
 ax.set_ylabel("Taxon count")
 plt.tight_layout()
 plt.show()
+plt.savefig('./out/Validation_counts2.png')
 
 
 #
@@ -79,3 +80,4 @@ ax=df[(df.tax>0) & (df.cla>0)].sort_values(by='tax', ascending=False).plot.bar(l
 ax.set_ylabel("Taxon count")
 plt.tight_layout()
 plt.show()
+plt.savefig('./out/Validation_counts_clean2.png')

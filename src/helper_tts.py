@@ -22,13 +22,14 @@ class CTrainTestSet:
 	A class for extracting train and test sets from the original dataset, and preprocessing them.
 	'''
 
-	def __init__(self, X, y,filenames, ttkind='image',classifier=None,balance_weight=None, rescale=False, testSplit=0.2, random_state=12345):
+	def __init__(self, X, y,filenames, ttkind='image',classifier=None,balance_weight=None, rescale=False, testSplit=0.2,valid_set=None, random_state=12345):
 		''' 
 		X and y are dataframes with features and labels
 		'''
 
 		self.ttkind=ttkind
 		self.testSplit=testSplit
+		self.valid_set=valid_set
 		self.random_state=random_state
 		self.classifier=classifier
 		self.balance_weight=balance_weight
@@ -56,7 +57,7 @@ class CTrainTestSet:
 
     
 		# Split train and test data
-		self.Split(test_size=testSplit, random_state=random_state)
+		self.Split(test_size=testSplit,valid_set=valid_set, random_state=random_state)
 
 		# Rescale features
 		if rescale == True:
@@ -105,26 +106,30 @@ class CTrainTestSet:
 		return np.array([X.to_numpy()[i, im_col] for i in range( len(X.index) )])
 
 
-	def Split(self, test_size=0.2, random_state=12345):
+	def Split(self, test_size=0.2,valid_set=None, random_state=12345):
 		''' 
 		Splits train and test datasets.
-
 		Allows to put all the data in the test set by choosing test_size=1. This is useful for evaluation.
-
 		Handles differently the mixed case, because in that case  X is a dataframe.
 		'''
-
 				
 		if test_size<1:
-			self.trainX, self.testX, self.trainY, self.testY, self.trainFilenames, self.testFilenames = train_test_split(self.X, self.y,self.filenames, test_size=test_size, random_state=random_state, shuffle=True)
-           
+            
+			if valid_set == 'no':       
+				self.trainX, self.testX, self.trainY, self.testY, self.trainFilenames, self.testFilenames = train_test_split(self.X, self.y,self.filenames, test_size=test_size, random_state=random_state, shuffle=True)
+			elif valid_set == 'yes':  
+				train_ratio = 0.70
+				validation_ratio = 0.15
+				test_ratio = 0.15
+				self.trainX, self.test1X, self.trainY, self.test1Y, self.trainFilenames, self.test1Filenames = train_test_split(self.X, self.y,self.filenames, test_size=1-train_ratio,random_state=random_state, shuffle=True)   
+				self.valX, self.testX, self.valY, self.testY, self.valFilenames, self.testFilenames = train_test_split(self.test1X, self.test1Y,self.test1Filenames, test_size=test_ratio/(test_ratio + validation_ratio), random_state=random_state, shuffle=True) 
+                              
 			y_integers = np.argmax(self.trainY, axis=1)
 			if self.balance_weight=='yes':            
 				class_weights = compute_class_weight('balanced', np.unique(y_integers), y_integers)
 			else:
 				class_weights = compute_class_weight(None, np.unique(y_integers), y_integers)
 			self.d_class_weights = dict(enumerate(class_weights))
-
 
 		else: # This allows us to pack everything into the test set
 			self.trainX, self.testX, self.trainY, self.testY, self.trainFilenames, self.testFilenames = None, self.X, None, self.y
@@ -135,6 +140,8 @@ class CTrainTestSet:
 			if self.trainX is not None:
 				self.trainXimage = self.ImageNumpyFromMixedDataframe(self.trainX)
 			self.testXimage = self.ImageNumpyFromMixedDataframe(self.testX)
+			if valid_set=='yes':
+				self.valXimage = self.ImageNumpyFromMixedDataframe(self.valX)
 
 			#Features
 			if self.trainX is not None:
@@ -142,7 +149,10 @@ class CTrainTestSet:
 				self.trainXfeat=np.array([Xf.to_numpy()[i] for i in range(len(Xf.index))])
 			Xf=self.DropCols(self.testX, ['npimage','rescaled'])
 			self.testXfeat=np.array([Xf.to_numpy()[i] for i in range(len(Xf.index))])
-
+			if valid_set=='yes':
+				Xf=self.DropCols(self.valX, ['npimage','rescaled'])
+				self.valXfeat=np.array([Xf.to_numpy()[i] for i in range(len(Xf.index))])
+            
 		return
 
 	def RemoveUselessCols(self, df):
