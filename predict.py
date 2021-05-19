@@ -2,12 +2,6 @@
 '''
 Quick and dirty program that loads a model and generates prediction on custom data.
 
-Next upgrades:
-	[DONE] Use PR for abstention 
-	[DONE] Validation Recall
-	[DONE] Validation False Positives
-	[] Use PR for ensembling -  FIRST MAKE A CONFIDENCE VS PR SCATTER PLOT
-
 Launch as:
 	python predict.py  -modelfullnames './trained-models/conv2/keras_model.h5' \
                 -weightnames './trained-models/conv2/bestweights.hdf5' \
