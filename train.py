@@ -28,7 +28,7 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import to_categorical
 import keras.backend as K
 import matplotlib.pyplot as plt, seaborn as sns
-from src import helper_models_4 as hm, helper_data_2 as hd, helper_tts_2 as htts
+from src import helper_models as hm, helper_data as hd, helper_tts as htts
 from PIL import Image
 from sklearn.metrics import classification_report
 # import pdb
@@ -206,8 +206,11 @@ class Ctrain:
 		if args.ttkind != 'image' and args.aug==True: 
 			print('User asked for data augmentation, but we set it to False, because we only do it for `image` models')
 			args.aug=False
-
-
+            
+		if args.ttkind == 'image':
+			args.compute_extrafeat='no'   
+			print('User asked for computing extra features, but we set it to False, because we only do it for `mixed` models')
+            
 		return
 
 
@@ -708,7 +711,7 @@ class Ctrain:
 			if self.params.valid_set=='no':  
 				valXimage,valXfeat,valX,valY=[],[],[],[]
 
-                # IMAGE
+                # IMAGE ONLY
 			if self.params.ttkind == 'image':
 				if self.params.only_ensemble is None:
 					for i in range(len(self.params.models_image)):

@@ -23,6 +23,7 @@ from termcolor import colored
 
 import sys, os, keras, argparse, glob, pathlib
 import matplotlib.pyplot as plt, seaborn as sns
+from pathlib import Path
 
 
 
@@ -108,8 +109,6 @@ def compute_extrafeat_function(df):
     
 	return dfExtraFeat
     
-    
-
 
 def ResizeWithoutProportions(im,desired_size):
 	new_im = im.resize((desired_size, desired_size), Image.LANCZOS)
@@ -408,7 +407,7 @@ def LoadImages(datapaths, L, class_select=None,classifier=None,resize_images=Non
 	names1='/training_data/*.jp*g' if training_data==True else '/*.jp*g'
 	names2='/training_data/*.png' if training_data==True else '/*.png'
 	names3='/training_data/*.ti*f' if training_data==True else '/*.ti*f'
-	print(names2)
+# 	print(names2)
 	if classifier=='multi':    
 		class_select=ReduceClasses(datapaths, class_select,classifier)	# Decide whether to use all available classes
 		if len(class_select)>2:  
@@ -521,6 +520,43 @@ def LoadImageList(im_names, L,resize_images, show=False):
 	return npimages/255.0
 
 
+
+def LoadMixedData(test_features,L,resize_images,alsoImages,compute_extrafeat):
+	# Read from tsv file, and create column with full path to the image
+	dfFeat = pd.DataFrame()
+	for idp in range(len(test_features)):
+		dftemp = pd.read_csv(test_features[idp], sep = '\t')
+		pathname=str(Path(test_features[idp]).parents[0])
+		dftemp['filename'] = [pathname +'/'+ dftemp.url[ii] for ii in range(len(dftemp))]
+		dfFeat = pd.concat([dfFeat, dftemp], axis=0, sort=True)
+
+	testimages1=dfFeat['filename']
+	testimages=list(testimages1)
+	print('There are {} images in total'.format(len(testimages)) )
+	print('There are {} feature files in total'.format(len(test_features)))
+    
+	df = pd.DataFrame()
+	for index, row in dfFeat.iterrows():
+		if alsoImages:
+			npimage,rescaled,filename=LoadImage(row.filename,L,resize_images)                                   
+
+			dftemp=pd.DataFrame([[npimage,rescaled]+row.to_list()],
+                                columns=['npimage','rescaled']+dfFeat.columns.to_list())
+		else: #alsoImages is False here
+			dftemp=pd.DataFrame([row.to_list()] ,columns=dfFeat.columns.to_list())
+		df=pd.concat([df,dftemp], axis=0, sort=True)
+
+	df.npimage = df.npimage / 255.0 
+	df = df.sample(frac=1).reset_index(drop=True)
+    
+	if compute_extrafeat == 'yes':
+		dfExtraFeat=compute_extrafeat_function(df)
+		df=pd.concat([df,dfExtraFeat], axis=1)
+   
+	return df
+    
+
+
 class Cdata:
 
 	def __init__(self, datapath, L=None, class_select=None,classifier=None,compute_extrafeat =None, resize_images=None,balance_weight=None, kind='mixed', training_data=True):
@@ -576,7 +612,7 @@ class Cdata:
 		else:
 			raise NotImplementedError('Only mixed, image or feat data-loading')
 
-		print(self.df['classname'].unique())
+# 		print(self.df['classname'].unique())
 		self.classes=self.df['classname'].unique()
         
 		self.kind=kind 		# Now the data kind is kind. In most cases, we had already kind=self.kind, but if the user tested another kind, it must be changed

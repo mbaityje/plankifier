@@ -22,7 +22,7 @@ class CTrainTestSet:
 	A class for extracting train and test sets from the original dataset, and preprocessing them.
 	'''
 
-	def __init__(self, X, y,filenames, ttkind='image',classifier=None,balance_weight=None, rescale=False, testSplit=0.2,valid_set=None, random_state=12345):
+	def __init__(self, X, y,filenames, ttkind='image',classifier=None,balance_weight=None, rescale=False, testSplit=0.2,valid_set=None, compute_extrafeat=None,random_state=12345):
 		''' 
 		X and y are dataframes with features and labels
 		'''
@@ -33,7 +33,8 @@ class CTrainTestSet:
 		self.random_state=random_state
 		self.classifier=classifier
 		self.balance_weight=balance_weight
-        
+		self.compute_extrafeat=compute_extrafeat
+  
 		# Take care of the labels
 		self.y=y
 		self.VectorizeLabels(classifier)
@@ -42,7 +43,7 @@ class CTrainTestSet:
 #			UnvectorizeLabels(self, y)
 
 		# Now the features
-		if ttkind == 'image':
+		if ttkind == 'image' and compute_extrafeat =='no':
 			self.X=self.ImageNumpyFromMixedDataframe(X)
 		elif ttkind == 'feat':
 			X = self.DropCols(X, ['npimage','rescaled'])
@@ -129,13 +130,31 @@ class CTrainTestSet:
 				class_weights = compute_class_weight('balanced', np.unique(y_integers), y_integers)
 			else:
 				class_weights = compute_class_weight(None, np.unique(y_integers), y_integers)
-			self.d_class_weights = dict(enumerate(class_weights))
+			self.class_weights = dict(enumerate(class_weights))
 
 		else: # This allows us to pack everything into the test set
 			self.trainX, self.testX, self.trainY, self.testY, self.trainFilenames, self.testFilenames = None, self.X, None, self.y
 
 
 		if self.ttkind == 'mixed':
+			# Images
+			if self.trainX is not None:
+				self.trainXimage = self.ImageNumpyFromMixedDataframe(self.trainX)
+			self.testXimage = self.ImageNumpyFromMixedDataframe(self.testX)
+			if valid_set=='yes':
+				self.valXimage = self.ImageNumpyFromMixedDataframe(self.valX)
+
+			#Features
+			if self.trainX is not None:
+				Xf=self.DropCols(self.trainX, ['npimage','rescaled'])
+				self.trainXfeat=np.array([Xf.to_numpy()[i] for i in range(len(Xf.index))])
+			Xf=self.DropCols(self.testX, ['npimage','rescaled'])
+			self.testXfeat=np.array([Xf.to_numpy()[i] for i in range(len(Xf.index))])
+			if valid_set=='yes':
+				Xf=self.DropCols(self.valX, ['npimage','rescaled'])
+				self.valXfeat=np.array([Xf.to_numpy()[i] for i in range(len(Xf.index))])
+            
+		elif self.ttkind == 'image' and self.compute_extrafeat =='yes':
 			# Images
 			if self.trainX is not None:
 				self.trainXimage = self.ImageNumpyFromMixedDataframe(self.trainX)
@@ -185,7 +204,9 @@ class CTrainTestSet:
 			self.RescaleMixed()
 		elif self.ttkind == 'feat':
 			self.RescaleFeat()
-		elif self.ttkind == 'image':
+		elif self.ttkind == 'image' and self.compute_extrafeat =='yes':
+			self.RescaleMixed()
+		elif self.ttkind == 'image' and self.compute_extrafeat =='no':
 			pass # We don't rescale the image
 		else:
 			raise NotImplementedError('CTrainTestSet: ttkind must be feat, image or mixed')

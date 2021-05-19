@@ -1,65 +1,67 @@
 # import the necessary packages
+
+# keras related libraries
 import keras
-from keras.models import Sequential, Model
+from keras.models import Sequential, Model,load_model
 from keras.layers.normalization import BatchNormalization
 from keras.layers.convolutional import Conv2D, MaxPooling2D
 from keras.layers.core import Activation, Flatten, Dropout, Dense
-from keras.layers import concatenate
+from keras.layers import concatenate,Reshape
 from keras import backend as K
 from keras import metrics as metrics
-import numpy as np
-import pandas as pd
-
 from keras.optimizers import Adam
 from keras.metrics import categorical_crossentropy
 from keras.preprocessing import image
 from keras.models import Model
 from keras.applications import imagenet_utils
 from keras.layers import Dense,GlobalAveragePooling2D
-
 from keras.applications import MobileNet
-from tensorflow.keras.applications import ResNet50
-from tensorflow.keras.applications.inception_v3 import InceptionV3
 from keras.applications.densenet import DenseNet201, DenseNet121
-import efficientnet.keras as efn
-
 from keras.applications.mobilenet import preprocess_input
 from keras.callbacks import ModelCheckpoint
-from keras.layers import Reshape
-from tensorflow.keras.layers import Input
-import keras_metrics as km
-
-from kerastuner import HyperModel
-from tensorflow.keras import regularizers
-from kerastuner.tuners import RandomSearch,Hyperband,BayesianOptimization
-import tensorflow as tf
-import kerastuner as kt
-
 from keras.preprocessing.image import ImageDataGenerator
+from keras.utils import to_categorical
+import efficientnet.keras as efn
 
+# tensorflow related libraries
+import tensorflow as tf
+from tensorflow.keras.applications import ResNet50
+from tensorflow.keras.applications.inception_v3 import InceptionV3
+from tensorflow.keras import regularizers
+from tensorflow.keras.layers import Input
+from tensorflow.keras.metrics import top_k_categorical_accuracy
 
-# stacked generalization with linear meta model 
+#Keras tuner related libraries
+import kerastuner as kt
+from kerastuner import HyperModel
+from kerastuner.tuners import BayesianOptimization #,RandomSearch,Hyperband,
+
+#SKlearn related libraries
 from sklearn.datasets import make_blobs
 from sklearn.metrics import accuracy_score,f1_score
-from sklearn.linear_model import LogisticRegression,Perceptron,RidgeClassifier,RidgeClassifierCV
-from keras.models import load_model
-from keras.utils import to_categorical
-from numpy import dstack
-from matplotlib import pyplot
-
-from sklearn.linear_model import SGDClassifier
+from sklearn.linear_model import LogisticRegression,Perceptron,RidgeClassifier,RidgeClassifierCV,SGDClassifier
+# from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 from sklearn.svm import LinearSVC
+from sklearn.metrics import classification_report,confusion_matrix
 
+# Other libraries
+import numpy as np
+import pandas as pd
+import pickle
+from numpy import dstack
 import joblib
 from pathlib import Path
 import os
-from sklearn.metrics import classification_report,confusion_matrix
+import matplotlib.pyplot as plt, seaborn as sns
+from collections import Counter
+
+# from matplotlib import pyplot
+# import keras_metrics as km
 
 np.set_printoptions(threshold=np.inf)
-import matplotlib.pyplot as plt, seaborn as sns
-import pickle
+
     
 def CreateParams(layers= None, lr =None, bs=None, optimizer=None,classifier=None,totEpochs= None, dropout=None, callbacks= None, 
 				 initial_epoch=0, aug=None, modelfile=None, model_feat=None, model_image=None, load_weights=None, 
@@ -92,17 +94,15 @@ def CreateParams(layers= None, lr =None, bs=None, optimizer=None,classifier=None
 	return params
 
 
-
-
 class CModelWrapper:
 	'''
 	A wrapper class for models
 	'''
-	def __init__(self, trainX, trainY, testX, testY,d_class_weights, params, verbose=False, numclasses=None):
+	def __init__(self, trainX, trainY, testX, testY,class_weights, params, verbose=False, numclasses=None):
 
 		self.history, self.model = None, None
 
-		(self.trainX, self.trainY, self.testX, self.testY,self.d_class_weights, self.params, self.verbose) = (trainX, trainY, testX, testY,d_class_weights, params, verbose)
+		(self.trainX, self.trainY, self.testX, self.testY,self.class_weights, self.params, self.verbose) = (trainX, trainY, testX, testY,class_weights, params, verbose)
 
 		self.numclasses = numclasses
 #		if trainY is not None:
@@ -181,21 +181,21 @@ class CModelWrapper:
 		elif self.modelname == 'mobile':
 			self.model = MobileNet.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)  
 		elif self.modelname == 'eff0':
-			self.model = EfficientNetB0.Build(input_shape=self.trainX[0].shape, classes=self.numclasses) 
+			self.model = EfficientNetB0Model.Build(input_shape=self.trainX[0].shape, classes=self.numclasses) 
 		elif self.modelname == 'eff1':
-			self.model = EfficientNetB1.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
+			self.model = EfficientNetB1Model.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
 		elif self.modelname == 'eff2':
-			self.model = EfficientNetB2.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
+			self.model = EfficientNetB2Model.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
 		elif self.modelname == 'eff3':
-			self.model = EfficientNetB3.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
+			self.model = EfficientNetB3Model.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
 		elif self.modelname == 'eff4':
-			self.model = EfficientNetB4.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
+			self.model = EfficientNetB4Model.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
 		elif self.modelname == 'eff5':
-			self.model = EfficientNetB5.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
+			self.model = EfficientNetB5Model.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
 		elif self.modelname == 'eff6':
-			self.model = EfficientNetB6.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
+			self.model = EfficientNetB6Model.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)
 		elif self.modelname == 'eff7':
-			self.model = EfficientNetB7.Build(input_shape=self.trainX[0].shape, classes=self.numclasses) 
+			self.model = EfficientNetB7Model.Build(input_shape=self.trainX[0].shape, classes=self.numclasses) 
 		elif self.modelname == 'res50':
 			self.model = ResNet50.Build(input_shape=self.trainX[0].shape, classes=self.numclasses)   
 		elif self.modelname == 'incepv3':
@@ -295,10 +295,10 @@ class CModelWrapper:
 	# Set Classifier
 		if self.params['classifier'] == 'binary' or 'versusall':
 			self.model.compile(loss="binary_crossentropy", optimizer=self.optimizer, 
-                               metrics=["accuracy",km.binary_precision(), km.binary_recall()])
+                               metrics=["accuracy"])
 		elif self.params['classifier'] == 'multi':
 			self.model.compile(loss="categorical_crossentropy", optimizer=self.optimizer, 
-                               metrics=["accuracy",km.binary_precision(), km.binary_recall()])
+                               metrics=["accuracy"])
 		return
 
     
@@ -306,13 +306,12 @@ class CModelWrapper:
 		'''
 		Trains the model if params['train'] is set to True, and logs the history in self.history
 		'''
-		if self.params['train']:
-                
+		if self.params['train']:            
 			if self.params['aug'] is None:
-
 				self.history = self.model.fit(
 									self.trainX, self.trainY, 
 									validation_data=(self.testX, self.testY), 
+									class_weight=self.class_weights,
 									epochs=self.params['totEpochs'], 
 									batch_size=self.params['bs'], 
 									callbacks=self.params['callbacks'],
@@ -322,14 +321,12 @@ class CModelWrapper:
 				self.history = self.model.fit(
 									self.params['aug'].flow(self.trainX, self.trainY, batch_size=self.params['bs']), 
 									validation_data=(self.testX, self.testY),
-									class_weight=self.d_class_weights,
+									class_weight=self.class_weights,
 									epochs=self.params['totEpochs'], 
 									callbacks=self.params['callbacks'],
 									initial_epoch = self.params['initial_epoch'],
 									steps_per_epoch=len(self.trainX)//self.params['bs']
 									)
-              
-                
 		return
 
 
@@ -1289,11 +1286,13 @@ class Explore_DenseNet(HyperModel):
         return model
     
     
+################################### RELATED TO HYPER-PARAMETER TUNING ##################################
     
-def Bayesian_optimization_search(model,X_train,y_train,X_test,y_test,Bayesian_epoch,max_trials,
-                                 executions_per_trial,directory,project_name,aug,
-                                 outpath,epochs,model_to_train,classes,
-                                 finetune,loss,ttkind,Mixed,finetune_epochs):
+def Bayesian_optimization_search(model,X_train,y_train,X_test,y_test,X_val,y_val,
+                                 bayesian_epoch,max_trials,executions_per_trial,
+                                 directory,project_name,aug,outpath,epochs,
+                                 model_to_train,classes,finetune,loss,ttkind,Mixed,
+                                 finetune_epochs,class_weight,valid_set,init_name):
     
     tuner_Bayesian = BayesianOptimization(model,objective='val_accuracy',
                                           max_trials=max_trials,
@@ -1305,11 +1304,11 @@ def Bayesian_optimization_search(model,X_train,y_train,X_test,y_test,Bayesian_ep
                                     horizontal_flip=True,zoom_range=0.2,shear_range=10)
         train_generator = datagen.flow(X_train,y_train,batch_size=32)
         validation_generator = datagen.flow(X_test,y_test,batch_size=32)
-        tuner_Bayesian.search(train_generator, epochs=Bayesian_epoch, 
-                              validation_data=validation_generator,verbose = 2)
+        tuner_Bayesian.search(train_generator, epochs=bayesian_epoch, 
+                              validation_data=validation_generator,verbose = 2,class_weight = class_weight)
     else:
-        tuner_Bayesian.search(X_train,y_train, epochs=Bayesian_epoch, 
-                              validation_data=(X_test, y_test),verbose = 2)
+        tuner_Bayesian.search(X_train,y_train, epochs=bayesian_epoch, 
+                              validation_data=(X_test, y_test),verbose = 2,class_weight = class_weight)
 
     selected_hps=tuner_Bayesian.get_best_hyperparameters()[0]
     
@@ -1317,60 +1316,63 @@ def Bayesian_optimization_search(model,X_train,y_train,X_test,y_test,Bayesian_ep
     best_model = tuner_Bayesian.hypermodel.build(selected_hps)
     
     # Train the best model
+    # finetune is set to zer0
     compile_and_train(best_model,outpath,model_to_train,0.0001,
-                      X_train,y_train,X_test,y_test,epochs,aug,loss,0,classes,ttkind,Mixed) # here learning rate is not used for training
+                      X_train,y_train,X_test,y_test,X_val,y_val,
+                      epochs,aug,loss,0,classes,ttkind, 
+                      Mixed,class_weight,valid_set,init_name) # here learning rate is not used for training
         
     if finetune==1:
-        # Fine tune the best model
-        compile_and_train(best_model,outpath,model_to_train,1e-04,
-                          X_train,y_train,X_test,y_test,finetune_epochs,aug,loss,1,classes,ttkind,Mixed) # here learning rate is used 
-    
-
-def print_performance(model,ReportName,X_test,y_test,outpath,model_to_train,classes,finetune,Mixed):
-    
-#     print('MODEL to TRAIN{}'.format(model_to_train))
-#     print('CLASSES {}'.format(classes))
-#     print('LENGTH of y_test{}'.format(len(y_test)))
-#     print('Shape of Y TEST{}'.format(y_test.shape))
-#     print('MODEL{}'.format(model))
+        # finetune is set to one
         
+        # Fine tune the best model
+        compile_and_train(best_model,outpath,model_to_train,1e-06,
+                          X_train,y_train,X_test,y_test,X_val,y_val,
+                          finetune_epochs,aug,loss,1,classes,ttkind,
+                          Mixed,class_weight,valid_set,init_name) # here learning rate is used 
+
+
+def print_performance(model,ReportName,X_test,y_test,outpath,
+                      model_to_train,classes,finetune,Mixed,init_name):
+    
     y_test_max=y_test.argmax(axis=1)  # The class that the classifier would bet on
     y_test_label=np.array([classes[y_test_max[i]] for i in range(len(y_test_max))],dtype=object)
-#     print('Shape of Y TEST LABEL{}'.format(y_test_label.shape))
     
     model_loss, accuracy = model.evaluate(X_test,y_test,verbose = 0)
-#     print('model_loss: %.5f, accuracy: %.5f' % (model_loss,accuracy))
 
-    
-    predictions_names=get_predictions_names(model,classes,X_test,Mixed)
-#     print('Shape of predictions_names{}'.format(predictions_names.shape))
+    probs,predictions_names=get_predictions_names(model,classes,X_test,Mixed)
 
     # Print and save classification report
-    
-    clf_report=classification_report(y_test_label, predictions_names)
+    clf_report=classification_report(y_test_label, predictions_names,digits=4)
     conf_matrix=confusion_matrix(y_test_label, predictions_names)
     f1=f1_score(y_test_label, predictions_names, average='macro')
-    
-    if Mixed ==1:
-        pathname=outpath+'BestModelsFromBayesianSearch/Mixed/'+ model_to_train +'/'
-    else:
-        pathname=outpath+'BestModelsFromBayesianSearch/'+ model_to_train +'/'
 
-#     pathname=outpath+'BestModelsFromBayesianSearch/'+model_to_train
+    if Mixed ==1:
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Singles/'+ model_to_train +'/'
+    elif model_to_train == 'mlp':
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Feature/'+ model_to_train +'/'
+    else:
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Singles/'+ model_to_train +'/'
+        
     stringlist = []
     model.summary(print_fn=lambda x: stringlist.append(x))
     short_model_summary = "\n".join(stringlist)
     
     if finetune ==0:
         f = open(pathname+ReportName+'.txt', 'w')
-        f.write('\nModel Name: \n\n{}\n\nTest Accuracy\n\n{}\n\nTest Loss\n\n{}\n\nF1 Score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n\nModel Summary \n\n{}\n'.format(model_to_train,accuracy,model_loss,f1,clf_report, conf_matrix,short_model_summary))
+        f.write('\nModel Name: \n\n{}\n\n Accuracy\n\n{}\n\nTest Loss\n\n{}\n\nF1 Score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n\nModel Summary \n\n{}\n'.format(model_to_train,accuracy,model_loss,f1,clf_report, conf_matrix,short_model_summary))
         f.close()
-
 
     elif finetune ==1 and Mixed!=1:
         f = open(pathname+ReportName+'_Finetuned.txt', 'w')
-        f.write('\nModel Name: \n\n{}\n\nTest Accuracy\n\n{}\n\nTest Loss\n\n{}\n\nF1 Score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n\nModel Summary \n\n{}\n'.format(model_to_train,accuracy,model_loss,f1,clf_report, conf_matrix,short_model_summary))
+        f.write('\nModel Name: \n\n{}\n\n Accuracy\n\n{}\n\nTest Loss\n\n{}\n\nF1 Score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n\nModel Summary \n\n{}\n'.format(model_to_train,accuracy,model_loss,f1,clf_report, conf_matrix,short_model_summary))
         f.close()
+        
+    Final_predictions=[probs,y_test,predictions_names,y_test_label]
+    
+    with open(pathname+'/Predictions_'+ReportName+'.pickle', 'wb') as cw:
+        pickle.dump(Final_predictions,cw) 
+        
 
 def get_callbacks(bestmodelpath,patience,finetune):
     
@@ -1392,9 +1394,14 @@ def get_callbacks(bestmodelpath,patience,finetune):
     
     return callbacks
     
-def load_best_model(outpath,foldername,finetune):
+def load_best_model(outpath,foldername,finetune, Mixed,init_name):
     
-    bestmodelpath=outpath+'BestModelsFromBayesianSearch/'+ foldername
+    if Mixed ==1:
+        bestmodelpath=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Singles/'+ foldername
+    elif foldername == 'mlp':
+        bestmodelpath=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Feature/'+ foldername
+    else:
+        bestmodelpath=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Singles/'+ foldername
     
     if finetune==0:
         modelnames=bestmodelpath+'/keras_model.h5'
@@ -1407,28 +1414,29 @@ def load_best_model(outpath,foldername,finetune):
     model.load_weights(weightnames)
     return model
 
-
-
 def compile_and_train(model,outpath,foldername,learning_rate,
-                      X_train,y_train,X_test,y_test,epochs,aug,loss,finetune,classes,ttkind,Mixed):
+                      X_train,y_train,X_test,y_test,X_val,y_val,
+                      epochs,aug,loss,finetune,classes,ttkind,
+                      Mixed,class_weight,valid_set,init_name):
     
 #     print('X_train {}'.format(X_train))
 #     print('LENGTH of X_train{}'.format(len(X_train)))
 #     print('Shape of X_train{}'.format(X_train.shape))
         
     if Mixed ==1:
-        bestmodelpath=outpath+'BestModelsFromBayesianSearch/Mixed/'+ foldername
+        bestmodelpath=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Singles/'+ foldername
+    elif foldername == 'mlp':
+        bestmodelpath=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Feature/'+ foldername
     else:
-        bestmodelpath=outpath+'BestModelsFromBayesianSearch/'+ foldername
+        bestmodelpath=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Singles/'+ foldername
             
     Path(bestmodelpath).mkdir(parents=True, exist_ok=True)
     np.save(bestmodelpath+'/classes.npy', classes)
-#     np.save(bestmodelpath+'/params.npy',params)
+
+    if finetune ==1 and ttkind!='mixed': # Because for mixed we should not change the model parameters
         
-#     if finetune ==1 and ttkind!='mixed':
-#     if finetune ==1:
-    if finetune ==1 and ttkind!='mixed':
-        model=load_best_model(outpath,foldername,finetune=0)
+        # load the not tuned model
+        model=load_best_model(outpath,foldername,finetune=0,Mixed=Mixed,init_name=init_name)
         
 #         for layer in model.layers[-15:]:
 #             layer.trainable = True
@@ -1438,22 +1446,26 @@ def compile_and_train(model,outpath,foldername,learning_rate,
         model.compile(loss=loss, 
                   optimizer=keras.optimizers.Adam(learning_rate=learning_rate), 
                   metrics=["accuracy"])
-        callbacks=get_callbacks(bestmodelpath=bestmodelpath,patience=epochs/2,finetune=finetune)
+        callbacks=get_callbacks(bestmodelpath=bestmodelpath,
+                                patience=epochs/2,finetune=finetune)
     else:
         model.compile(loss=loss, optimizer='Adam',metrics=["accuracy"])
-        callbacks=get_callbacks(bestmodelpath=bestmodelpath,patience=epochs/3,finetune=finetune)
+        callbacks=get_callbacks(bestmodelpath=bestmodelpath,
+                                patience=epochs/3,finetune=finetune)
 
     if aug==1:
         datagen =ImageDataGenerator(rotation_range=90,vertical_flip=True,
-                                        horizontal_flip=True,zoom_range=0.2,shear_range=10)
+                                    horizontal_flip=True,zoom_range=0.2,shear_range=10)
         train_generator = datagen.flow(X_train,y_train,batch_size=32)
         history = model.fit(train_generator,epochs=epochs,
-                            validation_data=(X_test, y_test), 
-                            callbacks=callbacks,verbose = 2)   
+                            validation_data=(X_test, y_test),
+                            callbacks=callbacks,verbose=2,
+                            class_weight=class_weight)   
     elif aug==0:
         history = model.fit(X_train,y_train,epochs=epochs,
                             validation_data=(X_test, y_test),
-                            batch_size=256, callbacks=callbacks,verbose = 2) 
+                            batch_size=256, callbacks=callbacks,verbose = 2,
+                            class_weight=class_weight) 
 
     if finetune==0:
         model.save(bestmodelpath+'/keras_model.h5', overwrite=True, 
@@ -1473,33 +1485,40 @@ def compile_and_train(model,outpath,foldername,learning_rate,
         with open(bestmodelpath+'/history_finetune', 'wb') as file_pi:
             pickle.dump(history.history, file_pi)
     
-    print_performance(model,'Report_test',X_test=X_test,y_test=y_test,outpath=outpath,
-                      model_to_train=foldername,classes=classes,
-                      finetune=finetune,Mixed=Mixed)
+    print_performance(model,'Report_test',
+                      X_test=X_test,
+                      y_test=y_test,
+                      outpath=outpath,
+                      model_to_train=foldername,
+                      classes=classes,
+                      finetune=finetune,
+                      Mixed=Mixed,
+                      init_name=init_name)
     
-#     print_performance(model,'Report_valid',X_test=X_val,y_test=y_val,outpath=outpath,
-#                       model_to_train=foldername,classes=classes,
-#                       finetune=finetune,ttkind=ttkind,Mixed=Mixed)
+    if valid_set=='yes':
+        print_performance(model,'Report_valid',
+                          X_test=X_val,
+                          y_test=y_val,
+                          outpath=outpath,
+                          model_to_train=foldername,
+                          classes=classes,
+                          finetune=finetune,
+                          Mixed=Mixed,
+                          init_name=init_name)
             
-def get_and_train_best_models(X_train,y_train,
-                              X_test,y_test,
-                              outpath,model_to_train,
-                              epochs,aug,
-                              classes,Bayesian_epoch,
-                              max_trials,executions_per_trial,loss,finetune,ttkind,Mixed,finetune_epochs):
+def get_and_train_best_models(X_train,y_train,X_test,y_test,X_val,y_val,outpath,
+                              model_to_train,epochs,aug,classes,bayesian_epoch,
+                              max_trials,executions_per_trial,loss,finetune,
+                              ttkind,Mixed,finetune_epochs,class_weight,valid_set,init_name):
 
     if model_to_train=='mlp':
         model = Explore_MLP(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)   
-    
     elif model_to_train=='conv2':
-        model = Explore_Conv(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)   
-        
+        model = Explore_Conv(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
     elif model_to_train=='mobile':
         model = Explore_Mobile(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
-
     elif model_to_train=='eff0':
         model = Explore_EfficientNetB0(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
-
     elif model_to_train=='eff1':
         model = Explore_EfficientNetB1(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
     elif model_to_train=='eff2':
@@ -1512,27 +1531,23 @@ def get_and_train_best_models(X_train,y_train,
         model = Explore_EfficientNetB5(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
     elif model_to_train=='eff6':
         model = Explore_EfficientNetB6(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
-
     elif model_to_train=='eff7':
         model = Explore_EfficientNetB7(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
-    
     elif model_to_train=='res50':
         model = Explore_ResNet50(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
-    
     elif model_to_train=='incepv3':
         model = Explore_InceptionV3(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
-    
     elif model_to_train=='dense121':
         model = Explore_DenseNet(input_shape=X_train[0].shape, num_classes=len(classes),loss=loss)
-    
     else:
         print('Check if the model name is right else the requested model is not implemented')
         raise ValueError
-    
 
-    
-    Bayesian_optimization_search(model,X_train,y_train,X_test,y_test,
-                                 Bayesian_epoch=Bayesian_epoch,
+    Bayesian_optimization_search(model,
+                                 X_train,y_train,
+                                 X_test,y_test,
+                                 X_val,y_val,
+                                 bayesian_epoch=bayesian_epoch,
                                  max_trials=max_trials,
                                  executions_per_trial=executions_per_trial,
                                  directory=outpath+'BayesianSearchTrials/',
@@ -1541,99 +1556,186 @@ def get_and_train_best_models(X_train,y_train,
                                  epochs=epochs,model_to_train=model_to_train,
                                  classes=classes, finetune=finetune,loss=loss,
                                  ttkind=ttkind,Mixed=Mixed,
-                                 finetune_epochs=finetune_epochs)
+                                 finetune_epochs=finetune_epochs,
+                                 class_weight=class_weight,
+                                 valid_set=valid_set,
+                                 init_name=init_name)
 
 
-def combine_models(models_image,outpath,finetune):
+####################### Average Ensemble #######################################
+
+    
+def combine_models(models_image,outpath,finetune,Mixed,init_name):
     members = list()
+    
     for i in range(len(models_image)):
-        members.append(load_best_model(outpath,foldername=models_image[i],finetune=finetune))
+        members.append(load_best_model(outpath,foldername=models_image[i],
+                                       finetune=finetune,Mixed=Mixed,init_name=init_name))
     return members
 
-
-
 # make an ensemble prediction for multi-class classification
-def ensemble_predictions(members, X_test,classes,Mixed):
+def ensemble_predictions(members, X_test,classes):
 	# make predictions
 	yhats = [model.predict(X_test) for model in members]
 	yhats = np.array(yhats)
 	# sum across ensemble members
-	summed = np.sum(yhats, axis=0)
+	probs = np.sum(yhats, axis=0)
 	# argmax across classes
-	result = summed.argmax(axis=1)
+	result = probs.argmax(axis=1)
+	result_confidences = probs.max(axis=1)
 	result_names=np.array([classes[result[i]] for i in range(result.shape[0])],dtype=object)
-	return result,result_names
+	return probs,result_names
 
 # evaluate a specific number of members in an ensemble
-def evaluate_n_members(members, n_members, X_test, y_test_label,classes,models_image,Mixed):
+def evaluate_n_members(members, n_members, X_test, y_test_label,classes,models_image):
 	# select a subset of members
 	subset = members[:n_members]
 	members_name=models_image[:n_members]
 	# make prediction
-	yhat,yhat_names = ensemble_predictions(subset, X_test,classes,Mixed)
+	yhat,yhat_names = ensemble_predictions(subset, X_test,classes)
 	# calculate accuracy
 	return accuracy_score(y_test_label, yhat_names),members_name
 
-
-def Avg_ensemble(X_test,y_test,classes,models_image,outpath,finetune,Mixed,ReportName):
+def print_ens_performance_metrics(pathname,y_test_label,y_test,probs,
+                                  predictions_names,ReportName,foldername):
     
-    members=combine_models(models_image,outpath,finetune=finetune)
+#     f = open(pathname+'/Ensemble_Scores_'+ReportName+'.txt', 'w')
+#     for i in range(1, len(members)+1):
+#         ensemble_score,members_name = evaluate_n_members(members, i, X_test, y_test_label,
+#                                                          classes,models_image)
+#         _, single_score = members[i-1].evaluate(X_test, y_test, verbose=0)
+#         individual_selected_model=models_image[i-1]
+#         f.write('\n\n{:d}: {} = {:f},Ensemble of {} = {:f}\n\n'.format(i, individual_selected_model,single_score,
+#                                                            members_name,ensemble_score))
+#         ensemble_scores.append(ensemble_score)
+#         single_scores.append(single_score)
+#     f.close()
+    
+    # Print and save classification report
+    clf_report=classification_report(y_test_label, predictions_names,digits=4)
+    conf_matrix=confusion_matrix(y_test_label, predictions_names)
+    
+    acc= accuracy_score(y_test_label, predictions_names)
+    f1=f1_score(y_test_label, predictions_names, average='macro')
+    
+    top_1_acc_1 = top_k_categorical_accuracy(y_test,probs, k=1)
+    top_1_acc_1=top_1_acc_1.numpy()
+    top_1_acc=sum(top_1_acc_1)/len(top_1_acc_1)
+    
+    top_2_acc_1 = top_k_categorical_accuracy(y_test,probs, k=2)
+    top_2_acc_1=top_2_acc_1.numpy()
+    top_2_acc=sum(top_2_acc_1)/len(top_2_acc_1)
+    
+    top_3_acc_1 = top_k_categorical_accuracy(y_test,probs, k=3)
+    top_3_acc_1=top_3_acc_1.numpy()
+    top_3_acc=sum(top_3_acc_1)/len(top_3_acc_1)
+    
+    f = open(pathname+'/'+ ReportName +'.txt', 'w')
+    f.write('\n\nModel Name: \n\n{}\n\nAcc\n\n{}\n\nTop_1_Acc\n\n{}\n\nTop_2_Acc\n\n{}\n\nTop_3_Acc\n\n{}\n\n F1 score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n'.format(foldername,acc,top_1_acc,top_2_acc,top_3_acc,f1,clf_report, conf_matrix))
+    f.close()
 
+def Avg_predictions_and_print(members,X_test,y_test,classes,pathname,ReportName,foldername):
+    
     predictions=y_test.argmax(axis=1)  # The class that the classifier would bet on
     y_test_label=np.array([classes[predictions[i]] for i in range(len(predictions))],dtype=object)
     
-    # evaluate different numbers of ensembles on hold out set
-    single_scores, ensemble_scores = list(), list()
-    Models_for_Avg_ensemble = '_'.join(map(str, models_image))
-    
-    if finetune==0:
-        foldername='Average_Ensemble_of_'+Models_for_Avg_ensemble
-        pathname=outpath+'BestModelsFromBayesianSearch/Average_Ensemble_of_'+Models_for_Avg_ensemble
-        Path(pathname).mkdir(parents=True, exist_ok=True)
-    
-    elif finetune==1:
-        foldername='Finetuned_Average_Ensemble_of_'+Models_for_Avg_ensemble
-        pathname=outpath+'BestModelsFromBayesianSearch/Finetuned_Average_Ensemble_of_'+Models_for_Avg_ensemble
-        Path(pathname).mkdir(parents=True, exist_ok=True)
-
-    f = open(pathname+'/Ensemble_Scores_'+ReportName+'.txt', 'w')
-    
+    probs,predictions_names=ensemble_predictions(members,X_test,classes)
+    Final_predictions=[probs,predictions_names]
+    with open(pathname+'/Probs_and_predictions_'+ReportName+'.pickle', 'wb') as cw:
+        pickle.dump(Final_predictions,cw) 
+        
     np.save(pathname+'/classes.npy', classes)
 
+    ## Print the performances on text
+    print_ens_performance_metrics(pathname,y_test_label,y_test,probs,
+                                  predictions_names,ReportName,foldername)
     
-    for i in range(1, len(members)+1):
-        ensemble_score,members_name = evaluate_n_members(members, i, X_test, y_test_label,
-                                                         classes,models_image,Mixed)
-        # evaluate the i'th model standalone
-        # testy_enc = to_categorical(testy)
-        _, single_score = members[i-1].evaluate(X_test, y_test, verbose=0)
-        individual_selected_model=models_image[i-1]
+def Avg_ensemble(X_test,y_test,X_val,y_val,
+                 classes,models_image,outpath,
+                 finetune,Mixed,valid_set,for_mixed,init_name):
+    
+    members=combine_models(models_image,outpath,finetune=finetune, Mixed=Mixed,init_name=init_name)
+    Models_for_Avg_ensemble = '_'.join(map(str, for_mixed))
+    
+    if finetune==0 and Mixed==0:
+        foldername='Ens_of_'+Models_for_Avg_ensemble
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Average_Ensemble/' + foldername
+        Path(pathname).mkdir(parents=True, exist_ok=True)
+    
+    elif finetune==1 and Mixed==0:
+        foldername='Ens_of_'+Models_for_Avg_ensemble
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Finetuned_Average_Ensemble/' + foldername
+        Path(pathname).mkdir(parents=True, exist_ok=True)
+
+    elif finetune ==0 and Mixed==1:        
+        foldername='Ens_of_'+Models_for_Avg_ensemble
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Average_Ensemble/'+foldername
+        Path(pathname).mkdir(parents=True, exist_ok=True)
+
+    Avg_predictions_and_print(members,X_test,y_test,classes,pathname,'Report_test',foldername)
+    
+    if valid_set=='yes':
+        Avg_predictions_and_print(members,X_val,y_val,classes,pathname,'Report_val',foldername)
         
-        f.write('\n\n{:d}: {} = {:f},Ensemble of {} = {:f}\n\n'.format(i, individual_selected_model,single_score,
-                                                           members_name,ensemble_score))
-#         print("{:d}: {} = {:f},Ensemble of {} = {:f}".format(i, individual_selected_model,
-#                                                              single_score,members_name,ensemble_score))
-        # summarize this step
-#         print('> %d: single=%.3f, ensemble of=%.3f' % (i, single_score, ensemble_score))
-        ensemble_scores.append(ensemble_score)
-        single_scores.append(single_score)
     
-    f.close()
-
-    _,predictions_names=ensemble_predictions(members, X_test,classes,Mixed)
-
-    # Print and save classification report
-    clf_report=classification_report(y_test_label, predictions_names)
-    conf_matrix=confusion_matrix(y_test_label, predictions_names)
+# def Avg_ensemble(X_test,y_test,X_val,y_val,
+#                  classes,models_image,outpath,
+#                  finetune,Mixed,valid_set,for_mixed,init_name):
     
-    acc_ensemble= accuracy_score(y_test_label, predictions_names)
-    f1=f1_score(y_test_label, predictions_names, average='macro')
+#     members=combine_models(models_image,outpath,finetune=finetune, Mixed=Mixed,init_name=init_name)
     
-    f = open(pathname+'/Report_'+ ReportName +'.txt', 'w')
-    f.write('\n\nModel Name: \n\n{}\n\nTest Accuracy\n\n{}\n\n F1 score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n'.format(foldername,acc_ensemble,f1,clf_report, conf_matrix))
-    f.close()
+#     Avg_ensemble_1(members,X_test,y_test,classes,
+#                  models_image,outpath,
+#                  finetune,Mixed,'Report_test',for_mixed,init_name)
+    
+#     if valid_set=='yes':
+#         Avg_ensemble_1(members,X_val,y_val,classes,
+#                        models_image,outpath,
+#                        finetune,Mixed,'Report_val',for_mixed,init_name)
+            
+# def Avg_ensemble_1(members,X_test,y_test,classes,
+#                  models_image,outpath,
+#                  finetune,Mixed,ReportName,for_mixed,init_name):
+    
+#     predictions=y_test.argmax(axis=1)  # The class that the classifier would bet on
+#     y_test_label=np.array([classes[predictions[i]] for i in range(len(predictions))],dtype=object)
+    
+#     # evaluate different numbers of ensembles on hold out set
+#     single_scores, ensemble_scores = list(), list()
+#     Models_for_Avg_ensemble = '_'.join(map(str, for_mixed))
+    
+#     if finetune==0 and Mixed==0:
+#         foldername='Ens_of_'+Models_for_Avg_ensemble
+#         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Average_Ensemble/' + foldername
+#         Path(pathname).mkdir(parents=True, exist_ok=True)
+    
+#     elif finetune==1 and Mixed==0:
+#         foldername='Ens_of_'+Models_for_Avg_ensemble
+#         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Finetuned_Average_Ensemble/' + foldername
+#         Path(pathname).mkdir(parents=True, exist_ok=True)
 
+#     elif finetune ==0 and Mixed==1:        
+#         foldername='Ens_of_'+Models_for_Avg_ensemble
+#         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Average_Ensemble/'+foldername
+#         Path(pathname).mkdir(parents=True, exist_ok=True)
+        
+# #     elif finetune ==1 and Mixed==1:        
+# #         foldername='Ens_of_'+Models_for_Avg_ensemble
+# #         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Finetuned_Average_Ensemble/'+foldername
+# #         Path(pathname).mkdir(parents=True, exist_ok=True)
 
+#     probs,predictions_names=ensemble_predictions(members, X_test,classes)
+
+#     Final_predictions=[probs,y_test,predictions_names,y_test_label]
+    
+#     with open(pathname+'/Probs_and_predictions_'+ReportName+'.pickle', 'wb') as cw:
+#         pickle.dump(Final_predictions,cw)  
+        
+#     print_ens_performance_metrics(pathname,y_test_label,y_test,probs,
+#                                   predictions_names,ReportName,foldername)
+
+    
+####################### STACKED Ensemble #######################################
         
 # create stacked model input dataset as outputs from the ensemble
 def stacked_dataset(members, X_test):
@@ -1650,36 +1752,60 @@ def stacked_dataset(members, X_test):
 	stackX = stackX.reshape((stackX.shape[0], stackX.shape[1]*stackX.shape[2]))
 	return stackX  
 
-def fit_stacked_ensemble_and_save(stackedXtrain,stackedXtest,model,foldername,
-                                  y_train_label,y_test_label,outpath,classes,ReportName):
+def stack_predictions(stacked_model,stackedXtest,y_test,classes,pathname,foldername,ReportName):
+    
+    predictions_names = stacked_model.predict(stackedXtest)
+    probs= stacked_model.predict_proba(stackedXtest)
+    
+    predictions=y_test.argmax(axis=1)  # The class that the classifier would bet on
+    y_test_label=np.array([classes[predictions[i]] for i in range(len(predictions))],dtype=object)
+    
+    Final_predictions=[probs,y_test, predictions_names,y_test_label]
+    
+    with open(pathname+'/Predictions'+ReportName+'.pickle', 'wb') as cw:
+        pickle.dump(Final_predictions,cw)    
+        
+    print_ens_performance_metrics(pathname,classes,y_test,probs,
+                                  predictions_names,ReportName,foldername)      
+
+def fit_stacked_ensemble_and_save(stackedXtrain,stackedXtest,stackedXval,
+                                  model,foldername,finetune,Mixed,
+                                  y_train_label,y_test_label,y_val_label,
+                                  outpath,classes,valid_set,init_name,
+                                  y_test,y_val):
+    
     # fit standalone model on trained stack
     stacked_model = make_pipeline(StandardScaler(),model(max_iter=5000, tol=1e-5))
     stacked_model.fit(stackedXtrain, y_train_label)
 
     # save the model to disk
-    pathname=outpath+'BestModelsFromBayesianSearch/Stacking_Ensemble/'+ foldername
+    if finetune==0 and Mixed==0:
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Stacking_Ensemble/' + 'Ens_of_'+ foldername
+    elif finetune==1 and Mixed==0:
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Finetuned_Stacking_Ensemble/' + 'Ens_of_'+ foldername
+    elif finetune ==0 and Mixed==1:
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Stacking_Ensemble/'+'Ens_of_'+ foldername
+
     Path(pathname).mkdir(parents=True, exist_ok=True)
     filename=pathname +'/model.sav'
     joblib.dump(stacked_model, filename)
     np.save(pathname+'/classes.npy', classes)
-    
-    # Get the prediction names on test
-    predictions_names = stacked_model.predict(stackedXtest)
-    acc_stacked = accuracy_score(y_test_label, predictions_names)
-    clf_report=classification_report(y_test_label, predictions_names)
-    conf_matrix=confusion_matrix(y_test_label, predictions_names)
-    f1=f1_score(y_test_label, predictions_names, average='macro')
-    print(foldername+'__Accuracy: %.3f' % acc_stacked)
-
-    f = open(pathname+'/Report_'+ ReportName +'.txt', 'w')
-    f.write('\nModel Name: \n\n{}\n\nTest Accuracy\n\n{}\n\n F1 score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n'.format(foldername,acc_stacked,f1,clf_report, conf_matrix))
-    f.close()
-    
-
         
-def stacking_ensemble(X_train,y_train,X_test,y_test,classes,models_image,outpath,finetune,ReportName):
-    members=combine_models(models_image,outpath,finetune=finetune)
+    stack_predictions(stacked_model,stackedXtest,y_test,classes,pathname,foldername,'test')
     
+    if valid_set=='yes':
+        stack_predictions(stacked_model,stackedXval,y_val,classes,pathname,foldername,'val')
+
+def stacking_ensemble(X_train,y_train,
+                      X_test,y_test,
+                      X_val,y_val,
+                      classes,models_image,outpath,
+                      finetune,valid_set,for_mixed,
+                      init_name,Mixed):
+
+    members=combine_models(models_image,outpath,finetune=finetune, Mixed=Mixed,init_name=init_name)
+    Models_for_stacking = '_'.join(map(str, for_mixed)) 
+
     # On train Data
     predictions_train=y_train.argmax(axis=1)  # The class that the classifier would bet on
     y_train_label=np.array([classes[predictions_train[i]] for i in range(len(predictions_train))],dtype=object)
@@ -1690,18 +1816,246 @@ def stacking_ensemble(X_train,y_train,X_test,y_test,classes,models_image,outpath
     y_test_label=np.array([classes[predictions_test[i]] for i in range(len(predictions_test))],dtype=object)
     stackedX_test = stacked_dataset(members, X_test)
     
-    
-#     Models_for_stacking = '_'.join([str(elem) for elem in models_image]) 
-    Models_for_stacking = '_'.join(map(str, models_image)) 
-    if finetune ==0:
-        fit_stacked_ensemble_and_save(stackedXtrain,stackedX_test,LogisticRegression,
-                                      'StackedLR_of_'+Models_for_stacking, y_train_label,
-                                  y_test_label,outpath,classes,ReportName)
-    elif finetune ==1:
-        fit_stacked_ensemble_and_save(stackedXtrain,stackedX_test,LogisticRegression,
-                                      'Finetuned_StackedLR_of_'+Models_for_stacking,
-                                      y_train_label,y_test_label,outpath,classes,ReportName)
+    if valid_set=='yes':
+        predictions_val=y_val.argmax(axis=1)  # The class that the classifier would bet on
+        y_val_label=np.array([classes[predictions_val[i]] for i in range(len(predictions_val))],dtype=object)
+        stackedX_val = stacked_dataset(members, X_val)
+        
+        fit_stacked_ensemble_and_save(stackedXtrain,stackedX_test,stackedX_val,
+                                      LogisticRegression,Models_for_stacking,
+                                      finetune,Mixed,
+                                      y_train_label,y_test_label,y_val_label,
+                                      outpath,classes,valid_set,init_name,y_test,y_val)
+    else:
+        stackedX_val,y_val_label=[],[]
+        fit_stacked_ensemble_and_save(stackedXtrain,stackedX_test,stackedX_val,
+                                      LogisticRegression,Models_for_stacking,
+                                      finetune,Mixed,
+                                      y_train_label,y_test_label,y_val_label,
+                                      outpath,classes,valid_set,init_name,y_test,y_val)
 
+        
+####################### For Validation counts and selected models #######################################
+
+def combine_models_selected(models_image,outpath,finetune,Mixed,init_name):
+    members = list()
+    for i in range(len(init_name)):
+        members.append(load_best_model(outpath,foldername=models_image[i],
+                                          finetune=finetune,Mixed=Mixed,init_name=init_name[i]))
+    return members
+
+def combine_models_across_iteration(model_image,outpath,finetune,Mixed,init_name):
+    members = list()
+    
+    for i in range(len(init_name)):
+        members.append(load_best_model(outpath,foldername=model_image,
+                                       finetune=finetune,Mixed=Mixed,init_name=init_name[i]))
+    return members
+
+
+def Avg_ensemble_selected_on_unlabelled(im_names,X_test,classes,models_image,outpath,
+                          finetune,Mixed,for_mixed,init_name,path_to_save):
+    
+    members=combine_models_selected(models_image,outpath,finetune,Mixed,init_name)
+    Models_for_Avg_ensemble = '_'.join(map(str, for_mixed))
+    foldername='Ens_of_'+Models_for_Avg_ensemble
+
+    if finetune==0 and Mixed==0:
+        pathname=path_to_save+'/Image/Average_Ensemble/' + foldername
+    elif finetune==1 and Mixed==0:
+        pathname=path_to_save+'/Image/Finetuned_Average_Ensemble/' + foldername
+    elif finetune ==0 and Mixed==1:        
+        pathname=path_to_save+'/Mixed/Average_Ensemble/'+foldername
+        
+    Path(pathname).mkdir(parents=True, exist_ok=True)
+    probs,predictions_names=ensemble_predictions(members,X_test,classes)
+    Final_predictions=[im_names,probs,predictions_names]
+    
+    with open(pathname+'/Filenames_Probs_and_Predictions.pickle', 'wb') as cw:
+        pickle.dump(Final_predictions,cw)   
+    
+    return Final_predictions
+
+
+def stacking_ensemble_selected_on_unlabelled(im_names,X_test,classes,models_image,outpath,
+                      finetune,Mixed,init_name,stack_path,for_mixed,path_to_save):
+    
+    members=combine_models_selected(models_image,outpath,finetune,Mixed,init_name)
+    
+    Models_for_Avg_ensemble = '_'.join(map(str, for_mixed))
+    
+    filename=stack_path +'/model.sav'
+    stacked_model = joblib.load(open(filename, 'rb'))
+    
+    stackedXtest = stacked_dataset(members, X_test)
+    predictions_names = stacked_model.predict(stackedXtest)
+    probs= stacked_model.predict_proba(stackedXtest)
+    
+    foldername='Ens_of_'+Models_for_Avg_ensemble
+    
+    if finetune==0 and Mixed==0:
+        pathname=path_to_save+'/Image/Stacking_Ensemble/' + foldername
+    elif finetune==1 and Mixed==0:
+        pathname=path_to_save+'/Image/Finetuned_Stacking_Ensemble/' + foldername
+    elif finetune ==0 and Mixed==1:        
+        pathname=path_to_save+'/Mixed/Stacking_Ensemble/'+foldername
+    
+    Path(pathname).mkdir(parents=True, exist_ok=True)
+
+    Final_predictions=[im_names,probs,predictions_names]
+    
+    with open(pathname+'/Filenames_Probs_and_Predictions.pickle', 'wb') as cw:
+        pickle.dump(Final_predictions,cw)   
+    
+    return Final_predictions
+
+def stacking_ensemble_selected_on_labelled_test(X_test,y_test,classes,models_image,outpath,
+                      finetune,Mixed,init_name,stack_path,for_mixed,ReportName):
+    
+    members=combine_models_selected(models_image,outpath,
+                                    finetune,Mixed,init_name)
+    
+    Models_for_Avg_ensemble = '_'.join(map(str, for_mixed))
+    
+    filename=stack_path +'/model.sav'
+    stacked_model = joblib.load(open(filename, 'rb'))
+    
+    stackedXtest = stacked_dataset(members, X_test)
+    predictions_names = stacked_model.predict(stackedXtest)
+    probs= stacked_model.predict_proba(stackedXtest)
+    
+    foldername='Ens_of_'+Models_for_Avg_ensemble
+
+    if finetune==0 and Mixed==0:
+        pathname=outpath+'BestModelsFromBayesianSearch/For_each_model_across_Iterations_and_selected_models/'\
+        'Image/Stacking_Ensemble/' + foldername    
+    elif finetune==1:
+        pathname=outpath+'BestModelsFromBayesianSearch/For_each_model_across_Iterations_and_selected_models/'\
+        'Image/Finetuned_Stacking_Ensemble/' + foldername
+    elif finetune ==0 and Mixed==1:        
+        pathname=outpath+'BestModelsFromBayesianSearch/For_each_model_across_Iterations_and_selected_models/'\
+        'Mixed/Stacking_Ensemble/'+foldername
+    
+    Path(pathname).mkdir(parents=True, exist_ok=True)
+
+    Final_predictions=[probs,predictions_names]
+
+    with open(pathname+'/Probs_and_predictions_'+ReportName+'.pickle', 'wb') as cw:
+        pickle.dump(Final_predictions,cw) 
+        
+    predictions=y_test.argmax(axis=1)  # The class that the classifier would bet on
+    y_test_label=np.array([classes[predictions[i]] for i in range(len(predictions))],dtype=object)
+
+    print_ens_performance_metrics(pathname,y_test_label,y_test,probs,
+                              predictions_names,ReportName,foldername)
+    
+    return Final_predictions
+
+
+
+        
+####################### Across Initial conditions or selected models #################################
+
+def Avg_ensemble_iter_or_selected_models(X_test,y_test,X_val,y_val,classes,models_image,
+                                      outpath,finetune,Mixed,valid_set,for_mixed,init_name,sel,ReportName):
+    
+    if sel=='yes':
+        members=combine_models_selected(models_image,outpath,finetune, Mixed,init_name)
+        Models_for_Avg_ensemble = '_'.join(map(str, for_mixed))
+    else:
+        members=combine_models_across_iteration(models_image,outpath,finetune, Mixed,init_name)
+        Models_for_Avg_ensemble = for_mixed #Adapted here to across iterations
+    
+    foldername='Ens_of_'+Models_for_Avg_ensemble
+
+    if finetune==0 and Mixed==0:
+        pathname=outpath+'BestModelsFromBayesianSearch/For_each_model_across_Iterations_and_selected_models/'\
+        'Image/Average_Ensemble/' + foldername    
+    elif finetune==1 and Mixed==0:
+        pathname=outpath+'BestModelsFromBayesianSearch/For_each_model_across_Iterations_and_selected_models/'\
+        'Image/Finetuned_Average_Ensemble/' + foldername
+    elif finetune ==0 and Mixed==1:
+        pathname=outpath+'BestModelsFromBayesianSearch/For_each_model_across_Iterations_and_selected_models/'\
+        'Mixed/Average_Ensemble/'+foldername
+    
+    Path(pathname).mkdir(parents=True, exist_ok=True)
+    
+    Report_on_test='Report_test'+ReportName
+    Report_on_valid='Report_valid'+ReportName
+    Avg_predictions_and_print(members,X_test,y_test,classes,pathname,Report_on_test,foldername)
+    
+    if valid_set=='yes':
+        Avg_predictions_and_print(members,X_val,y_val,classes,pathname,Report_on_valid,foldername)
+
+def stacking_ensemble_iter_or_selected_models(X_train,y_train,X_test,y_test,X_val,y_val,classes,models_image,
+                                              outpath,finetune,Mixed,valid_set,for_mixed,init_name,sel):
+    
+    if sel=='yes':
+        members=combine_models_selected(models_image,outpath,finetune, Mixed,init_name)
+        Models_for_stacking = '_'.join(map(str, for_mixed))
+    else:
+        members=combine_models_across_iteration(models_image,outpath,finetune, Mixed,init_name)
+        Models_for_stacking = for_mixed #Adapted here to across iterations
+        
+    # On train Data
+    predictions_train=y_train.argmax(axis=1)  # The class that the classifier would bet on
+    y_train_label=np.array([classes[predictions_train[i]] for i in range(len(predictions_train))],dtype=object)
+    stackedXtrain = stacked_dataset(members, X_train)
+    
+    # On test data
+    predictions_test=y_test.argmax(axis=1)  # The class that the classifier would bet on
+    y_test_label=np.array([classes[predictions_test[i]] for i in range(len(predictions_test))],dtype=object)
+    stackedX_test = stacked_dataset(members, X_test)
+    
+    if valid_set=='yes':
+        predictions_val=y_val.argmax(axis=1)  # The class that the classifier would bet on
+        y_val_label=np.array([classes[predictions_val[i]] for i in range(len(predictions_val))],dtype=object)
+        stackedX_val = stacked_dataset(members, X_val)
+        
+        fit_stacked_ensemble_and_save_iter(stackedXtrain,stackedX_test,stackedX_val,
+                                      LogisticRegression,Models_for_stacking,finetune,Mixed,
+                                      y_train_label,y_test_label,y_val_label,
+                                      outpath,classes,valid_set,y_test,y_val)
+    else:
+        stackedX_val,y_val_label=[],[]
+        fit_stacked_ensemble_and_save_iter(stackedXtrain,stackedX_test,stackedX_val,
+                                      LogisticRegression,Models_for_stacking,
+                                      finetune,Mixed,
+                                      y_train_label,y_test_label,y_val_label,
+                                      outpath,classes,valid_set,y_test,y_val)
+        
+def fit_stacked_ensemble_and_save_iter(stackedXtrain,stackedXtest,stackedXval,
+                                       model,foldername,finetune,Mixed,
+                                       y_train_label,y_test_label,y_val_label,
+                                       outpath,classes,valid_set,y_test,y_val):
+    
+    # fit standalone model on trained stack
+    stacked_model = make_pipeline(StandardScaler(),model(max_iter=5000, tol=1e-5))
+    stacked_model.fit(stackedXtrain, y_train_label)
+
+    # save the model to disk
+    if finetune==0 and Mixed==0:
+        pathname=outpath+'BestModelsFromBayesianSearch/For_each_model_across_Iterations_and_selected_models/'\
+        'Image/Stacking_Ensemble/' + 'Ens_of_'+ foldername
+    elif finetune==1:
+        pathname=outpath+'BestModelsFromBayesianSearch/For_each_model_across_Iterations_and_selected_models/'\
+        'Image/Finetuned_Stacking_Ensemble/' + 'Ens_of_'+ foldername
+    elif finetune ==0 and Mixed==1:
+        pathname=outpath+'BestModelsFromBayesianSearch/For_each_model_across_Iterations_and_selected_models/'\
+        'Mixed/Stacking_Ensemble/'+'Ens_of_'+ foldername
+    Path(pathname).mkdir(parents=True, exist_ok=True)
+    filename=pathname +'/model.sav'
+    joblib.dump(stacked_model, filename)
+    np.save(pathname+'/classes.npy', classes)
+
+    stack_predictions(stacked_model,stackedXtest,y_test,y_test_label,pathname,foldername,'test')
+    
+    if valid_set=='yes':
+        stack_predictions(stacked_model,stackedXval,y_val,y_val_label,pathname,foldername,'val')
+  
+        
+####################### MIXED Models #######################################
+            
 def define_Mixed_model(members,num_classes,loss):
 	# update all layers in all models to not be trainable
 	for i in range(len(members)):
@@ -1748,14 +2102,11 @@ def define_Mixed_model_from_scratch(members,num_classes,loss):
 # 	model.compile(loss=loss, optimizer='adam', metrics=['accuracy'])
 	return model
 
-
-
-def Select_Mixed_Model(outpath,foldername,FeaturePath,finetune):
+def Select_Mixed_Model(outpath,foldername,FeaturePath,finetune,Mixed,init_name):
     members = list()
-    members.append(load_best_model(outpath,foldername,finetune))
-    members.append(load_best_model(outpath,FeaturePath,finetune))
+    members.append(load_best_model(outpath,foldername,finetune,0,init_name)) # load from non-mixed model, i.e. Mixed=0
+    members.append(load_best_model(outpath,FeaturePath,finetune,0,init_name)) # load from non-mixed model, i.e. Mixed=0
     return members
-
 
 def Select_Mixed_Model_from_scratch(X_train,classes,ImageName):
     members = list()
@@ -1795,8 +2146,6 @@ def Select_Mixed_Model_from_scratch(X_train,classes,ImageName):
     return members
 
 
-
-
 def get_predictions_names(model,classes,X_test,Mixed):
     
     probs = model.predict(X_test)
@@ -1815,7 +2164,7 @@ def get_predictions_names(model,classes,X_test,Mixed):
 #     print('PREDICTIONS{}'.format(predictions))
 #     print('PREDICTIONS_NAMES {}'.format(predictions_names))
 
-    return predictions_names  
+    return probs,predictions_names  
 
 
 def plot_acc_loss(history,bestmodelpath,finetune):
@@ -1938,3 +2287,43 @@ def get_testdirs_and_labels(testpaths,classifier,class_select):
     
     return Class_labels,Class_labels_original,testdirs#,individual_labels_original,individual_names_original
 
+def get_hist_of_val_counts(predictions,tax_path,save_fig_path,logy):
+    # Create a dataframe with the classification counts
+    histo_cla = Counter(predictions[1])
+    df_cla=pd.DataFrame(histo_cla.values(), index=histo_cla.keys(), columns=['cla'])
+    
+    #
+    # Data from taxonomists
+    #
+    df_tax=pd.read_csv(tax_path+'counts_cleaned.csv', sep=';',encoding="ISO-8859-1")                                                                             
+    useless_cols = ['name_folder', 'ID','timestamp','year', 'month', 'day', 'hour', 'name_counter', 'total_ROI', 'comments']
+    classes = list(set(df_tax.columns)-set(useless_cols))
+    df_tax = pd.DataFrame(df_tax[classes].sum().values, index=df_tax[classes].sum().index, columns=['tax'])
+    print('According to the taxonomists, there are {} images'.format(df_tax.sum().values.item()))
+
+    #
+    # Concatenate and plot the two histograms
+    #
+
+    df=pd.concat([df_cla, df_tax], axis=1, ignore_index=False, sort=True)
+    ax=df[['cla','tax',]].sort_values(by='tax', ascending=False).plot.bar(logy=logy)
+    ax.set_ylabel("Taxon count")
+    plt.tight_layout()
+    plt.show()
+    plt.savefig(save_fig_path+'Validation_counts.png')
+
+    #
+    # Make a nicer plot that excludes classes that are not present in either tax or cla
+    #
+    ax=df[(df.tax>0) & (df.cla>0)].sort_values(by='tax', ascending=False).plot.bar(logy=logy)
+    ax.set_ylabel("Taxon count")
+    plt.tight_layout()
+    plt.show()
+    plt.savefig(save_fig_path+'Validation_counts_clean.png')
+    
+    
+    Sorted=df[['cla','tax']].sort_values(by='tax', ascending=False)
+
+    Ratios=Sorted['cla']/Sorted['tax']
+    
+    return Sorted,Ratios
