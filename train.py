@@ -713,7 +713,7 @@ class Ctrain:
 
                 # IMAGE ONLY
 			if self.params.ttkind == 'image':
-				if self.params.only_ensemble is None:
+				if self.params.only_ensemble == 'no' or self.params.only_ensemble is None:
 					for i in range(len(self.params.models_image)):
 						hm.get_and_train_best_models(X_train=trainX,y_train=trainY,
                                                      X_test=testX, y_test=testY,
@@ -735,6 +735,7 @@ class Ctrain:
 					if self.params.avg_ensemble=='yes':
 						hm.avg_ensemble(X_test=testX, y_test=testY,
                                         X_val=valX, y_val=valY,
+                                        classes=classes,
                                         models_image=self.params.models_image,
                                         outpath=self.params.outpath,
                                         finetune=self.params.finetune,
@@ -800,7 +801,7 @@ class Ctrain:
 
              # MIXED
 			elif self.params.ttkind == 'mixed':
-				if self.params.only_ensemble is None:
+				if self.params.only_ensemble == 'no' or self.params.only_ensemble is None:
 ######################### Mixed from Scratch ###########################  
 					if self.params.mixed_from_scratch == 1:  
 						X_train=[trainXimage,trainXfeat]

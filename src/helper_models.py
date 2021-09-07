@@ -1316,84 +1316,37 @@ def Bayesian_optimization_search(model,X_train,y_train,X_test,y_test,X_val,y_val
     best_model = tuner_Bayesian.hypermodel.build(selected_hps)
     
     # Train the best model
-    # finetune is set to zer0
-    compile_and_train(best_model,outpath,model_to_train,0.0001,
-                      X_train,y_train,X_test,y_test,X_val,y_val,
-                      epochs,aug,loss,0,classes,ttkind, 
-                      Mixed,class_weight,valid_set,init_name) # here learning rate is not used for training
+    if Mixed ==1:
+        bestmodelpath=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Singles/'+ model_to_train
+    elif model_to_train == 'mlp':
+        bestmodelpath=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Feature/'+ model_to_train
+    else:
+        bestmodelpath=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Singles/'+ model_to_train
+    
+    weightnames=bestmodelpath+'/bestweights_finetune.hdf5'
+    
+    if os.path.isfile(weightnames)!=1:
+        # finetune is set to zer0
+        compile_and_train(best_model,outpath,model_to_train,0.0001,
+                          X_train,y_train,X_test,y_test,X_val,y_val,
+                          epochs,aug,loss,0,classes,ttkind, 
+                          Mixed,class_weight,valid_set,init_name) # here learning rate is not used for training
         
     if finetune==1:
         # finetune is set to one
-        
         # Fine tune the best model
         compile_and_train(best_model,outpath,model_to_train,1e-06,
                           X_train,y_train,X_test,y_test,X_val,y_val,
                           finetune_epochs,aug,loss,1,classes,ttkind,
                           Mixed,class_weight,valid_set,init_name) # here learning rate is used 
-
-
-def print_performance(model,ReportName,X_test,y_test,outpath,
-                      model_to_train,classes,finetune,Mixed,init_name):
-    
-    y_test_max=y_test.argmax(axis=1)  # The class that the classifier would bet on
-    y_test_label=np.array([classes[y_test_max[i]] for i in range(len(y_test_max))],dtype=object)
-    
-    model_loss, accuracy = model.evaluate(X_test,y_test,verbose = 0)
-
-    probs,predictions_names=get_predictions_names(model,classes,X_test,Mixed)
-
-    # Print and save classification report
-    clf_report=classification_report(y_test_label, predictions_names,digits=4)
-    conf_matrix=confusion_matrix(y_test_label, predictions_names)
-    f1=f1_score(y_test_label, predictions_names, average='macro')
-
-    if Mixed ==1:
-        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Singles/'+ model_to_train +'/'
-    elif model_to_train == 'mlp':
-        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Feature/'+ model_to_train +'/'
-    else:
-        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Singles/'+ model_to_train +'/'
-        
-    stringlist = []
-    model.summary(print_fn=lambda x: stringlist.append(x))
-    short_model_summary = "\n".join(stringlist)
-    
-    if finetune ==0:
-        f = open(pathname+ReportName+'.txt', 'w')
-        f.write('\nModel Name: \n\n{}\n\n Accuracy\n\n{}\n\nTest Loss\n\n{}\n\nF1 Score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n\nModel Summary \n\n{}\n'.format(model_to_train,accuracy,model_loss,f1,clf_report, conf_matrix,short_model_summary))
-        f.close()
-
-    elif finetune ==1 and Mixed!=1:
-        f = open(pathname+ReportName+'_Finetuned.txt', 'w')
-        f.write('\nModel Name: \n\n{}\n\n Accuracy\n\n{}\n\nTest Loss\n\n{}\n\nF1 Score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n\nModel Summary \n\n{}\n'.format(model_to_train,accuracy,model_loss,f1,clf_report, conf_matrix,short_model_summary))
-        f.close()
-        
-    Final_predictions=[probs,y_test,predictions_names,y_test_label]
-    
-    with open(pathname+'/Predictions_'+ReportName+'.pickle', 'wb') as cw:
-        pickle.dump(Final_predictions,cw) 
-        
-
-def get_callbacks(bestmodelpath,patience,finetune):
-    
-    if finetune==0:
-        checkpointer    = keras.callbacks.ModelCheckpoint(filepath=bestmodelpath+'/bestweights.hdf5', 
-                                                      monitor='val_loss', verbose=0, save_best_only=True)
-        logger          = keras.callbacks.CSVLogger(bestmodelpath+'/epochs.log', separator=' ', append=False)
-        earlyStopping   = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=patience, 
-                                                    restore_best_weights=True)
-        
-    elif finetune==1:
-        checkpointer    = keras.callbacks.ModelCheckpoint(filepath=bestmodelpath+'/bestweights_finetune.hdf5', 
-                                                      monitor='val_loss', verbose=0, save_best_only=True) 
-        logger          = keras.callbacks.CSVLogger(bestmodelpath+'/epochs_finetune.log', separator=' ', append=False)
-        earlyStopping   = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=patience, 
-                                                    restore_best_weights=True)
-        
-    callbacks=[checkpointer, logger,earlyStopping]
-    
-    return callbacks
-    
+    elif finetune==2:
+            # finetune is set to two
+            # Fine tune the best model
+            compile_and_train(best_model,outpath,model_to_train,1e-06,
+                              X_train,y_train,X_test,y_test,X_val,y_val,
+                              finetune_epochs,aug,loss,2,classes,ttkind,
+                              Mixed,class_weight,valid_set,init_name) # here learning rate is used 
+            
 def load_best_model(outpath,foldername,finetune, Mixed,init_name):
     
     if Mixed ==1:
@@ -1402,18 +1355,24 @@ def load_best_model(outpath,foldername,finetune, Mixed,init_name):
         bestmodelpath=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Feature/'+ foldername
     else:
         bestmodelpath=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Singles/'+ foldername
-    
+          
     if finetune==0:
         modelnames=bestmodelpath+'/keras_model.h5'
         weightnames=bestmodelpath+'/bestweights.hdf5'
+
     elif finetune==1:
         modelnames=bestmodelpath+'/keras_model_finetune.h5'
         weightnames=bestmodelpath+'/bestweights_finetune.hdf5'
-    
+
+    elif finetune==2:
+        modelnames=bestmodelpath+'/keras_model_finetune2.h5'
+        weightnames=bestmodelpath+'/bestweights_finetune2.hdf5'
+        
     model = keras.models.load_model(modelnames)
     model.load_weights(weightnames)
-    return model
-
+    
+    return model   
+            
 def compile_and_train(model,outpath,foldername,learning_rate,
                       X_train,y_train,X_test,y_test,X_val,y_val,
                       epochs,aug,loss,finetune,classes,ttkind,
@@ -1448,6 +1407,24 @@ def compile_and_train(model,outpath,foldername,learning_rate,
                   metrics=["accuracy"])
         callbacks=get_callbacks(bestmodelpath=bestmodelpath,
                                 patience=epochs/2,finetune=finetune)
+
+    elif finetune ==2 and ttkind!='mixed': # Because for mixed we should not change the model parameters
+        
+        # load the not tuned model
+        model=load_best_model(outpath,foldername,finetune=1,Mixed=Mixed,init_name=init_name)
+        
+#         for layer in model.layers[-15:]:
+#             layer.trainable = True
+            
+        for layer in model.layers:
+            layer.trainable = True
+        model.compile(loss=loss, 
+                  optimizer=keras.optimizers.Adam(learning_rate=learning_rate), 
+                  metrics=["accuracy"])
+        callbacks=get_callbacks(bestmodelpath=bestmodelpath,
+                                patience=epochs/2,finetune=finetune)
+        
+        
     else:
         model.compile(loss=loss, optimizer='Adam',metrics=["accuracy"])
         callbacks=get_callbacks(bestmodelpath=bestmodelpath,
@@ -1484,6 +1461,16 @@ def compile_and_train(model,outpath,foldername,learning_rate,
         
         with open(bestmodelpath+'/history_finetune', 'wb') as file_pi:
             pickle.dump(history.history, file_pi)
+            
+    elif finetune==2:
+        model.save(bestmodelpath+'/keras_model_finetune2.h5', overwrite=True, 
+                   include_optimizer=True)
+        
+        plot_acc_loss(history,bestmodelpath,finetune)
+        
+        with open(bestmodelpath+'/history_finetune2', 'wb') as file_pi:
+            pickle.dump(history.history, file_pi)
+            
     
     print_performance(model,'Report_test',
                       X_test=X_test,
@@ -1505,6 +1492,90 @@ def compile_and_train(model,outpath,foldername,learning_rate,
                           finetune=finetune,
                           Mixed=Mixed,
                           init_name=init_name)
+        
+        
+def print_performance(model,ReportName,X_test,y_test,outpath,
+                      model_to_train,classes,finetune,Mixed,init_name):
+    
+    y_test_max=y_test.argmax(axis=1)  # The class that the classifier would bet on
+    y_test_label=np.array([classes[y_test_max[i]] for i in range(len(y_test_max))],dtype=object)
+    
+    model_loss, accuracy = model.evaluate(X_test,y_test,verbose = 0)
+
+    probs,predictions_names=get_predictions_names(model,classes,X_test,Mixed)
+
+    # Print and save classification report
+    clf_report=classification_report(y_test_label, predictions_names,digits=4)
+    conf_matrix=confusion_matrix(y_test_label, predictions_names)
+    f1=f1_score(y_test_label, predictions_names, average='macro')
+
+    if Mixed ==1:
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Singles/'+ model_to_train +'/'
+    elif model_to_train == 'mlp':
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Feature/'+ model_to_train +'/'
+    else:
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Singles/'+ model_to_train +'/'
+        
+    stringlist = []
+    model.summary(print_fn=lambda x: stringlist.append(x))
+    short_model_summary = "\n".join(stringlist)
+    
+    Final_predictions=[probs,y_test,predictions_names,y_test_label]
+    
+    if finetune ==0:
+        f = open(pathname+ReportName+'.txt', 'w')
+        f.write('\nModel Name: \n\n{}\n\n Accuracy\n\n{}\n\nTest Loss\n\n{}\n\nF1 Score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n\nModel Summary \n\n{}\n'.format(model_to_train,accuracy,model_loss,f1,clf_report, conf_matrix,short_model_summary))
+        f.close()
+        
+        with open(pathname+'/Predictions_'+ReportName+'.pickle', 'wb') as cw:
+            pickle.dump(Final_predictions,cw) 
+
+    elif finetune ==1 and Mixed!=1:
+        f = open(pathname+ReportName+'_Finetuned.txt', 'w')
+        f.write('\nModel Name: \n\n{}\n\n Accuracy\n\n{}\n\nTest Loss\n\n{}\n\nF1 Score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n\nModel Summary \n\n{}\n'.format(model_to_train,accuracy,model_loss,f1,clf_report, conf_matrix,short_model_summary))
+        f.close()
+        
+        with open(pathname+'/Predictions_'+ReportName+'_Finetuned.pickle', 'wb') as cw:
+            pickle.dump(Final_predictions,cw) 
+   
+    elif finetune ==2 and Mixed!=1:
+        f = open(pathname+ReportName+'_Finetuned2.txt', 'w')
+        f.write('\nModel Name: \n\n{}\n\n Accuracy\n\n{}\n\nTest Loss\n\n{}\n\nF1 Score\n\n{}\n\nClassification Report\n\n{}\n\nConfusion Matrix\n\n{}\n\nModel Summary \n\n{}\n'.format(model_to_train,accuracy,model_loss,f1,clf_report, conf_matrix,short_model_summary))
+        f.close()
+        
+        with open(pathname+'/Predictions_'+ReportName+'_Finetuned2.pickle', 'wb') as cw:
+            pickle.dump(Final_predictions,cw) 
+
+
+def get_callbacks(bestmodelpath,patience,finetune):
+    
+    if finetune==0:
+        checkpointer    = keras.callbacks.ModelCheckpoint(filepath=bestmodelpath+'/bestweights.hdf5', 
+                                                      monitor='val_loss', verbose=0, save_best_only=True)
+        logger          = keras.callbacks.CSVLogger(bestmodelpath+'/epochs.log', separator=' ', append=False)
+        earlyStopping   = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=patience, 
+                                                    restore_best_weights=True)
+        
+    elif finetune==1:
+        checkpointer    = keras.callbacks.ModelCheckpoint(filepath=bestmodelpath+'/bestweights_finetune.hdf5', 
+                                                      monitor='val_loss', verbose=0, save_best_only=True) 
+        logger          = keras.callbacks.CSVLogger(bestmodelpath+'/epochs_finetune.log', separator=' ', append=False)
+        earlyStopping   = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=patience, 
+                                                    restore_best_weights=True)
+        
+    elif finetune==2:
+        checkpointer    = keras.callbacks.ModelCheckpoint(filepath=bestmodelpath+'/bestweights_finetune2.hdf5', 
+                                                      monitor='val_loss', verbose=0, save_best_only=True) 
+        logger          = keras.callbacks.CSVLogger(bestmodelpath+'/epochs_finetune2.log', separator=' ', append=False)
+        earlyStopping   = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=patience, 
+                                                    restore_best_weights=True)
+        
+    callbacks=[checkpointer, logger,earlyStopping]
+    
+    return callbacks
+    
+
+
             
 def get_and_train_best_models(X_train,y_train,X_test,y_test,X_val,y_val,outpath,
                               model_to_train,epochs,aug,classes,bayesian_epoch,
@@ -1650,25 +1721,31 @@ def Avg_predictions_and_print(members,X_test,y_test,classes,pathname,ReportName,
     print_ens_performance_metrics(pathname,y_test_label,y_test,probs,
                                   predictions_names,ReportName,foldername)
     
-def Avg_ensemble(X_test,y_test,X_val,y_val,
+def avg_ensemble(X_test,y_test,X_val,y_val,
                  classes,models_image,outpath,
                  finetune,Mixed,valid_set,for_mixed,init_name):
     
     members=combine_models(models_image,outpath,finetune=finetune, Mixed=Mixed,init_name=init_name)
-    Models_for_Avg_ensemble = '_'.join(map(str, for_mixed))
+    Models_for_avg_ensemble = '_'.join(map(str, for_mixed))
     
     if finetune==0 and Mixed==0:
-        foldername='Ens_of_'+Models_for_Avg_ensemble
+        foldername='Ens_of_'+Models_for_avg_ensemble
         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Average_Ensemble/' + foldername
         Path(pathname).mkdir(parents=True, exist_ok=True)
     
     elif finetune==1 and Mixed==0:
-        foldername='Ens_of_'+Models_for_Avg_ensemble
+        foldername='Ens_of_'+Models_for_avg_ensemble
         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Finetuned_Average_Ensemble/' + foldername
         Path(pathname).mkdir(parents=True, exist_ok=True)
 
+    elif finetune==2 and Mixed==0:
+        foldername='Ens_of_'+Models_for_avg_ensemble
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Finetuned2_Average_Ensemble/' + foldername
+        Path(pathname).mkdir(parents=True, exist_ok=True)
+        
+        
     elif finetune ==0 and Mixed==1:        
-        foldername='Ens_of_'+Models_for_Avg_ensemble
+        foldername='Ens_of_'+Models_for_avg_ensemble
         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Average_Ensemble/'+foldername
         Path(pathname).mkdir(parents=True, exist_ok=True)
 
@@ -1678,22 +1755,22 @@ def Avg_ensemble(X_test,y_test,X_val,y_val,
         Avg_predictions_and_print(members,X_val,y_val,classes,pathname,'Report_val',foldername)
         
     
-# def Avg_ensemble(X_test,y_test,X_val,y_val,
+# def avg_ensemble(X_test,y_test,X_val,y_val,
 #                  classes,models_image,outpath,
 #                  finetune,Mixed,valid_set,for_mixed,init_name):
     
 #     members=combine_models(models_image,outpath,finetune=finetune, Mixed=Mixed,init_name=init_name)
     
-#     Avg_ensemble_1(members,X_test,y_test,classes,
+#     avg_ensemble_1(members,X_test,y_test,classes,
 #                  models_image,outpath,
 #                  finetune,Mixed,'Report_test',for_mixed,init_name)
     
 #     if valid_set=='yes':
-#         Avg_ensemble_1(members,X_val,y_val,classes,
+#         avg_ensemble_1(members,X_val,y_val,classes,
 #                        models_image,outpath,
 #                        finetune,Mixed,'Report_val',for_mixed,init_name)
             
-# def Avg_ensemble_1(members,X_test,y_test,classes,
+# def avg_ensemble_1(members,X_test,y_test,classes,
 #                  models_image,outpath,
 #                  finetune,Mixed,ReportName,for_mixed,init_name):
     
@@ -1702,25 +1779,25 @@ def Avg_ensemble(X_test,y_test,X_val,y_val,
     
 #     # evaluate different numbers of ensembles on hold out set
 #     single_scores, ensemble_scores = list(), list()
-#     Models_for_Avg_ensemble = '_'.join(map(str, for_mixed))
+#     Models_for_avg_ensemble = '_'.join(map(str, for_mixed))
     
 #     if finetune==0 and Mixed==0:
-#         foldername='Ens_of_'+Models_for_Avg_ensemble
+#         foldername='Ens_of_'+Models_for_avg_ensemble
 #         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Average_Ensemble/' + foldername
 #         Path(pathname).mkdir(parents=True, exist_ok=True)
     
 #     elif finetune==1 and Mixed==0:
-#         foldername='Ens_of_'+Models_for_Avg_ensemble
+#         foldername='Ens_of_'+Models_for_avg_ensemble
 #         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Finetuned_Average_Ensemble/' + foldername
 #         Path(pathname).mkdir(parents=True, exist_ok=True)
 
 #     elif finetune ==0 and Mixed==1:        
-#         foldername='Ens_of_'+Models_for_Avg_ensemble
+#         foldername='Ens_of_'+Models_for_avg_ensemble
 #         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Average_Ensemble/'+foldername
 #         Path(pathname).mkdir(parents=True, exist_ok=True)
         
 # #     elif finetune ==1 and Mixed==1:        
-# #         foldername='Ens_of_'+Models_for_Avg_ensemble
+# #         foldername='Ens_of_'+Models_for_avg_ensemble
 # #         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Finetuned_Average_Ensemble/'+foldername
 # #         Path(pathname).mkdir(parents=True, exist_ok=True)
 
@@ -1764,9 +1841,9 @@ def stack_predictions(stacked_model,stackedXtest,y_test,classes,pathname,foldern
     
     with open(pathname+'/Predictions'+ReportName+'.pickle', 'wb') as cw:
         pickle.dump(Final_predictions,cw)    
-        
-    print_ens_performance_metrics(pathname,classes,y_test,probs,
-                                  predictions_names,ReportName,foldername)      
+   
+    print_ens_performance_metrics(pathname,y_test_label,y_test,probs,
+                              predictions_names,ReportName,foldername)
 
 def fit_stacked_ensemble_and_save(stackedXtrain,stackedXtest,stackedXval,
                                   model,foldername,finetune,Mixed,
@@ -1783,6 +1860,10 @@ def fit_stacked_ensemble_and_save(stackedXtrain,stackedXtest,stackedXval,
         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Stacking_Ensemble/' + 'Ens_of_'+ foldername
     elif finetune==1 and Mixed==0:
         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Finetuned_Stacking_Ensemble/' + 'Ens_of_'+ foldername
+        
+    elif finetune==2 and Mixed==0:
+        pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Finetuned2_Stacking_Ensemble/' + 'Ens_of_'+ foldername
+        
     elif finetune ==0 and Mixed==1:
         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Stacking_Ensemble/'+'Ens_of_'+ foldername
 
@@ -1853,12 +1934,12 @@ def combine_models_across_iteration(model_image,outpath,finetune,Mixed,init_name
     return members
 
 
-def Avg_ensemble_selected_on_unlabelled(im_names,X_test,classes,models_image,outpath,
+def avg_ensemble_selected_on_unlabelled(im_names,X_test,classes,models_image,outpath,
                           finetune,Mixed,for_mixed,init_name,path_to_save):
     
     members=combine_models_selected(models_image,outpath,finetune,Mixed,init_name)
-    Models_for_Avg_ensemble = '_'.join(map(str, for_mixed))
-    foldername='Ens_of_'+Models_for_Avg_ensemble
+    Models_for_avg_ensemble = '_'.join(map(str, for_mixed))
+    foldername='Ens_of_'+Models_for_avg_ensemble
 
     if finetune==0 and Mixed==0:
         pathname=path_to_save+'/Image/Average_Ensemble/' + foldername
@@ -1871,6 +1952,10 @@ def Avg_ensemble_selected_on_unlabelled(im_names,X_test,classes,models_image,out
     probs,predictions_names=ensemble_predictions(members,X_test,classes)
     Final_predictions=[im_names,probs,predictions_names]
     
+    To_write = [i + '------------------' + j for i, j in zip(im_names, predictions_names)]
+    np.savetxt(pathname+'/Predictions_avg_ens.txt', To_write, fmt='%s')
+    
+    
     with open(pathname+'/Filenames_Probs_and_Predictions.pickle', 'wb') as cw:
         pickle.dump(Final_predictions,cw)   
     
@@ -1882,7 +1967,7 @@ def stacking_ensemble_selected_on_unlabelled(im_names,X_test,classes,models_imag
     
     members=combine_models_selected(models_image,outpath,finetune,Mixed,init_name)
     
-    Models_for_Avg_ensemble = '_'.join(map(str, for_mixed))
+    Models_for_avg_ensemble = '_'.join(map(str, for_mixed))
     
     filename=stack_path +'/model.sav'
     stacked_model = joblib.load(open(filename, 'rb'))
@@ -1891,7 +1976,7 @@ def stacking_ensemble_selected_on_unlabelled(im_names,X_test,classes,models_imag
     predictions_names = stacked_model.predict(stackedXtest)
     probs= stacked_model.predict_proba(stackedXtest)
     
-    foldername='Ens_of_'+Models_for_Avg_ensemble
+    foldername='Ens_of_'+Models_for_avg_ensemble
     
     if finetune==0 and Mixed==0:
         pathname=path_to_save+'/Image/Stacking_Ensemble/' + foldername
@@ -1904,6 +1989,9 @@ def stacking_ensemble_selected_on_unlabelled(im_names,X_test,classes,models_imag
 
     Final_predictions=[im_names,probs,predictions_names]
     
+    To_write = [i + '------------------' + j for i, j in zip(im_names, predictions_names)]
+    np.savetxt(pathname+'/Predictions_stack_ens.txt', To_write, fmt='%s')
+    
     with open(pathname+'/Filenames_Probs_and_Predictions.pickle', 'wb') as cw:
         pickle.dump(Final_predictions,cw)   
     
@@ -1915,7 +2003,7 @@ def stacking_ensemble_selected_on_labelled_test(X_test,y_test,classes,models_ima
     members=combine_models_selected(models_image,outpath,
                                     finetune,Mixed,init_name)
     
-    Models_for_Avg_ensemble = '_'.join(map(str, for_mixed))
+    Models_for_avg_ensemble = '_'.join(map(str, for_mixed))
     
     filename=stack_path +'/model.sav'
     stacked_model = joblib.load(open(filename, 'rb'))
@@ -1924,7 +2012,7 @@ def stacking_ensemble_selected_on_labelled_test(X_test,y_test,classes,models_ima
     predictions_names = stacked_model.predict(stackedXtest)
     probs= stacked_model.predict_proba(stackedXtest)
     
-    foldername='Ens_of_'+Models_for_Avg_ensemble
+    foldername='Ens_of_'+Models_for_avg_ensemble
 
     if finetune==0 and Mixed==0:
         pathname=outpath+'BestModelsFromBayesianSearch/For_each_model_across_Iterations_and_selected_models/'\
@@ -1956,17 +2044,17 @@ def stacking_ensemble_selected_on_labelled_test(X_test,y_test,classes,models_ima
         
 ####################### Across Initial conditions or selected models #################################
 
-def Avg_ensemble_iter_or_selected_models(X_test,y_test,X_val,y_val,classes,models_image,
+def avg_ensemble_iter_or_selected_models(X_test,y_test,X_val,y_val,classes,models_image,
                                       outpath,finetune,Mixed,valid_set,for_mixed,init_name,sel,ReportName):
     
     if sel=='yes':
         members=combine_models_selected(models_image,outpath,finetune, Mixed,init_name)
-        Models_for_Avg_ensemble = '_'.join(map(str, for_mixed))
+        Models_for_avg_ensemble = '_'.join(map(str, for_mixed))
     else:
         members=combine_models_across_iteration(models_image,outpath,finetune, Mixed,init_name)
-        Models_for_Avg_ensemble = for_mixed #Adapted here to across iterations
+        Models_for_avg_ensemble = for_mixed #Adapted here to across iterations
     
-    foldername='Ens_of_'+Models_for_Avg_ensemble
+    foldername='Ens_of_'+Models_for_avg_ensemble
 
     if finetune==0 and Mixed==0:
         pathname=outpath+'BestModelsFromBayesianSearch/For_each_model_across_Iterations_and_selected_models/'\
@@ -2182,6 +2270,9 @@ def plot_acc_loss(history,bestmodelpath,finetune):
     if finetune==1:
         plt.savefig(bestmodelpath+'/Accuracy_finetuned.png')
         plt.close() 
+    elif finetune==2:
+        plt.savefig(bestmodelpath+'/Accuracy_finetuned2.png')
+        plt.close() 
     else:
         plt.savefig(bestmodelpath+'/Accuracy.png')
         plt.close() 
@@ -2197,6 +2288,9 @@ def plot_acc_loss(history,bestmodelpath,finetune):
     plt.xscale('log')
     if finetune==1:
         plt.savefig(bestmodelpath+'/LogX_Accuracy_finetuned.png')
+        plt.close() 
+    elif finetune==2:
+        plt.savefig(bestmodelpath+'/LogX_Accuracy_finetuned2.png')
         plt.close() 
     else:
         plt.savefig(bestmodelpath+'/LogX_Accuracy.png')
@@ -2214,6 +2308,9 @@ def plot_acc_loss(history,bestmodelpath,finetune):
     if finetune==1:
         plt.savefig(bestmodelpath+'/Loss_finetuned.png')
         plt.close() 
+    elif finetune==2:
+        plt.savefig(bestmodelpath+'/Loss_finetuned2.png')
+        plt.close() 
     else:
         plt.savefig(bestmodelpath+'/Loss.png')
         plt.close() 
@@ -2230,6 +2327,9 @@ def plot_acc_loss(history,bestmodelpath,finetune):
 #     plt.show()
     if finetune==1:
         plt.savefig(bestmodelpath+'/LogX_Loss_finetuned.png')
+        plt.close() 
+    elif finetune==2:
+        plt.savefig(bestmodelpath+'/LogX_Loss_finetuned2.png')
         plt.close() 
     else:
         plt.savefig(bestmodelpath+'/LogX_Loss.png')

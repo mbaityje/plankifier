@@ -21,9 +21,10 @@ import cv2
 import pickle
 from termcolor import colored
 
-import sys, os, keras, argparse, glob, pathlib
+import sys, os, argparse, glob, pathlib
 import matplotlib.pyplot as plt, seaborn as sns
 from pathlib import Path
+from sklearn.model_selection import train_test_split
 
 
 
@@ -337,13 +338,29 @@ def LoadMixed(datapaths, L, class_select=None,classifier=None,resize_images=None
                                                for ii in range(len(dftempA))]
 						dfFeatA = pd.concat([dfFeatA, dftempA], axis=0, sort=True)
 # 						print('original class: {} ({})'.format(c, len(dfFeatA)))
-						dfFeatA = dfFeatA.sample(frac=0.5, replace=True, random_state=1)
+
+# 						dfFeatA = dfFeatA.sample(frac=0.5, replace=True, random_state=1)
+    
 # 						print('50% class: {} ({})'.format(c, len(dfFeatA)))
 						concatenated_list=pd.concat([concatenated_list,dfFeatA]) 
 # 						print('ConCatenated:({})'.format(len(concatenated_list)))                
 					except:
 						pass
-			Negative_class = concatenated_list.sample(n=len(dfB), replace=True)
+        
+        
+			Only_dirName=[]
+			Only_dirName1=list(concatenated_list.filename)
+			for i in range(len(Only_dirName1)):
+				Only_dirName.append(os.path.basename(Path(Only_dirName1[i]).parents[1]))
+			indices = np.arange(len(Only_dirName))
+			y_train, y_test,y_train_idx,y_test_idx = train_test_split(Only_dirName,indices, test_size=len(dfB)/len(Only_dirName)*3, random_state=42, stratify=Only_dirName)
+			Negative_class = concatenated_list.iloc[y_test_idx]
+            
+            
+        
+        
+        
+# 			Negative_class = concatenated_list.sample(n=len(dfB), replace=True)
 			print('Total NEGATIVE class: {} ({})'.format(negative_class_name, len(Negative_class)))
 			# Each line in features.tsv should be associated with classname (and image, if the options say it's true)
 			for index, row in Negative_class.iterrows():
@@ -481,17 +498,38 @@ def LoadImages(datapaths, L, class_select=None,classifier=None,resize_images=Non
 					classImages.extend( glob.glob(datapaths[idp]+'/'+c+'/'+names1) + glob.glob(datapaths[idp]+'/'+c+'/'+names2)+ glob.glob(datapaths[idp]+'/'+c+'/'+names3) )
                     
 # 				random_classImages = np.random.choice(classImages, int(len(classImages)*0.50))  ## if positive class has more image than negatives then random sampling of 50% doesnot work. Therefore, it is edited to the line below removing 0.5.
-				random_classImages = np.random.choice(classImages, int(len(classImages)))
+# 				random_classImages = np.random.choice(classImages, int(len(classImages))) # removed to check stratified split
 
 #				print('50% data of selected class: {} ({})'.format(c, len(random_classImages)))
-				concatenated_list=np.concatenate([concatenated_list,random_classImages])
+# 				concatenated_list=np.concatenate([concatenated_list,random_classImages]) # removed to check stratified split
+				concatenated_list=np.concatenate([concatenated_list,classImages]) # added to check stratified split
+
 # 				print('class: {} ({})'.format(c, len(classImages))) 
 # 				print('Concatenated images ({})'.format( len(concatenated_list))) 
 
-			if len(concatenated_list)>len(dfB):
-				Negative_class = np.random.choice(concatenated_list, len(dfB))
-			else:
-				Negative_class = concatenated_list         
+
+
+ # added to check stratified split
+			Only_dirName=[]
+			for i in range(len(concatenated_list)):
+				Only_dirName.append(os.path.basename(Path(concatenated_list[i]).parents[1]))
+			indices = np.arange(len(Only_dirName))
+			y_train, y_test,y_train_idx,y_test_idx = train_test_split(Only_dirName,indices, test_size=len(dfB)/len(Only_dirName)*6, random_state=25, stratify=Only_dirName)
+            
+            
+			Negative_class = concatenated_list  # --- Uncomment this to select all negatives
+            
+# 			Negative_class = concatenated_list[y_test_idx] # --- Uncomment this to select 6 times negative as positive
+
+
+
+
+
+# # # removed to check stratified split
+# 			if len(concatenated_list)>len(dfB):
+# 				Negative_class = np.random.choice(concatenated_list, len(dfB))
+# 			else:
+# 				Negative_class = concatenated_list         
 
 			print('Total NEGATIVE class: {} ({})'.format(negative_class_name, len(Negative_class))) 
 			# Create an empty dataframe for this class
@@ -503,6 +541,7 @@ def LoadImages(datapaths, L, class_select=None,classifier=None,resize_images=Non
 			dfA.npimage = dfA.npimage / 255.0 
 			df=pd.concat([dfB,dfA], axis=0)    # Concatenate Selected class and all other class
 	df = df.sample(frac=1).reset_index(drop=True)
+            
 	return df
 
 
