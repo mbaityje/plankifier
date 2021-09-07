@@ -29,6 +29,8 @@ import train as t
 # from PIL import Image
 import tensorflow as tf
 from collections import Counter
+from pathlib import Path
+
 # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -101,13 +103,30 @@ class Cpred:
 
 		# Create a Ctrain object. Maybe it is not needed, and we could straight out load the model.
 		self.simPred=t.Ctrain(verbose=False)
+        
+# 		try:
+# 			self.simPred.params=np.load(self.modelpath+'/params.npy' , allow_pickle=True).item()
+            
+# 		except:
+# 			print('WARNING: We were not able to load ',self.modelpath+'/params.npy')
+# 		self.simPred.LoadModel(self.modelname, self.weightsname) # Loads models and updates weights
+
+
 		try:
 			self.simPred.params=np.load(self.modelpath+'/params.npy' , allow_pickle=True).item()
+            
 		except:
 			print('WARNING: We were not able to load ',self.modelpath+'/params.npy')
+			try:
+				p = Path(self.modelpath).parents[4]
+				self.simPred.params=np.load(str(p) +'/params.npy' , allow_pickle=True).item()    
+				print('LOADED : ', str(p) +'/params.npy')
+			except:
+				print('WARNING: We were not able to load ', str(p) +'/params.npy')
+
 		self.simPred.LoadModel(self.modelname, self.weightsname) # Loads models and updates weights
 
-
+             
 
 
 
@@ -141,15 +160,26 @@ class Censemble:
 
 		sizes = list(set([self.predictors[im].simPred.params.L  for im in range(self.nmodels)]) )
         
-		resize_images = self.predictors[0].simPred.params.resize_images ## This needs to be written elegently later
-        
+# 		resize_images = self.predictors[0].simPred.params.resize_images ## This needs to be written elegently later
+# 		resize_image_list = list(set([self.predictors[im].simPred.params.resize_images  for im in range(self.nmodels)]) )
+
+
 		# Initialize data  to predict
 		self.im_names, self.im_labels = self.GetImageNames(training_data=training_data)
 		self.npimages={} # Models are tailored to specific image sizes
-		for L in sizes:
-# 			self.npimages[L] = hd.LoadImageList(self.im_names, L, show=False) # Load images
-			self.npimages[L] = hd.LoadImageList(self.im_names, L,resize_images, show=False) # Load 
+        
+# 		for L in sizes:
+# # 			self.npimages[L] = hd.LoadImageList(self.im_names, L, show=False) # Load images
+# 			self.npimages[L] = hd.LoadImageList(self.im_names, L,resize_images, show=False) # Load 
 
+		counti=0
+		for L in sizes:
+			resize_image = self.predictors[counti].simPred.params.resize_images
+
+# 			self.npimages[L] = hd.LoadImageList(self.im_names, L, show=False) # Load images
+			self.npimages[L] = hd.LoadImageList(self.im_names, L, resize_image, show=False) # Load  
+			counti=counti+1
+    
 
 	def InitPredictors(self):
 		''' Initialize the predictors from the files '''
@@ -355,12 +385,20 @@ if __name__=='__main__':
 	args=parser.parse_args()
 
 
+# 	ensembler=Censemble(modelnames=args.modelfullnames, 
+# 						testdirs=args.testdirs, 
+# 						weightnames=args.weightnames,
+# 						verbose=args.verbose,
+# 						)
+	
+    
 	ensembler=Censemble(modelnames=args.modelfullnames, 
 						testdirs=args.testdirs, 
 						weightnames=args.weightnames,
-						verbose=args.verbose,
 						)
 	
+    
+    
 	ensembler.MakePredictions()
 
 	for method in args.ensMethods:

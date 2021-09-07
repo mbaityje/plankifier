@@ -25,7 +25,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 
 def predict_ensemble(testdir,model_path,models_image,
-                     init_names,ens_type,stack_path,path_to_save):
+                     init_names,ens_type,stack_path,path_to_save,ttkind):
     
     model_path=''.join(model_path)
     testdir=''.join(testdir)
@@ -38,17 +38,21 @@ def predict_ensemble(testdir,model_path,models_image,
     L=params.L
     resize_images=params.resize_images
     finetune=params.finetune
-    ttkind=params.ttkind
+    
+#     ttkind=params.ttkind
+    
     if ttkind=='mixed':
         Mixed=1
-    
+    else:
+        Mixed=0
+
     compute_extrafeat=params.compute_extrafeat
     mixed_from_finetune=params.mixed_from_finetune
     mixed_from_notune=params.mixed_from_notune
     mixed_from_scratch=params.mixed_from_scratch
 
     
-    if Mixed==1:
+    if ttkind=='mixed':
         alsoImages= True
         finetune=0
         test_features	= glob.glob(testdir+'/*.tsv')
@@ -90,7 +94,7 @@ def predict_ensemble(testdir,model_path,models_image,
         
 
     if ens_type==1:
-        Avg_Probs_and_predictions = hm.Avg_ensemble_selected_on_unlabelled(im_names,Data,classes,model_names,
+        Avg_Probs_and_predictions = hm.avg_ensemble_selected_on_unlabelled(im_names,Data,classes,model_names,
                                                                       model_path,finetune,
                                                                       Mixed,models_image,
                                                                       init_names,path_to_save)
@@ -100,7 +104,7 @@ def predict_ensemble(testdir,model_path,models_image,
                                                                    init_names,stack_path,
                                                                    for_mixed,path_to_save)
     elif ens_type==3:
-        Avg_Probs_and_predictions = hm.Avg_ensemble_selected_on_unlabelled(im_names,Data,classes,model_names,
+        Avg_Probs_and_predictions = hm.avg_ensemble_selected_on_unlabelled(im_names,Data,classes,model_names,
                                                                       model_path,finetune,
                                                                       Mixed,models_image,
                                                                       init_names,path_to_save)
@@ -110,8 +114,6 @@ def predict_ensemble(testdir,model_path,models_image,
                                                                    init_names,stack_path,
                                                                    for_mixed,path_to_save)
         
-
-
 if __name__=='__main__':
 
 	parser = argparse.ArgumentParser(description='Load ensemble model and use it to make predictions on images')
@@ -124,13 +126,14 @@ if __name__=='__main__':
 'BestModelsFromBayesianSearch/For_each_model_across_Iterations_and_selected_models/Mixed/Stacking_Ensemble/'\
 'Ens_of_eff2_eff7_incepv3_mobile_eff3_dense121/'], help="path of the saved stacking ensemble")
 	parser.add_argument('-ens_type', type=int, default=1, help="Choose ens_type=1 for average ensemble, ens_type=2 for stack_ensemble and ens_type=3 for both average and stack ensemble")
+	parser.add_argument('-ttkind', default=['image'], help="select either 'mixed' or 'image' models")
     
 	args=parser.parse_args()
 
 
 	predict_ensemble(testdir=args.testdir,model_path=args.model_path,models_image=args.models_image,
                      init_names=args.init_names,stack_path=args.stack_path,path_to_save=args.path_to_save,
-                     ens_type=args.ens_type)
+                     ens_type=args.ens_type, ttkind=args.ttkind)
     
 
 
