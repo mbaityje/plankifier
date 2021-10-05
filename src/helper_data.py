@@ -227,8 +227,17 @@ def LoadMixed(datapaths, L, class_select=None,classifier=None,resize_images=None
 						dftemp['filename'] = [datapaths[idp]+c+training_data_dir+os.path.basename(dftemp.url[ii]) 
                                               for ii in range(len(dftemp))]
 						dfFeat = pd.concat([dfFeat, dftemp], axis=0, sort=True)
-					except:
-						pass
+						print(dftemp['filename'])
+					except:                    
+						try: # It could happen that a class is contained in one datapath but not in the others
+							dftemp = pd.read_csv(datapaths[idp]+c+'/features.csv', sep = ';')
+							dftemp['filename'] = [datapaths[idp]+c+training_data_dir+os.path.basename(dftemp.url[ii]) 
+                                              for ii in range(len(dftemp))]
+							dfFeat = pd.concat([dfFeat, dftemp], axis=0, sort=True)
+							print(dftemp['filename'])    
+						except: 
+							pass
+                        
 				print('class: {} ({})'.format(c, len(dfFeat)))
 				# Each line in features.tsv should be associated with classname (and image, if the options say it's true)
 				for index, row in dfFeat.iterrows():
@@ -236,7 +245,7 @@ def LoadMixed(datapaths, L, class_select=None,classifier=None,resize_images=None
 						npimage,rescaled,filename=LoadImage(row.filename,L,resize_images)                                   
 
 						dftemp=pd.DataFrame([[c,npimage,rescaled]+row.to_list()], 
-                                            columns ['classname','npimage','rescaled']+dfFeat.columns.to_list())
+                                            columns=['classname','npimage','rescaled']+dfFeat.columns.to_list())
 					else: #alsoImages is False here
 						dftemp=pd.DataFrame([[c]+row.to_list()] ,columns=['classname']+dfFeat.columns.to_list())
 
@@ -263,7 +272,13 @@ def LoadMixed(datapaths, L, class_select=None,classifier=None,resize_images=None
                                               for ii in range(len(dftemp))]
 						dfFeat = pd.concat([dfFeat, dftemp], axis=0, sort=True)
 					except:
-						pass
+						try: # It could happen that a class is contained in one datapath but not in the others
+							dftemp = pd.read_csv(datapaths[idp]+c+'/features.csv', sep = ';')
+							dftemp['filename'] = [datapaths[idp]+c+training_data_dir+os.path.basename(dftemp.url[ii]) 
+                                              for ii in range(len(dftemp))]
+							dfFeat = pd.concat([dfFeat, dftemp], axis=0, sort=True)
+						except:
+							pass     
 				print('class: {} ({})'.format(c, len(dfFeat)))
 				# Each line in features.tsv should be associated with classname (and image, if the options say it's true)
 				for index, row in dfFeat.iterrows():
@@ -306,8 +321,14 @@ def LoadMixed(datapaths, L, class_select=None,classifier=None,resize_images=None
 						dftempB['filename'] = [datapaths[idp]+c+training_data_dir+os.path.basename(dftempB.url[ii]) 
                                                for ii in range(len(dftempB))]
 						dfFeatB = pd.concat([dfFeatB, dftempB], axis=0, sort=True)
-					except:
-						pass
+					except:              
+						try: # It could happen that a class is contained in one datapath but not in the others
+							dftempB = pd.read_csv(datapaths[idp]+c+'/features.csv', sep = ';')
+							dftempB['filename'] = [datapaths[idp]+c+training_data_dir+os.path.basename(dftempB.url[ii]) 
+                                               for ii in range(len(dftempB))]
+							dfFeatB = pd.concat([dfFeatB, dftempB], axis=0, sort=True)
+						except:
+							pass
 				print('Individual POSITIVE class: {} ({})'.format(c, len(dfFeatB)))
 				Total_positive_class=Total_positive_class+len(dfFeatB)
 				dftempimageBs=[]
@@ -345,8 +366,20 @@ def LoadMixed(datapaths, L, class_select=None,classifier=None,resize_images=None
 						concatenated_list=pd.concat([concatenated_list,dfFeatA]) 
 # 						print('ConCatenated:({})'.format(len(concatenated_list)))                
 					except:
-						pass
-        
+						try: # It could happen that a class is contained in one datapath but not in the others
+							dftempA = pd.read_csv(datapaths[idp]+c+'/features.csv', sep = ';')
+							dftempA['filename'] = [datapaths[idp]+c+training_data_dir+os.path.basename(dftempA.url[ii]) 
+                                               for ii in range(len(dftempA))]
+							dfFeatA = pd.concat([dfFeatA, dftempA], axis=0, sort=True)
+# 							print('original class: {} ({})'.format(c, len(dfFeatA)))
+
+# 							dfFeatA = dfFeatA.sample(frac=0.5, replace=True, random_state=1)
+    
+# 							print('50% class: {} ({})'.format(c, len(dfFeatA)))
+							concatenated_list=pd.concat([concatenated_list,dfFeatA]) 
+# 							print('ConCatenated:({})'.format(len(concatenated_list)))                
+						except:
+							pass        
         
 			Only_dirName=[]
 			Only_dirName1=list(concatenated_list.filename)
@@ -543,7 +576,6 @@ def LoadImages(datapaths, L, class_select=None,classifier=None,resize_images=Non
 	df = df.sample(frac=1).reset_index(drop=True)
             
 	return df
-
 
 
 def LoadImageList(im_names, L,resize_images, show=False):
