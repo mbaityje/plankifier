@@ -1670,18 +1670,6 @@ def evaluate_n_members(members, n_members, X_test, y_test_label,classes,models_i
 def print_ens_performance_metrics(pathname,y_test_label,y_test,probs,
                                   predictions_names,ReportName,foldername):
     
-#     f = open(pathname+'/Ensemble_Scores_'+ReportName+'.txt', 'w')
-#     for i in range(1, len(members)+1):
-#         ensemble_score,members_name = evaluate_n_members(members, i, X_test, y_test_label,
-#                                                          classes,models_image)
-#         _, single_score = members[i-1].evaluate(X_test, y_test, verbose=0)
-#         individual_selected_model=models_image[i-1]
-#         f.write('\n\n{:d}: {} = {:f},Ensemble of {} = {:f}\n\n'.format(i, individual_selected_model,single_score,
-#                                                            members_name,ensemble_score))
-#         ensemble_scores.append(ensemble_score)
-#         single_scores.append(single_score)
-#     f.close()
-    
     # Print and save classification report
     clf_report=classification_report(y_test_label, predictions_names,digits=4)
     conf_matrix=confusion_matrix(y_test_label, predictions_names)
@@ -1754,64 +1742,7 @@ def avg_ensemble(X_test,y_test,X_val,y_val,
     if valid_set=='yes':
         Avg_predictions_and_print(members,X_val,y_val,classes,pathname,'Report_val',foldername)
         
-    
-# def avg_ensemble(X_test,y_test,X_val,y_val,
-#                  classes,models_image,outpath,
-#                  finetune,Mixed,valid_set,for_mixed,init_name):
-    
-#     members=combine_models(models_image,outpath,finetune=finetune, Mixed=Mixed,init_name=init_name)
-    
-#     avg_ensemble_1(members,X_test,y_test,classes,
-#                  models_image,outpath,
-#                  finetune,Mixed,'Report_test',for_mixed,init_name)
-    
-#     if valid_set=='yes':
-#         avg_ensemble_1(members,X_val,y_val,classes,
-#                        models_image,outpath,
-#                        finetune,Mixed,'Report_val',for_mixed,init_name)
-            
-# def avg_ensemble_1(members,X_test,y_test,classes,
-#                  models_image,outpath,
-#                  finetune,Mixed,ReportName,for_mixed,init_name):
-    
-#     predictions=y_test.argmax(axis=1)  # The class that the classifier would bet on
-#     y_test_label=np.array([classes[predictions[i]] for i in range(len(predictions))],dtype=object)
-    
-#     # evaluate different numbers of ensembles on hold out set
-#     single_scores, ensemble_scores = list(), list()
-#     Models_for_avg_ensemble = '_'.join(map(str, for_mixed))
-    
-#     if finetune==0 and Mixed==0:
-#         foldername='Ens_of_'+Models_for_avg_ensemble
-#         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Average_Ensemble/' + foldername
-#         Path(pathname).mkdir(parents=True, exist_ok=True)
-    
-#     elif finetune==1 and Mixed==0:
-#         foldername='Ens_of_'+Models_for_avg_ensemble
-#         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Finetuned_Average_Ensemble/' + foldername
-#         Path(pathname).mkdir(parents=True, exist_ok=True)
 
-#     elif finetune ==0 and Mixed==1:        
-#         foldername='Ens_of_'+Models_for_avg_ensemble
-#         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Average_Ensemble/'+foldername
-#         Path(pathname).mkdir(parents=True, exist_ok=True)
-        
-# #     elif finetune ==1 and Mixed==1:        
-# #         foldername='Ens_of_'+Models_for_avg_ensemble
-# #         pathname=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Mixed/Finetuned_Average_Ensemble/'+foldername
-# #         Path(pathname).mkdir(parents=True, exist_ok=True)
-
-#     probs,predictions_names=ensemble_predictions(members, X_test,classes)
-
-#     Final_predictions=[probs,y_test,predictions_names,y_test_label]
-    
-#     with open(pathname+'/Probs_and_predictions_'+ReportName+'.pickle', 'wb') as cw:
-#         pickle.dump(Final_predictions,cw)  
-        
-#     print_ens_performance_metrics(pathname,y_test_label,y_test,probs,
-#                                   predictions_names,ReportName,foldername)
-
-    
 ####################### STACKED Ensemble #######################################
         
 # create stacked model input dataset as outputs from the ensemble
