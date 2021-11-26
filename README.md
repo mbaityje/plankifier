@@ -39,7 +39,7 @@ The repo contains the following directories:
 
 ## Datasets
 
-The datasets can be downloaded from https://data.eawag.ch/dataset/eep-learning-classification-of-zooplankton-from-lakes.  
+The datasets can be downloaded from https://doi.org/10.25678/0004DY.  
 
 The datasets consists of two folders 1) ``zooplankton_0p5x`` and 2) ``Processed_Data``. If you want to train the classifiers from scratch then use the ``zooplankton_0p5x`` folder else if you want to use the same train, test and val split as we used for our publication then use the ``Processed_Data`` folder.
 
