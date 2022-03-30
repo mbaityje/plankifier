@@ -111,15 +111,17 @@ def compute_extrafeat_function(df):
 	return dfExtraFeat
     
 
-def ResizeWithoutProportions(im,desired_size):
+def ResizeWithoutProportions(filename, im, desired_size):
+# 	new_im = im.resize((desired_size, desired_size), Image.ANTIALIAS)
+    
 	new_im = im.resize((desired_size, desired_size), Image.LANCZOS)
 	rescaled=1
 	return new_im,rescaled
 
 
-def ResizeWithProportions(im, desired_size):
+def ResizeWithProportions(filename, im, desired_size):
 	'''
-	Take and image and resize it to a square of the desired size.
+	Take an image and resize it to a square of the desired size.
 	0) If any dimension of the image is larger than the desired size, shrink until the image can fully fit in the desired size
 	1) Add black paddings to create a square
 	'''
@@ -128,31 +130,36 @@ def ResizeWithProportions(im, desired_size):
 	largest_dim = max(old_size)
 	smallest_dim = min(old_size)
 
-	# If the image dimensions are very different, reducing the larger one to `desired_size` can make the other
-	# dimension too small. We impose that it be at least 4 pixels.
-	if desired_size*smallest_dim/largest_dim<4:
-		print('Image size: ({},{})'.format(largest_dim,smallest_dim ))
-		print('Desired size: ({},{})'.format(desired_size,desired_size))
-		raise ValueError('Images are too extreme rectangles to be reduced to this size. Try increasing the desired image size.')
+	try: 
+# 	# If the image dimensions are very different, reducing the larger one to `desired_size` can make the other
+# 	# dimension too small. We impose that it be at least 1 pixel.
 
-	rescaled    = 0 # This flag tells us whether there was a rescaling of the image (besides the padding). We can use it as feature for training.
-
+		if desired_size*smallest_dim/largest_dim<1:
+			print('Image size: ({},{})'.format(largest_dim,smallest_dim ))
+			print('Desired size: ({},{})'.format(desired_size,desired_size))
+			print('Images are too extreme rectangles to be reduced to this size. Try increasing the desired image size.')  
+			print('File name {} was resized differently. PLEASE CHECK'.format(filename)) 
+		new_im = im.resize((desired_size, desired_size), Image.LANCZOS) # ResizeWithoutProportions
+		rescaled = 0 # This flag tells us whether there was a rescaling of the image (besides the padding). We can use it as feature for training.
+		return new_im, rescaled
+        
+	except: 
 	# 0) If any dimension of the image is larger than the desired size, shrink until the image can fully fit in the desired size
-	if max(im.size)>desired_size:
+		if max(im.size)>desired_size:
 
-		ratio = float(desired_size)/max(old_size)
-		new_size = tuple([int(x*ratio) for x in old_size])
-		# print('new_size:',new_size)
-		sys.stdout.flush()
-		im = im.resize(new_size, Image.LANCZOS)
-		rescaled = 1
+			ratio = float(desired_size)/max(old_size)
+			new_size = tuple([int(x*ratio) for x in old_size])
+			# print('new_size:',new_size)
+			sys.stdout.flush()
+			im = im.resize(new_size, Image.LANCZOS)
+			rescaled = 1
 
     # 1) Add black paddings to create a square
-	new_im = Image.new("RGB", (desired_size, desired_size), color=0)
-	new_im.paste(im, (	(desired_size-im.size[0])//2,
-						(desired_size-im.size[1])//2))
+		new_im = Image.new("RGB", (desired_size, desired_size), color=0)
+		new_im.paste(im, (	(desired_size-im.size[0])//2,(desired_size-im.size[1])//2)) 
 
-	return new_im, rescaled
+		return new_im, rescaled
+
 
 def ReduceClasses(datapaths, class_select,classifier):
 	print('datapaths:',datapaths)
@@ -423,9 +430,9 @@ def LoadImage(filename, L=None,resize_images=None,show=False):
 	if resize_images==0 or resize_images is None :
 		rescaled=0
 	elif resize_images ==1:
-		image,rescaled = ResizeWithProportions(image, L) # width and height are assumed to be the same (assertion at the beginning)
+		image,rescaled = ResizeWithProportions(filename, image, L) # width and height are assumed to be the same (assertion at the beginning)
 	elif resize_images ==2:
-		image,rescaled = ResizeWithoutProportions(image, L) # width and height are assumed to be the same (assertion at the beginning)
+		image,rescaled = ResizeWithoutProportions(filename, image, L) # width and height are assumed to be the same (assertion at the beginning)
 	npimage = np.array(image.copy(), dtype=np.float32)
 # 	npimage = cv2.cvtColor(npimage,cv2.COLOR_GRAY2RGB) ## FOR WHOI and KAGGLE dataset
 	if show:
