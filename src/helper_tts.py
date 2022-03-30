@@ -117,12 +117,12 @@ class CTrainTestSet:
 		if test_size<1:
             
 			if valid_set == 'no':       
-				self.trainX, self.testX, self.trainY, self.testY, self.trainFilenames, self.testFilenames = train_test_split(self.X, self.y,self.filenames, test_size=test_size, random_state=random_state, shuffle=True)
+				self.trainX, self.testX, self.trainY, self.testY, self.trainFilenames, self.testFilenames = train_test_split(self.X, self.y,self.filenames, test_size=test_size, random_state=random_state, shuffle=True, stratify = self.y)
 			elif valid_set == 'yes':  
 				train_ratio = 0.70
 				validation_ratio = 0.15
 				test_ratio = 0.15
-				self.trainX, self.test1X, self.trainY, self.test1Y, self.trainFilenames, self.test1Filenames = train_test_split(self.X, self.y,self.filenames, test_size=1-train_ratio,random_state=random_state, shuffle=True)   
+				self.trainX, self.test1X, self.trainY, self.test1Y, self.trainFilenames, self.test1Filenames = train_test_split(self.X, self.y,self.filenames, test_size=1-train_ratio,random_state=random_state, shuffle=True, stratify = self.y)   
 				self.valX, self.testX, self.valY, self.testY, self.valFilenames, self.testFilenames = train_test_split(self.test1X, self.test1Y,self.test1Filenames, test_size=test_ratio/(test_ratio + validation_ratio), random_state=random_state, shuffle=True) 
                               
 			y_integers = np.argmax(self.trainY, axis=1)
