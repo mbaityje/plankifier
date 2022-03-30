@@ -1323,7 +1323,7 @@ def Bayesian_optimization_search(model,X_train,y_train,X_test,y_test,X_val,y_val
     else:
         bestmodelpath=outpath+'BestModelsFromBayesianSearch/'+ init_name +'/Image/Singles/'+ model_to_train
     
-    weightnames=bestmodelpath+'/bestweights_finetune.hdf5'
+    weightnames=bestmodelpath+'/bestweights.hdf5'
     
     if os.path.isfile(weightnames)!=1:
         # finetune is set to zer0
@@ -1331,14 +1331,16 @@ def Bayesian_optimization_search(model,X_train,y_train,X_test,y_test,X_val,y_val
                           X_train,y_train,X_test,y_test,X_val,y_val,
                           epochs,aug,loss,0,classes,ttkind, 
                           Mixed,class_weight,valid_set,init_name) # here learning rate is not used for training
-        
-    if finetune==1:
-        # finetune is set to one
-        # Fine tune the best model
-        compile_and_train(best_model,outpath,model_to_train,1e-06,
-                          X_train,y_train,X_test,y_test,X_val,y_val,
-                          finetune_epochs,aug,loss,1,classes,ttkind,
-                          Mixed,class_weight,valid_set,init_name) # here learning rate is used 
+    
+    weightnames2=bestmodelpath+'/bestweights_finetune.hdf5'
+    if os.path.isfile(weightnames2)!=1:
+        if finetune==1:
+            # finetune is set to one
+            # Fine tune the best model
+            compile_and_train(best_model,outpath,model_to_train,1e-06,
+                              X_train,y_train,X_test,y_test,X_val,y_val,
+                              finetune_epochs,aug,loss,1,classes,ttkind,
+                              Mixed,class_weight,valid_set,init_name) # here learning rate is used 
     elif finetune==2:
             # finetune is set to two
             # Fine tune the best model
